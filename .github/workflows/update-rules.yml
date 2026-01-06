@@ -130,31 +130,26 @@ jobs:
         black_count="${{ steps.generate-files.outputs.black_rules || 0 }}"
         white_count="${{ steps.generate-files.outputs.white_rules || 0 }}"
         
-        # 创建一个临时文件来存储提交信息
-        cat << 'MESSAGE_EOF' > /tmp/commit_message.txt
-🤖 自动更新广告拦截规则 [$commit_time]
-
-📊 规则统计:
-- 黑名单: $black_count 条规则
-- 白名单: $white_count 条规则
-
-✨ 拦截类型:
-• 开屏广告拦截
-• 弹窗广告拦截  
-• 视频广告拦截
-• 横幅广告拦截
-• 内联广告拦截
-
-🛡️ 其他防护:
-• 跟踪器拦截
-• 恶意软件防护
-• 隐私保护
-
-🤖 由 GitHub Actions 自动生成
-MESSAGE_EOF
-        
-        # 替换变量值
-        sed -i "s/\$black_count/$black_count/g; s/\$white_count/$white_count/g; s/\$commit_time/$commit_time/g" /tmp/commit_message.txt
+        # 使用多个echo命令创建提交信息文件，避免YAML解析问题
+        echo "🤖 自动更新广告拦截规则 [$commit_time]" > /tmp/commit_message.txt
+        echo "" >> /tmp/commit_message.txt
+        echo "📊 规则统计:" >> /tmp/commit_message.txt
+        echo "- 黑名单: $black_count 条规则" >> /tmp/commit_message.txt
+        echo "- 白名单: $white_count 条规则" >> /tmp/commit_message.txt
+        echo "" >> /tmp/commit_message.txt
+        echo "✨ 拦截类型:" >> /tmp/commit_message.txt
+        echo "• 开屏广告拦截" >> /tmp/commit_message.txt
+        echo "• 弹窗广告拦截" >> /tmp/commit_message.txt
+        echo "• 视频广告拦截" >> /tmp/commit_message.txt
+        echo "• 横幅广告拦截" >> /tmp/commit_message.txt
+        echo "• 内联广告拦截" >> /tmp/commit_message.txt
+        echo "" >> /tmp/commit_message.txt
+        echo "🛡️ 其他防护:" >> /tmp/commit_message.txt
+        echo "• 跟踪器拦截" >> /tmp/commit_message.txt
+        echo "• 恶意软件防护" >> /tmp/commit_message.txt
+        echo "• 隐私保护" >> /tmp/commit_message.txt
+        echo "" >> /tmp/commit_message.txt
+        echo "🤖 由 GitHub Actions 自动生成" >> /tmp/commit_message.txt
         
         # 使用文件内容进行提交
         git commit -F /tmp/commit_message.txt
