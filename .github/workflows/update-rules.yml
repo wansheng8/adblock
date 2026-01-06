@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'sources/sources.json'
+      - 'sources/sources.txt'
       - 'scripts/**'
 
 jobs:
