@@ -190,25 +190,22 @@ ipconfig /flushdns
 ### 文件结构
 ```
 adblock/
-├── .github/workflows/           # GitHub Actions 工作流
-│   └── update-rules.yml         # 自动更新配置
-├── scripts/                     # 核心脚本
-│   ├── update_rules.py          # 主更新脚本
-│   ├── merge_rules.py           # 规则合并脚本
-│   └── validate_rules.py        # 规则验证脚本
-├── sources/                     # 规则源配置
-│   └── sources.json             # 12+个规则源
-├── dist/                        # 生成的文件
-│   ├── blacklist.txt            # 主规则文件
-│   ├── whitelist.txt            # 白名单文件
-│   └── metadata.json            # 元数据信息
-├── rules/                       # 规则存储
-│   ├── raw/                     # 原始规则文件
-│   └── processed/               # 处理后的规则
-├── docs/                        # 文档
-│   ├── FAQ.md                   # 常见问题
-│   └── CONTRIBUTING.md          # 贡献指南
-└── README.md                    # 项目说明
+├── .github/
+│   └── workflows/
+│       └── update-rules.yml          # GitHub Actions 工作流
+├── scripts/
+│   ├── update_rules.py               # 主更新脚本
+│   ├── validate_rules.py             # 规则验证脚本
+│   └── format_rules.py               # 规则格式化脚本
+├── sources/
+│   └── sources.json                  # 规则源配置文件
+├── docs/
+│   ├── FAQ.md                        # 常见问题
+│   ├── CONTRIBUTING.md               # 贡献指南
+│   └── CHANGELOG.md                  # 更新日志
+├── README.md                         # 项目说明
+├── LICENSE                          # 许可证文件
+└── .gitignore                       # Git 忽略文件
 ```
 
 ## 🔧 本地部署与开发
