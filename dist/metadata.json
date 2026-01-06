@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-01-06T14:47:08.302331+08:00",
-  "total_rules": 601557,
-  "blacklist_rules": 599840,
-  "whitelist_rules": 1717,
+  "last_updated": "2026-01-06T15:06:00.205503+08:00",
+  "total_rules": 601884,
+  "blacklist_rules": 599854,
+  "whitelist_rules": 2030,
   "sources_used": 17,
   "sources_failed": 6,
-  "next_update": "2026-01-06T22:47:08.302346+08:00",
-  "version": "20260106.0647",
+  "next_update": "2026-01-06T23:06:00.205537+08:00",
+  "version": "20260106.0706",
   "file_sizes": {
-    "blacklist.txt": 13960627,
-    "whitelist.txt": 113601
+    "blacklist.txt": 13969105,
+    "whitelist.txt": 119765
   }
 }
