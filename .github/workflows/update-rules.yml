@@ -30,31 +30,25 @@ jobs:
     
     - name: Install dependencies
       run: |
-        cd scripts
-        pip install -r requirements.txt
+        pip install requests lxml beautifulsoup4
     
-    # 第一步：规则源同步 (12+个源)
-    - name: Step 1 - 同步规则源
+    # 第一步：创建必要目录
+    - name: 创建目录结构
+      run: |
+        mkdir -p dist
+        mkdir -p rules/raw
+    
+    # 第二步：规则源同步 (12+个源)
+    - name: "步骤1: 规则源同步"
       run: |
         echo "┌─────────────────┐"
         echo "│   规则源同步    │"
         echo "│  (12+个源)      │"
         echo "└─────────────────┘"
-        echo "开始同步规则源..."
-        python scripts/update_rules.py --step sync
-      continue-on-error: true
-    
-    # 第二步：规则处理引擎 (合并/去重)
-    - name: Step 2 - 规则处理引擎
-      run: |
-        echo "┌─────────────────┐"
-        echo "│   规则处理引擎   │"
-        echo "│  (合并/去重)    │"
-        echo "└─────────────────┘"
-        python scripts/update_rules.py --step process
+        python scripts/update_rules.py
     
     # 第三步：规则验证器 (语法检查)
-    - name: Step 3 - 规则验证器
+    - name: "步骤2: 规则验证器"
       run: |
         echo "┌─────────────────┐"
         echo "│   规则验证器    │"
@@ -63,29 +57,21 @@ jobs:
         python scripts/validate_rules.py
     
     # 第四步：规则优化器 (性能优化)
-    - name: Step 4 - 规则优化器
+    - name: "步骤3: 规则优化器"
       run: |
         echo "┌─────────────────┐"
         echo "│   规则优化器    │"
         echo "│  (性能优化)    │"
         echo "└─────────────────┘"
         if [ -f scripts/format_rules.py ]; then
-          python scripts/format_rules.py --optimize
+          python scripts/format_rules.py
         else
           echo "跳过规则优化 (format_rules.py 未找到)"
         fi
     
-    # 第五步：规则生成器 (格式转换)
-    - name: Step 5 - 规则生成器
-      run: |
-        echo "┌─────────────────┐"
-        echo "│   规则生成器    │"
-        echo "│  (格式转换)     │"
-        echo "└─────────────────┘"
-        python scripts/update_rules.py --step generate
-    
-    # 第六步：发布准备
-    - name: Step 6 - 发布准备
+    # 第五步：生成最终文件
+    - name: "步骤4: 文件统计"
+      id: stats
       run: |
         echo "┌─────────────────────────────────────────────────┐"
         echo "│             发布到 GitHub / CDN                 │"
@@ -97,15 +83,28 @@ jobs:
         # 统计信息
         if [ -f dist/metadata.json ]; then
           echo "规则统计:"
-          cat dist/metadata.json | python -c "import sys,json; data=json.load(sys.stdin); print(f'黑名单: {data[\"blacklist_rules\"]} 条'); print(f'白名单: {data[\"whitelist_rules\"]} 条'); print(f'总计: {data[\"total_rules\"]} 条')"
+          python << 'EOF'
+import json
+with open('dist/metadata.json', 'r', encoding='utf-8') as f:
+    data = json.load(f)
+    print(f"黑名单: {data.get('blacklist_rules', 0)} 条")
+    print(f"白名单: {data.get('whitelist_rules', 0)} 条")
+    print(f"总计: {data.get('total_rules', 0)} 条")
+EOF
         fi
         
-        # 文件大小检查
-        echo -e "\n文件大小:"
-        ls -lh dist/*.txt | awk '{print $9 ": " $5}'
+        # 获取文件行数用于提交信息
+        if [ -f dist/blacklist.txt ]; then
+          blacklist_lines=$(wc -l < dist/blacklist.txt)
+          echo "blacklist_lines=$blacklist_lines" >> $GITHUB_OUTPUT
+        fi
+        if [ -f dist/whitelist.txt ]; then
+          whitelist_lines=$(wc -l < dist/whitelist.txt)
+          echo "whitelist_lines=$whitelist_lines" >> $GITHUB_OUTPUT
+        fi
     
-    # 第七步：检查变更并提交
-    - name: Step 7 - 检查变更
+    # 第六步：检查变更
+    - name: "步骤5: 检查变更"
       id: check-changes
       run: |
         echo "┌─────────────────┐"
@@ -119,49 +118,36 @@ jobs:
           echo "没有检测到变更，跳过提交"
         else
           echo "changes_detected=true" >> $GITHUB_OUTPUT
-          
-          # 统计变更
-          blacklist_lines=$(wc -l < dist/blacklist.txt 2>/dev/null || echo "0")
-          whitelist_lines=$(wc -l < dist/whitelist.txt 2>/dev/null || echo "0")
-          echo "blacklist_lines=$blacklist_lines" >> $GITHUB_OUTPUT
-          echo "whitelist_lines=$whitelist_lines" >> $GITHUB_OUTPUT
-          
-          echo "检测到规则变更:"
-          git diff --cached --name-only | grep -E '\.(txt|json)$' || echo "无规则文件变更"
+          echo "检测到规则变更"
         fi
     
-    # 第八步：提交到 GitHub
-    - name: Step 8 - 提交变更
+    # 第七步：提交变更
+    - name: "步骤6: 提交变更"
       if: steps.check-changes.outputs.changes_detected == 'true'
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         
-        # 生成提交信息
+        # 获取统计信息
         commit_time=$(date +'%Y-%m-%d %H:%M')
-        commit_msg="🤖 自动更新规则 [$commit_time]"
         
-        # 添加统计信息
+        # 读取元数据或使用默认值
         if [ -f dist/metadata.json ]; then
-          stats=$(cat dist/metadata.json | python -c "import sys,json; data=json.load(sys.stdin); print(f'黑名单: {data[\"blacklist_rules\"]} 条, 白名单: {data[\"whitelist_rules\"]} 条')")
-          commit_msg="$commit_msg\n\n📊 $stats"
+          blacklist_count=$(python -c "import json; data=json.load(open('dist/metadata.json')); print(data.get('blacklist_rules', 0))")
+          whitelist_count=$(python -c "import json; data=json.load(open('dist/metadata.json')); print(data.get('whitelist_rules', 0))")
+          commit_msg="🤖 自动更新规则 [$commit_time]"
+          commit_msg="$commit_msg"$'\n'$'\n'"📊 黑名单: $blacklist_count 条, 白名单: $whitelist_count 条"
+        else
+          commit_msg="🤖 自动更新规则 [$commit_time]"
         fi
         
         # 提交
-        git commit -F- <<EOF
-$commit_msg
-
-由 GitHub Actions 自动生成
-更新时间: $commit_time
-规则文件已更新
-EOF
+        git commit -m "$commit_msg"$'\n'$'\n'"由 GitHub Actions 自动生成"
         
         # 推送
         git push
-        
-        echo "✅ 规则已更新并推送到 GitHub"
     
-    # 工作流完成通知
+    # 工作流完成
     - name: 工作流完成
       if: always()
       run: |
