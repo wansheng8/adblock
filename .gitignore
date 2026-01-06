@@ -1,29 +1,11 @@
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+*.pyc
+*.pyo
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # 系统文件
 .DS_Store
@@ -35,41 +17,9 @@ Thumbs.db
 *.temp
 
 # 本地配置
-config.local.json
 .env
 secrets.json
 
-# 测试文件
-test_*
-tests/
-
-# 备份文件
-*.bak
-*.backup
-*.old
-
-# 处理后的规则目录
-rules/processed/
-
-# 日志文件
-rules/invalid_rules.log
-
-# 注意：我们修改了以下规则
-# 1. 不忽略 dist/ 目录下的规则文件
-# 2. 保留 rules/raw/ 目录的规则文件跟踪
-
-# 不忽略以下重要文件
-!dist/blacklist.txt
-!dist/whitelist.txt
-!dist/metadata.json
-!dist/format_report.md
-
-# 不忽略 rules/raw/ 目录下的规则文件
-!rules/raw/*.txt
-!rules/raw/.gitkeep
-
-# 只忽略 dist/ 目录下的临时文件
-dist/*.tmp
-dist/*.temp
-dist/*.bak
-dist/backup/
+# 注意：我们故意不忽略以下目录和文件，因为我们需要提交它们：
+# - dist/ 目录中的所有文件
+# - rules/raw/ 目录中的 .txt 文件
