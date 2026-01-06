@@ -1,8 +1,23 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # IDE
 .vscode/
@@ -13,24 +28,32 @@ __pycache__/
 # 系统文件
 .DS_Store
 Thumbs.db
-desktop.ini
 
 # 临时文件
 *.log
 *.tmp
 *.temp
-*.cache
 
 # 本地配置
-.env
-.env.local
-secrets.json
 config.local.json
+.env
+secrets.json
 
-# 备份文件
-*.bak
-*.backup
-*.old
+# 原始规则文件 - 我们不提交这些，因为每次更新都会生成新的
+rules/raw/*.txt
+# 但是保留空目录
+!rules/raw/.gitkeep
 
-# 我们不忽略任何需要提交的重要文件
-# dist/ 和 rules/raw/ 下的文件应该被跟踪
+# 处理后的规则目录
+rules/processed/
+
+# 只提交dist目录下的特定文件，不提交整个目录
+dist/*
+!dist/blacklist.txt
+!dist/whitelist.txt
+!dist/metadata.json
+!dist/.gitkeep
+
+# 测试文件
+test_*
+tests/
