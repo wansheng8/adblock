@@ -38,7 +38,7 @@ jobs:
         echo ""
         echo "┌─────────────────────────────────────────┐"
         echo "│          🚀 规则源同步                  │"
-        echo "│       (23个广告拦截源)                 │"
+        echo "│       (广告拦截源)                 │"
         echo "└─────────────────────────────────────────┘"
         python scripts/update_rules.py
     
@@ -127,10 +127,22 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         
         commit_time=$(date +'%Y-%m-%d %H:%M')
-        black_count=${{ steps.generate-files.outputs.black_rules }}
-        white_count=${{ steps.generate-files.outputs.white_rules }}
         
-        git commit -m "🤖 自动更新广告拦截规则 [$commit_time]
+        # 安全地读取统计值
+        black_count=0
+        white_count=0
+        
+        if [[ -v steps.generate-files.outputs.black_rules ]]; then
+          black_count=${{ steps.generate-files.outputs.black_rules }}
+        fi
+        
+        if [[ -v steps.generate-files.outputs.white_rules ]]; then
+          white_count=${{ steps.generate-files.outputs.white_rules }}
+        fi
+        
+        # 构建提交信息（使用EOF安全创建多行字符串）
+        commit_msg=$(cat <<EOF
+🤖 自动更新广告拦截规则 [$commit_time]
 
 📊 规则统计:
 - 黑名单: $black_count 条规则
@@ -148,8 +160,11 @@ jobs:
 • 恶意软件防护
 • 隐私保护
 
-🤖 由 GitHub Actions 自动生成"
+🤖 由 GitHub Actions 自动生成
+EOF
+)
         
+        git commit -m "$commit_msg"
         git push
         
         echo "✅ 变更已提交到 GitHub"
