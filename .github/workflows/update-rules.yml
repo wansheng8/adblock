@@ -38,7 +38,7 @@ jobs:
         echo ""
         echo "┌─────────────────────────────────────────┐"
         echo "│          🚀 规则源同步                  │"
-        echo "│       (广告拦截源)                 │"
+        echo "│       (23个广告拦截源)                 │"
         echo "└─────────────────────────────────────────┘"
         python scripts/update_rules.py
     
@@ -128,20 +128,12 @@ jobs:
         
         commit_time=$(date +'%Y-%m-%d %H:%M')
         
-        # 安全地读取统计值
-        black_count=0
-        white_count=0
+        # 安全获取统计值，设置默认值
+        black_count="${{ steps.generate-files.outputs.black_rules || '0' }}"
+        white_count="${{ steps.generate-files.outputs.white_rules || '0' }}"
         
-        if [[ -v steps.generate-files.outputs.black_rules ]]; then
-          black_count=${{ steps.generate-files.outputs.black_rules }}
-        fi
-        
-        if [[ -v steps.generate-files.outputs.white_rules ]]; then
-          white_count=${{ steps.generate-files.outputs.white_rules }}
-        fi
-        
-        # 构建提交信息（使用EOF安全创建多行字符串）
-        commit_msg=$(cat <<EOF
+        # 创建临时文件来存储提交信息，这是最可靠的方法
+        cat > /tmp/commit_message.txt << 'EOF'
 🤖 自动更新广告拦截规则 [$commit_time]
 
 📊 规则统计:
@@ -162,9 +154,9 @@ jobs:
 
 🤖 由 GitHub Actions 自动生成
 EOF
-)
         
-        git commit -m "$commit_msg"
+        # 使用文件内容进行提交
+        git commit -F /tmp/commit_message.txt
         git push
         
         echo "✅ 变更已提交到 GitHub"
