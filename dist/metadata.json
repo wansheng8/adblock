@@ -1,11 +1,11 @@
 {
-  "last_updated": "2026-01-06T18:40:31.700982+08:00",
-  "blacklist_rules": 839309,
-  "whitelist_rules": 3483,
-  "total_rules": 842792,
-  "sources_used": 17,
-  "sources_total": 23,
-  "next_update": "2026-01-07T02:40:31.700982+08:00",
+  "last_updated": "2026-01-06T18:53:32.113098+08:00",
+  "blacklist_rules": 862293,
+  "whitelist_rules": 6106,
+  "total_rules": 868399,
+  "sources_used": 18,
+  "sources_total": 24,
+  "next_update": "2026-01-07T02:53:32.113098+08:00",
   "categories": {
     "popup_ads": "开屏/弹窗广告",
     "video_ads": "视频广告",
@@ -14,5 +14,8 @@
     "trackers": "跟踪器",
     "malware": "恶意软件",
     "social_media": "社交媒体"
+  },
+  "source_types": {
+    "mixed_sources": 1
   }
 }
