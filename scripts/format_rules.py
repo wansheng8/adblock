@@ -1,109 +1,126 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-规则格式化脚本
+规则格式化与优化脚本
 """
 
 import re
+import sys
 from pathlib import Path
-from datetime import datetime
 
 
-def format_file(file_path):
-    """格式化规则文件"""
-    path = Path(file_path)
-    if not path.exists():
-        print(f"文件不存在: {file_path}")
-        return
-    
-    with open(path, 'r', encoding='utf-8') as f:
-        content = f.read()
-    
-    # 分离头部和规则
-    lines = content.split('\n')
-    header = []
-    rules = []
-    
-    for line in lines:
-        if line.startswith('!'):
-            header.append(line)
-        elif line.strip():
-            rules.append(line.strip())
-    
-    # 分组规则
-    groups = {
-        'whitelist': [],
-        'domain': [],
-        'url': [],
-        'element': [],
-        'hosts': [],
-        'other': []
-    }
-    
-    for rule in rules:
-        if rule.startswith('@@'):
-            groups['whitelist'].append(rule)
-        elif rule.startswith('||'):
-            groups['domain'].append(rule)
-        elif rule.startswith('|'):
-            groups['url'].append(rule)
-        elif rule.startswith('##'):
-            groups['element'].append(rule)
-        elif rule.startswith(('0.0.0.0', '127.0.0.1')):
-            groups['hosts'].append(rule)
-        else:
-            groups['other'].append(rule)
-    
-    # 排序
-    for key in groups:
-        groups[key].sort()
-    
-    # 重新组装文件
-    formatted = []
-    formatted.extend(header)
-    
-    # 添加格式化信息
-    formatted.append(f'! 格式化时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
-    formatted.append('!')
-    
-    # 添加分组
-    group_names = {
-        'whitelist': '白名单规则',
-        'domain': '域名规则',
-        'url': 'URL规则',
-        'element': '元素隐藏规则',
-        'hosts': 'Hosts规则',
-        'other': '其他规则'
-    }
-    
-    for group_key, group_rules in groups.items():
-        if group_rules:
-            formatted.append(f'! {"="*60}')
-            formatted.append(f'! {group_names[group_key]} ({len(group_rules)}条)')
-            formatted.append(f'! {"="*60}')
-            formatted.append('')
-            formatted.extend(group_rules)
-            formatted.append('')
-    
-    # 写入文件
-    with open(path, 'w', encoding='utf-8', newline='\n') as f:
-        f.write('\n'.join(formatted))
-    
-    print(f"格式化完成: {path.name}")
-    print(f"总规则数: {len(rules)}")
+class RuleFormatter:
+    def __init__(self):
+        self.base_dir = Path(__file__).parent.parent
+        
+    def optimize_blacklist(self):
+        """优化黑名单规则"""
+        file_path = self.base_dir / 'dist/blacklist.txt'
+        if not file_path.exists():
+            print("黑名单文件不存在")
+            return
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        # 分离头部注释和规则
+        header = []
+        rules = []
+        
+        for line in lines:
+            line = line.rstrip('\n')
+            if line.startswith('!'):
+                header.append(line)
+            elif line.strip():
+                rules.append(line)
+        
+        # 规则优化
+        optimized_rules = []
+        rule_set = set()
+        
+        for rule in rules:
+            # 去除多余空格
+            rule = rule.strip()
+            
+            # 跳过重复规则
+            if rule in rule_set:
+                continue
+            
+            # 简单的规则标准化
+            # 例如: 确保通配符规则以 ^ 结尾
+            if rule.endswith('*'):
+                rule = rule.rstrip('*') + '^'
+            
+            rule_set.add(rule)
+            optimized_rules.append(rule)
+        
+        # 排序规则（可选，但可以提升性能）
+        optimized_rules.sort(key=lambda x: (
+            x.startswith('||'),  # 域名规则优先
+            x.startswith('|'),   # 协议规则
+            len(x),              # 短规则优先
+            x                    # 字母顺序
+        ))
+        
+        # 写回文件
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(header))
+            if header:
+                f.write('\n\n')
+            f.write('\n'.join(optimized_rules))
+        
+        print(f"黑名单优化完成: 原始 {len(rules)} 条, 优化后 {len(optimized_rules)} 条")
+        
+    def compress_whitelist(self):
+        """压缩白名单规则"""
+        file_path = self.base_dir / 'dist/whitelist.txt'
+        if not file_path.exists():
+            print("白名单文件不存在")
+            return
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        # 类似黑名单的处理
+        header = []
+        rules = []
+        
+        for line in lines:
+            line = line.rstrip('\n')
+            if line.startswith('!'):
+                header.append(line)
+            elif line.strip():
+                rules.append(line)
+        
+        # 去重
+        unique_rules = list(set(rules))
+        unique_rules.sort()
+        
+        # 写回文件
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(header))
+            if header:
+                f.write('\n\n')
+            f.write('\n'.join(unique_rules))
+        
+        print(f"白名单压缩完成: 原始 {len(rules)} 条, 压缩后 {len(unique_rules)} 条")
+        
+    def run(self):
+        """执行格式化"""
+        print("开始规则格式化与优化...")
+        print("=" * 60)
+        
+        self.optimize_blacklist()
+        print("-" * 60)
+        self.compress_whitelist()
+        print("=" * 60)
+        print("规则格式化完成")
 
 
 if __name__ == "__main__":
-    import sys
+    formatter = RuleFormatter()
     
-    base_dir = Path(__file__).parent.parent
-    
-    print("开始格式化规则文件...")
-    print("=" * 60)
-    
-    format_file(base_dir / 'dist/blacklist.txt')
-    print("-" * 60)
-    format_file(base_dir / 'dist/whitelist.txt')
-    
-    print("=" * 60)
-    print("格式化完成!")
+    if len(sys.argv) > 1 and sys.argv[1] == '--optimize':
+        formatter.run()
+    else:
+        print("使用方法: python format_rules.py --optimize")
