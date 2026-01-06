@@ -48,24 +48,28 @@ tests/
 *.backup
 *.old
 
-# 原始规则文件（保留最新的）
-rules/raw/*.txt
-!rules/raw/.gitkeep
-
 # 处理后的规则目录
 rules/processed/
 
 # 日志文件
 rules/invalid_rules.log
 
-# 确保 dist/ 目录下的重要文件不被忽略
-# 我们只忽略 dist/ 目录下的临时文件，但保留规则文件
+# 注意：我们修改了以下规则
+# 1. 不忽略 dist/ 目录下的规则文件
+# 2. 保留 rules/raw/ 目录的规则文件跟踪
+
+# 不忽略以下重要文件
+!dist/blacklist.txt
+!dist/whitelist.txt
+!dist/metadata.json
+!dist/format_report.md
+
+# 不忽略 rules/raw/ 目录下的规则文件
+!rules/raw/*.txt
+!rules/raw/.gitkeep
+
+# 只忽略 dist/ 目录下的临时文件
 dist/*.tmp
 dist/*.temp
 dist/*.bak
 dist/backup/
-
-# 注意：我们特意不忽略以下文件：
-# !dist/blacklist.txt
-# !dist/whitelist.txt
-# !dist/metadata.json
