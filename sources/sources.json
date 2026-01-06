@@ -234,7 +234,7 @@
       "description": "AdGuard间谍软件过滤器，阻止恶意软件和跟踪",
       "license": "MIT",
       "update_frequency": "daily"
-    }
+    },
     {
       "name": "混合规则集合",
       "url": "https://raw.githubusercontent.com/wansheng8/adblock/main/sources/gz.txt",
