@@ -2,24 +2,35 @@
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # 系统文件
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # 临时文件
 *.log
 *.tmp
 *.temp
+*.cache
 
 # 本地配置
 .env
+.env.local
 secrets.json
+config.local.json
 
-# 注意：我们故意不忽略以下目录和文件，因为我们需要提交它们：
-# - dist/ 目录中的所有文件
-# - rules/raw/ 目录中的 .txt 文件
+# 备份文件
+*.bak
+*.backup
+*.old
+
+# 我们不忽略任何需要提交的重要文件
+# dist/ 和 rules/raw/ 下的文件应该被跟踪
