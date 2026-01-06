@@ -1,4 +1,4 @@
-name: AdBlock Rules Auto-Updater
+name: 广告拦截规则自动更新
 
 on:
   workflow_dispatch:
