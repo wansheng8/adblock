@@ -1,79 +1,167 @@
-name: Update AdBlock Rules
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+广告拦截规则更新脚本
+"""
 
-on:
-  schedule:
-    - cron: '0 */8 * * *'
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'sources/**'
-      - 'scripts/**'
-      - '.github/workflows/**'
+import json
+import requests
+import datetime
+import re
+import os
+from pathlib import Path
 
-permissions:
-  contents: write
 
-jobs:
-  update:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-    
-    - name: Install dependencies and run update
-      run: |
-        pip install requests
-        python scripts/update_rules.py
-    
-    - name: Commit and push
-      if: success()
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git config --global user.name "github-actions[bot]"
+class RuleUpdater:
+    def __init__(self, config_path="sources/sources.json"):
+        self.config_path = config_path
+        self.base_dir = Path(__file__).parent.parent
         
-        # 检查是否有变更
-        if [ -n "$(git status --porcelain)" ]; then
-          # 获取规则统计
-          if [ -f "dist/blacklist.txt" ]; then
-            BLACKLIST_COUNT=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
-          else
-            BLACKLIST_COUNT="0"
-          fi
-          
-          if [ -f "dist/whitelist.txt" ]; then
-            WHITELIST_COUNT=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
-          else
-            WHITELIST_COUNT="0"
-          fi
-          
-          TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
-          
-          # 添加文件
-          git add dist/ rules/raw/
-          
-          # 提交
-          git commit -m "更新规则 $(date +'%Y-%m-%d %H:%M:%S')
-          
-          - 黑名单: $BLACKLIST_COUNT 条
-          - 白名单: $WHITELIST_COUNT 条
-          - 总计: $TOTAL_COUNT 条
-          
-          [skip ci]"
-          
-          # 推送
-          git pull --rebase origin main
-          git push origin HEAD:main
-          
-          echo "✅ 规则更新完成并已推送"
-        else
-          echo "ℹ️  没有变更，跳过提交"
-        fi
+        # 创建目录
+        (self.base_dir / 'dist').mkdir(exist_ok=True)
+        (self.base_dir / 'rules/raw').mkdir(exist_ok=True)
+        
+    def load_config(self):
+        """加载配置"""
+        with open(self.base_dir / self.config_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    
+    def fetch_rules(self, url, name):
+        """获取规则"""
+        try:
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            print(f"下载: {name}")
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+            return response.text
+        except Exception as e:
+            print(f"错误: {name} - {e}")
+            return None
+    
+    def parse_rules(self, content, rule_type):
+        """解析规则"""
+        if not content:
+            return []
+        
+        rules = []
+        lines = content.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith('!'):
+                continue
+            
+            # 如果是白名单源，确保规则以@@开头
+            if rule_type == 'whitelist' and not line.startswith('@@'):
+                if line.startswith('||'):
+                    line = '@@' + line
+                elif '^' in line:
+                    line = '@@' + line
+            
+            rules.append(line)
+        
+        return rules
+    
+    def remove_duplicates(self, rules):
+        """去重"""
+        unique_rules = []
+        seen = set()
+        
+        for rule in rules:
+            norm = rule.strip().lower()
+            if norm and norm not in seen:
+                seen.add(norm)
+                unique_rules.append(rule)
+        
+        return sorted(unique_rules)
+    
+    def run(self):
+        """运行更新"""
+        print("开始更新规则...")
+        print("=" * 60)
+        
+        config = self.load_config()
+        sources = config.get('sources', [])
+        
+        all_black_rules = []
+        all_white_rules = []
+        
+        for source in sources:
+            if not source.get('enabled', True):
+                continue
+            
+            content = self.fetch_rules(source['url'], source['name'])
+            if content:
+                # 保存原始文件
+                source_name = re.sub(r'[^\w\-_]', '_', source['name'].lower())
+                raw_file = self.base_dir / f"rules/raw/{source_name}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                with open(raw_file, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                
+                # 解析规则
+                rules = self.parse_rules(content, source.get('type', 'blacklist'))
+                
+                if source.get('type') == 'whitelist':
+                    all_white_rules.extend(rules)
+                else:
+                    all_black_rules.extend(rules)
+                
+                print(f"  ✓ {source['name']}: {len(rules)} 条")
+        
+        # 去重
+        black_rules = self.remove_duplicates(all_black_rules)
+        white_rules = self.remove_duplicates(all_white_rules)
+        
+        # 生成头部信息
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+        update_time = now.strftime('%Y-%m-%d %H:%M:%S')
+        
+        header = f"""! 标题: 广告拦截规则
+! 描述: 自动更新的多源规则
+! 生成时间: {update_time} (北京时间)
+! 黑名单规则: {len(black_rules)}
+! 白名单规则: {len(white_rules)}
+! 项目地址: https://github.com/wansheng8/adblock.git
+! 许可证: MIT
+!
+"""
+        
+        # 保存黑名单
+        with open(self.base_dir / 'dist/blacklist.txt', 'w', encoding='utf-8') as f:
+            f.write(header)
+            f.write('\n'.join(black_rules))
+        
+        # 保存白名单
+        with open(self.base_dir / 'dist/whitelist.txt', 'w', encoding='utf-8') as f:
+            f.write(header)
+            f.write('\n'.join(white_rules))
+        
+        # 保存元数据
+        metadata = {
+            "last_updated": update_time,
+            "blacklist_rules": len(black_rules),
+            "whitelist_rules": len(white_rules),
+            "total_rules": len(black_rules) + len(white_rules),
+            "next_update": (now + datetime.timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        with open(self.base_dir / 'dist/metadata.json', 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, indent=2, ensure_ascii=False)
+        
+        print("\n" + "=" * 60)
+        print("更新完成!")
+        print(f"黑名单: {len(black_rules)} 条")
+        print(f"白名单: {len(white_rules)} 条")
+        print(f"总计: {len(black_rules) + len(white_rules)} 条")
+        print("=" * 60)
+        
+        return True
+
+
+if __name__ == "__main__":
+    updater = RuleUpdater()
+    try:
+        updater.run()
+    except Exception as e:
+        print(f"更新失败: {e}")
+        exit(1)
