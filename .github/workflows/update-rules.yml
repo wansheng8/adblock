@@ -40,7 +40,7 @@ jobs:
         echo ""
         echo "┌─────────────────────────────────────────┐"
         echo "│          🚀 规则源同步                  │"
-        echo "│       (23个广告拦截源)                 │"
+        echo "│       (广告拦截源)                 │"
         echo "└─────────────────────────────────────────┘"
         python scripts/update_rules.py
     
@@ -97,11 +97,10 @@ jobs:
         echo "│        (详细规则分析与报告)             │"
         echo "└─────────────────────────────────────────┘"
         
-        # 创建统计报告生成脚本
-        python3 -c "
+        # 创建Python脚本来生成统计报告
+        cat > /tmp/generate_stats.py << 'EOF'
 import os
 import datetime
-import subprocess
 
 print('开始生成统计报告...')
 
@@ -116,20 +115,21 @@ white_count = 0
 if os.path.exists('dist/blacklist.txt'):
     with open('dist/blacklist.txt', 'r', encoding='utf-8') as f:
         content = f.read()
-        lines = content.split('\\n')
+        lines = content.split('\n')
         black_count = sum(1 for line in lines if line.strip() and not line.startswith('!'))
 
 if os.path.exists('dist/whitelist.txt'):
     with open('dist/whitelist.txt', 'r', encoding='utf-8') as f:
         content = f.read()
-        lines = content.split('\\n')
+        lines = content.split('\n')
         white_count = sum(1 for line in lines if line.strip() and not line.startswith('!'))
 
 # 分类统计
+category_counts = {}
 if os.path.exists('dist/blacklist.txt'):
     with open('dist/blacklist.txt', 'r', encoding='utf-8') as f:
         content = f.read().lower()
-    
+
     categories = {
         '开屏/弹窗广告': ['popup', 'fullscreen', 'interstitial', 'splash', '弹窗', '弹出'],
         '视频广告': ['video', 'youtube', 'pre-roll', 'mid-roll', 'post-roll', '视频', '贴片'],
@@ -138,8 +138,7 @@ if os.path.exists('dist/blacklist.txt'):
         '恶意软件': ['malware', 'phishing', 'scam', 'fraud', 'virus', '恶意', '钓鱼'],
         '社交媒体': ['facebook', 'twitter', 'instagram', 'weibo', 'social', '社交']
     }
-    
-    category_counts = {}
+
     for category, keywords in categories.items():
         count = sum(1 for keyword in keywords if keyword in content)
         category_counts[category] = count
@@ -167,24 +166,26 @@ if os.path.exists('dist/blacklist.txt'):
     report_content += '''| 广告类型 | 规则数量 | 主要拦截内容 |
 |----------|----------|--------------|
 '''
-    
+
+    descriptions = {
+        '开屏/弹窗广告': '应用启动广告、弹出窗口',
+        '视频广告': '视频前贴片、中插广告',
+        '横幅广告': '页面横幅、矩形广告',
+        '跟踪器': '用户行为跟踪脚本',
+        '恶意软件': '恶意网站、钓鱼攻击',
+        '社交媒体': '社交分享按钮追踪'
+    }
+
     for category, count in category_counts.items():
         if count > 0:
-            descriptions = {
-                '开屏/弹窗广告': '应用启动广告、弹出窗口',
-                '视频广告': '视频前贴片、中插广告',
-                '横幅广告': '页面横幅、矩形广告',
-                '跟踪器': '用户行为跟踪脚本',
-                '恶意软件': '恶意网站、钓鱼攻击',
-                '社交媒体': '社交分享按钮追踪'
-            }
-            report_content += f'| {category} | {count} 条 | {descriptions.get(category, "")} |\\n'
+            report_content += f'| {category} | {count} 条 | {descriptions.get(category, "")} |\n'
 
 # 添加更新时间信息
 next_time = datetime.datetime.now() + datetime.timedelta(hours=8)
 next_time_str = next_time.strftime('%Y-%m-%d %H:%M:%S')
 
 report_content += f'''
+
 ## 🔄 更新信息
 
 - **最后更新时间**: {current_time} (北京时间)
@@ -230,7 +231,10 @@ with open('dist/statistics.md', 'w', encoding='utf-8') as f:
 print(f'✅ 统计报告已生成: dist/statistics.md')
 print(f'📊 黑名单规则: {black_count} 条')
 print(f'📊 白名单规则: {white_count} 条')
-"
+EOF
+
+        # 运行Python脚本
+        python3 /tmp/generate_stats.py
     
     - name: Step 6 - 发布准备
       run: |
