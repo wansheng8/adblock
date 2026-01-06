@@ -1,167 +1,120 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-广告拦截规则更新脚本
-"""
+name: 更新广告拦截规则
 
-import json
-import requests
-import datetime
-import re
-import os
-from pathlib import Path
+on:
+  schedule:
+    # 每8小时运行一次 (UTC时间)
+    - cron: '0 */8 * * *'
+  workflow_dispatch:  # 允许手动触发
+  push:
+    branches:
+      - main
+    paths:
+      - 'sources/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
 
+# 权限设置
+permissions:
+  contents: write
 
-class RuleUpdater:
-    def __init__(self, config_path="sources/sources.json"):
-        self.config_path = config_path
-        self.base_dir = Path(__file__).parent.parent
-        
-        # 创建目录
-        (self.base_dir / 'dist').mkdir(exist_ok=True)
-        (self.base_dir / 'rules/raw').mkdir(exist_ok=True)
-        
-    def load_config(self):
-        """加载配置"""
-        with open(self.base_dir / self.config_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+jobs:
+  更新规则:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
     
-    def fetch_rules(self, url, name):
-        """获取规则"""
-        try:
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            print(f"下载: {name}")
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-            return response.text
-        except Exception as e:
-            print(f"错误: {name} - {e}")
-            return None
+    steps:
+    - name: 检出代码库
+      uses: actions/checkout@v4
     
-    def parse_rules(self, content, rule_type):
-        """解析规则"""
-        if not content:
-            return []
-        
-        rules = []
-        lines = content.split('\n')
-        
-        for line in lines:
-            line = line.strip()
-            if not line or line.startswith('!'):
-                continue
-            
-            # 如果是白名单源，确保规则以@@开头
-            if rule_type == 'whitelist' and not line.startswith('@@'):
-                if line.startswith('||'):
-                    line = '@@' + line
-                elif '^' in line:
-                    line = '@@' + line
-            
-            rules.append(line)
-        
-        return rules
+    - name: 设置Python环境
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
     
-    def remove_duplicates(self, rules):
-        """去重"""
-        unique_rules = []
-        seen = set()
-        
-        for rule in rules:
-            norm = rule.strip().lower()
-            if norm and norm not in seen:
-                seen.add(norm)
-                unique_rules.append(rule)
-        
-        return sorted(unique_rules)
+    - name: 安装依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
     
-    def run(self):
-        """运行更新"""
-        print("开始更新规则...")
-        print("=" * 60)
+    - name: 创建必要目录
+      run: |
+        mkdir -p dist rules/raw
         
-        config = self.load_config()
-        sources = config.get('sources', [])
+    - name: 运行更新脚本
+      run: |
+        python scripts/update_rules.py
+    
+    - name: 配置Git
+      run: |
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+    
+    - name: 检查变更
+      id: check-changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "检测到变更"
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        else
+          echo "没有检测到变更"
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: 提交变更
+      if: steps.check-changes.outputs.has_changes == 'true'
+      run: |
+        echo "准备提交变更..."
         
-        all_black_rules = []
-        all_white_rules = []
+        # 添加变更文件
+        git add dist/ rules/raw/
         
-        for source in sources:
-            if not source.get('enabled', True):
-                continue
-            
-            content = self.fetch_rules(source['url'], source['name'])
-            if content:
-                # 保存原始文件
-                source_name = re.sub(r'[^\w\-_]', '_', source['name'].lower())
-                raw_file = self.base_dir / f"rules/raw/{source_name}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-                with open(raw_file, 'w', encoding='utf-8') as f:
-                    f.write(content)
-                
-                # 解析规则
-                rules = self.parse_rules(content, source.get('type', 'blacklist'))
-                
-                if source.get('type') == 'whitelist':
-                    all_white_rules.extend(rules)
-                else:
-                    all_black_rules.extend(rules)
-                
-                print(f"  ✓ {source['name']}: {len(rules)} 条")
+        # 获取规则数量统计
+        if [ -f "dist/blacklist.txt" ]; then
+          BLACKLIST_COUNT=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
+        else
+          BLACKLIST_COUNT="0"
+        fi
         
-        # 去重
-        black_rules = self.remove_duplicates(all_black_rules)
-        white_rules = self.remove_duplicates(all_white_rules)
+        if [ -f "dist/whitelist.txt" ]; then
+          WHITELIST_COUNT=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
+        else
+          WHITELIST_COUNT="0"
+        fi
         
-        # 生成头部信息
-        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
-        update_time = now.strftime('%Y-%m-%d %H:%M:%S')
+        TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
         
-        header = f"""! 标题: 广告拦截规则
-! 描述: 自动更新的多源规则
-! 生成时间: {update_time} (北京时间)
-! 黑名单规则: {len(black_rules)}
-! 白名单规则: {len(white_rules)}
-! 项目地址: https://github.com/wansheng8/adblock.git
-! 许可证: MIT
-!
-"""
+        # 提交
+        git commit -m "自动更新规则 $(date +'%Y-%m-%d %H:%M:%S')
         
-        # 保存黑名单
-        with open(self.base_dir / 'dist/blacklist.txt', 'w', encoding='utf-8') as f:
-            f.write(header)
-            f.write('\n'.join(black_rules))
+        规则统计:
+        - 黑名单规则: $BLACKLIST_COUNT
+        - 白名单规则: $WHITELIST_COUNT
+        - 总规则数: $TOTAL_COUNT
         
-        # 保存白名单
-        with open(self.base_dir / 'dist/whitelist.txt', 'w', encoding='utf-8') as f:
-            f.write(header)
-            f.write('\n'.join(white_rules))
+        [skip ci]"
         
-        # 保存元数据
-        metadata = {
-            "last_updated": update_time,
-            "blacklist_rules": len(black_rules),
-            "whitelist_rules": len(white_rules),
-            "total_rules": len(black_rules) + len(white_rules),
-            "next_update": (now + datetime.timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
-        }
+        echo "提交完成"
+    
+    - name: 推送更改
+      if: steps.check-changes.outputs.has_changes == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "推送更改到远程仓库..."
         
-        with open(self.base_dir / 'dist/metadata.json', 'w', encoding='utf-8') as f:
-            json.dump(metadata, f, indent=2, ensure_ascii=False)
+        # 拉取最新更改
+        git pull --rebase origin main || echo "拉取失败，继续推送"
         
-        print("\n" + "=" * 60)
-        print("更新完成!")
-        print(f"黑名单: {len(black_rules)} 条")
-        print(f"白名单: {len(white_rules)} 条")
-        print(f"总计: {len(black_rules) + len(white_rules)} 条")
-        print("=" * 60)
+        # 推送更改
+        git push origin HEAD:main
         
-        return True
-
-
-if __name__ == "__main__":
-    updater = RuleUpdater()
-    try:
-        updater.run()
-    except Exception as e:
-        print(f"更新失败: {e}")
-        exit(1)
+        echo "推送完成"
+    
+    - name: 验证部署
+      if: success()
+      run: |
+        echo "✅ 规则更新完成!"
+        echo ""
+        echo "订阅链接:"
+        echo "黑名单: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/blacklist.txt"
+        echo "白名单: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/whitelist.txt"
