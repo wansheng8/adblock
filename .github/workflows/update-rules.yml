@@ -1,4 +1,4 @@
-name: Update Rules
+name: Update AdBlock Rules
 
 on:
   schedule:
@@ -32,16 +32,86 @@ jobs:
       run: |
         python scripts/update_rules.py
     
-    - name: Commit and push
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Configure Git
       run: |
         git config user.email "action@github.com"
         git config user.name "GitHub Action"
-        
-        if git status --porcelain | grep -q "."; then
-          git add dist/ rules/raw/
-          git commit -m "Update rules [skip ci]"
-          git pull --rebase origin main
-          git push
+    
+    - name: Check for changes
+      id: check-changes
+      run: |
+        # 检查是否有文件变更（排除.gitignore指定的文件）
+        if git status --porcelain dist/ rules/raw/ | grep -v ".gitignore" | grep -q "."; then
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          echo "检测到变更"
+        else
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+          echo "没有检测到变更"
         fi
+    
+    - name: Commit changes
+      if: steps.check-changes.outputs.has_changes == 'true'
+      run: |
+        echo "添加文件..."
+        
+        # 明确添加需要的文件
+        git add dist/blacklist.txt 2>/dev/null || echo "黑名单文件不存在"
+        git add dist/whitelist.txt 2>/dev/null || echo "白名单文件不存在"
+        git add dist/metadata.json 2>/dev/null || echo "元数据文件不存在"
+        
+        # 添加原始规则文件（如果有）
+        if [ -d "rules/raw" ] && [ -n "$(ls -A rules/raw/*.txt 2>/dev/null)" ]; then
+          git add rules/raw/*.txt
+        fi
+        
+        echo "提交变更..."
+        
+        # 获取规则数量
+        if [ -f "dist/blacklist.txt" ]; then
+          BLACKLIST_COUNT=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
+        else
+          BLACKLIST_COUNT="0"
+        fi
+        
+        if [ -f "dist/whitelist.txt" ]; then
+          WHITELIST_COUNT=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
+        else
+          WHITELIST_COUNT="0"
+        fi
+        
+        TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
+        
+        git commit -m "自动更新规则 $(date +'%Y-%m-%d %H:%M:%S')
+        
+        规则统计:
+        - 黑名单: $BLACKLIST_COUNT
+        - 白名单: $WHITELIST_COUNT
+        - 总计: $TOTAL_COUNT
+        
+        [skip ci]"
+        
+        echo "✅ 提交完成"
+    
+    - name: Push changes
+      if: steps.check-changes.outputs.has_changes == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "推送变更..."
+        
+        # 先拉取最新更改
+        git pull --rebase origin main || echo "拉取失败，继续推送"
+        
+        # 推送更改
+        git push origin HEAD:main
+        
+        echo "✅ 推送完成"
+    
+    - name: Show result
+      if: always()
+      run: |
+        echo "===== 更新完成 ====="
+        echo "订阅链接:"
+        echo "黑名单: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/blacklist.txt"
+        echo "白名单: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/whitelist.txt"
+        echo "元数据: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/metadata.json"
