@@ -2,7 +2,7 @@ name: Update AdBlock Rules
 
 on:
   schedule:
-    # 每8小时运行一次 (UTC时间) - 对应北京时间 8:00, 16:00, 24:00
+    # 每8小时运行一次 (UTC时间)
     - cron: '0 */8 * * *'
   workflow_dispatch:
     inputs:
@@ -15,152 +15,161 @@ env:
   PYTHON_VERSION: '3.9'
   TZ: 'Asia/Shanghai'
 
-# 权限设置必须放在顶层
 permissions:
   contents: write
 
 jobs:
   update-rules:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     
     steps:
-      # 步骤1：检出代码
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      # 步骤2：设置Python
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-
-      # 步骤3：安装依赖
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests
-
-      # 步骤4：创建必要目录
-      - name: Create directories
-        run: |
-          mkdir -p dist rules/raw rules/processed
-          touch dist/.gitkeep rules/raw/.gitkeep rules/processed/.gitkeep
-          
-          # 如果不存在自定义白名单，创建默认文件
-          if [ ! -f "rules/whitelist_custom.txt" ]; then
-            cat > rules/whitelist_custom.txt << 'EOF'
+    # 步骤1: 检出代码
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    # 步骤2: 设置Python环境
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    # 步骤3: 安装依赖
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
+    
+    # 步骤4: 创建必要目录
+    - name: Create directories
+      run: |
+        mkdir -p dist rules/raw rules/processed
+        
+        # 创建占位文件
+        touch dist/.gitkeep rules/raw/.gitkeep rules/processed/.gitkeep
+        
+        # 如果不存在自定义白名单，创建默认文件
+        if [ ! -f "rules/whitelist_custom.txt" ]; then
+          cat > rules/whitelist_custom.txt << 'EOF'
 ! 自定义白名单规则
 ! 在此添加需要免于广告拦截的网站
 ! 格式: @@||example.com^
 EOF
-          fi
-
-      # 步骤5：运行更新脚本
-      - name: Run update script
-        run: |
-          echo "开始更新规则..."
-          python scripts/update_rules.py
-          echo "规则更新完成!"
-
-      # 步骤6：显示统计信息
-      - name: Show statistics
-        run: |
-          echo "=== 规则统计 ==="
+        fi
+    
+    # 步骤5: 运行更新脚本
+    - name: Run update script
+      run: |
+        echo "开始更新规则..."
+        python scripts/update_rules.py
+        echo "规则更新完成!"
+    
+    # 步骤6: 显示统计信息
+    - name: Show statistics
+      run: |
+        echo "=== 规则统计 ==="
+        
+        if [ -f "dist/metadata.json" ]; then
+          echo "元数据:"
+          python -c "import json; data = json.load(open('dist/metadata.json')); print(json.dumps(data, indent=2, ensure_ascii=False))"
+        fi
+        
+        echo ""
+        echo "文件大小:"
+        ls -lh dist/*.txt 2>/dev/null || echo "文件不存在"
+        
+        echo ""
+        echo "规则数量统计:"
+        if [ -f "dist/blacklist.txt" ]; then
+          echo "黑名单规则数: $(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo '0')"
+        fi
+        if [ -f "dist/whitelist.txt" ]; then
+          echo "白名单规则数: $(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo '0')"
+        fi
+    
+    # 步骤7: 配置Git
+    - name: Configure Git
+      run: |
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+    
+    # 步骤8: 检查变更并提交
+    - name: Check and commit changes
+      if: success()
+      run: |
+        # 检查是否有变更
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "检测到变更，准备提交..."
           
-          # 检查文件是否存在
-          if [ -f "dist/metadata.json" ]; then
-            echo "元数据:"
-            python -c "import json; import sys; data = json.load(open('dist/metadata.json')); print(json.dumps(data, indent=2, ensure_ascii=False))"
-          else
-            echo "警告: metadata.json 文件不存在"
-          fi
+          # 添加变更文件
+          git add dist/ || true
+          git add rules/raw/ || true
           
-          echo ""
-          echo "文件大小:"
+          # 获取规则数量
           if [ -f "dist/blacklist.txt" ]; then
-            ls -lh dist/*.txt 2>/dev/null || true
-          else
-            echo "警告: 规则文件不存在"
-          fi
-          
-          echo ""
-          echo "规则数量统计:"
-          if [ -f "dist/blacklist.txt" ]; then
-            echo "黑名单规则数: $(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo '0')"
-          fi
-          if [ -f "dist/whitelist.txt" ]; then
-            echo "白名单规则数: $(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo '0')"
-          fi
-
-      # 步骤7：配置Git
-      - name: Configure Git
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-
-      # 步骤8：提交更改
-      - name: Commit changes
-        if: success()
-        run: |
-          # 检查是否有文件变更
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "检测到变更，准备提交..."
-            
-            # 添加变更的文件
-            git add dist/ || true
-            git add rules/raw/ || true
-            git add rules/whitelist_custom.txt || true
-            
-            # 获取规则数量
             BLACKLIST_COUNT=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
+          else
+            BLACKLIST_COUNT="0"
+          fi
+          
+          if [ -f "dist/whitelist.txt" ]; then
             WHITELIST_COUNT=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
-            TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
-            
-            git commit -m "🤖 自动更新规则 $(date +'%Y-%m-%d %H:%M:%S')
+          else
+            WHITELIST_COUNT="0"
+          fi
+          
+          TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
+          
+          # 提交消息
+          COMMIT_MESSAGE="自动更新规则 $(date +'%Y-%m-%d %H:%M:%S')
 
 规则统计:
 - 黑名单规则: $BLACKLIST_COUNT
 - 白名单规则: $WHITELIST_COUNT
 - 总规则数: $TOTAL_COUNT
 
-[skip ci]" || echo "没有新的变更"
-            
-            echo "提交完成"
-          else
-            echo "没有检测到变更"
-          fi
-
-      # 步骤9：推送更改
-      - name: Push changes
-        if: success()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # 检查是否有提交需要推送
-          if git log origin/main..HEAD --oneline 2>/dev/null | grep -q "."; then
-            echo "推送更改到远程仓库..."
-            
-            # 先拉取最新更改
-            git pull --rebase origin main || echo "拉取失败，继续推送"
-            
-            # 推送更改
-            git push origin HEAD:main
-            echo "推送完成"
-          else
-            echo "没有需要推送的更改"
-          fi
-
-      # 步骤10：验证部署
-      - name: Verify deployment
-        if: success()
-        run: |
-          echo "验证订阅链接..."
-          echo "黑名单: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/blacklist.txt"
-          echo "白名单: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/whitelist.txt"
+[skip ci]"
           
-          echo ""
-          echo "可以使用以下命令订阅:"
-          echo "curl -O https://raw.githubusercontent.com/${{ github.repository }}/main/dist/blacklist.txt"
+          echo "提交消息:"
+          echo "$COMMIT_MESSAGE"
+          
+          git commit -m "$COMMIT_MESSAGE" || echo "没有新内容需要提交"
+          echo "提交完成"
+        else
+          echo "没有检测到变更"
+        fi
+    
+    # 步骤9: 推送更改
+    - name: Push changes
+      if: success()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # 检查是否有本地提交需要推送
+        if [ -n "$(git log origin/main..HEAD 2>/dev/null)" ]; then
+          echo "推送更改到远程仓库..."
+          
+          # 先拉取最新更改，避免冲突
+          git pull --rebase origin main || echo "拉取失败，继续推送"
+          
+          # 推送更改
+          git push origin HEAD:main
+          echo "推送完成"
+        else
+          echo "没有需要推送的更改"
+        fi
+    
+    # 步骤10: 验证部署
+    - name: Verify deployment
+      if: success()
+      run: |
+        echo "✅ 规则更新完成!"
+        echo ""
+        echo "订阅链接:"
+        echo "黑名单: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/blacklist.txt"
+        echo "白名单: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/whitelist.txt"
+        echo ""
+        echo "使用示例:"
+        echo "curl -O https://raw.githubusercontent.com/${{ github.repository }}/main/dist/blacklist.txt"
