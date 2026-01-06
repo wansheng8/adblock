@@ -2,6 +2,7 @@ name: 更新广告拦截规则
 
 on:
   schedule:
+    # 每8小时运行一次 (UTC时间)
     - cron: '0 */8 * * *'
   workflow_dispatch:
   push:
@@ -10,6 +11,7 @@ on:
     paths:
       - 'sources/**'
       - 'scripts/**'
+      - '.github/workflows/**'
 
 permissions:
   contents: write
@@ -17,15 +19,13 @@ permissions:
 jobs:
   update-rules:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
     
-    - name: Set up Python
+    - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
@@ -37,8 +37,8 @@ jobs:
     
     - name: Create directories
       run: |
-        mkdir -p dist rules/raw rules/processed
-    
+        mkdir -p dist rules/raw
+        
     - name: Run update script
       run: |
         python scripts/update_rules.py
@@ -52,25 +52,26 @@ jobs:
       if: success()
       run: |
         if [ -n "$(git status --porcelain)" ]; then
-          echo "Changes detected"
+          echo "检测到变更，准备提交..."
           
-          git add dist/ || true
-          git add rules/raw/ || true
+          git add dist/ rules/raw/ || true
           
           BLACKLIST_COUNT=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
           WHITELIST_COUNT=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
           TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
           
-          git commit -m "Auto update rules $(date +'%Y-%m-%d %H:%M:%S')
+          git commit -m "自动更新规则 $(date +'%Y-%m-%d %H:%M:%S')
+
+规则统计:
+- 黑名单规则: $BLACKLIST_COUNT
+- 白名单规则: $WHITELIST_COUNT
+- 总规则数: $TOTAL_COUNT
+
+[skip ci]" || echo "没有变更需要提交"
           
-          Statistics:
-          - Blacklist rules: $BLACKLIST_COUNT
-          - Whitelist rules: $WHITELIST_COUNT
-          - Total rules: $TOTAL_COUNT
-          
-          [skip ci]" || echo "No changes to commit"
+          echo "提交完成"
         else
-          echo "No changes detected"
+          echo "没有检测到变更"
         fi
     
     - name: Push changes
@@ -79,6 +80,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         if [ -n "$(git log origin/main..HEAD 2>/dev/null)" ]; then
-          git pull --rebase origin main || echo "Pull failed"
+          echo "推送更改..."
+          git pull --rebase origin main || echo "拉取失败"
           git push origin HEAD:main
+          echo "推送完成"
         fi
