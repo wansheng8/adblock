@@ -1,0 +1,11 @@
+检查时间: 2026-01-06 06:13:50.714352
+  # ^ Example: eghtesadonline.com
+  # ^ Example: film.tebyan.net
+  # ^ Example: imovie-dl.org
+  # ^ Example: par30games.net
+  # ^ Used by Digiato, Vigiato, Rooziato
+  # ^ Used by digikala.com
+  # ^ Used by irna.ir
+  # ^ Used by kojaro.com
+  *ad.durasite.net^
+  -adrevenue.appsflyersdk.com^
