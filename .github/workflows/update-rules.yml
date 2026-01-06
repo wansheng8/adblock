@@ -4,107 +4,37 @@ on:
   schedule:
     - cron: '0 */8 * * *'
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'sources/**'
-      - 'scripts/**'
-      - '.github/workflows/**'
 
 permissions:
   contents: write
 
 jobs:
-  update-rules:
+  update:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     
-    - name: Setup Python
-      uses: actions/setup-python@v4
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.9'
     
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
+    - run: |
         pip install requests
-    
-    - name: Create directories
-      run: |
-        mkdir -p dist rules/raw
-        
-    - name: Run update script
-      run: |
         python scripts/update_rules.py
     
-    - name: Configure Git
-      run: |
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git config --global user.name "github-actions[bot]"
-    
-    - name: Commit changes
-      if: success()
-      run: |
-        # 检查是否有文件变更
-        if git status --porcelain | grep -q "."; then
-          echo "检测到变更，准备提交..."
-          
-          # 添加变更的文件
-          git add dist/ || true
-          git add rules/raw/ || true
-          
-          # 获取规则数量
-          if [ -f "dist/blacklist.txt" ]; then
-            BLACKLIST_COUNT=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
-          else
-            BLACKLIST_COUNT="0"
-          fi
-          
-          if [ -f "dist/whitelist.txt" ]; then
-            WHITELIST_COUNT=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
-          else
-            WHITELIST_COUNT="0"
-          fi
-          
-          TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
-          
-          # 创建提交消息
-          COMMIT_MESSAGE="自动更新规则 $(date +'%Y-%m-%d %H:%M:%S')
-
-规则统计:
-- 黑名单规则: $BLACKLIST_COUNT
-- 白名单规则: $WHITELIST_COUNT
-- 总规则数: $TOTAL_COUNT
-
-[skip ci]"
-          
-          # 提交
-          git commit -m "$COMMIT_MESSAGE" || echo "提交失败或无新内容"
-          echo "提交完成"
-        else
-          echo "没有检测到变更"
-        fi
-    
-    - name: Push changes
+    - name: Commit and Push
       if: success()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # 检查是否有需要推送的提交
-        if git log origin/main..HEAD --oneline 2>/dev/null | grep -q "."; then
-          echo "推送更改到远程仓库..."
-          
-          # 尝试拉取最新更改，避免冲突
-          git pull --rebase origin main 2>/dev/null || echo "拉取失败，继续推送"
-          
-          # 推送更改
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+        
+        if [ -n "$(git status --porcelain)" ]; then
+          git add dist/ rules/raw/
+          git commit -m "Update rules $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
+          git pull --rebase origin main
           git push origin HEAD:main
-          echo "推送完成"
-        else
-          echo "没有需要推送的更改"
         fi
