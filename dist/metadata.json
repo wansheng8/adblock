@@ -1,11 +1,11 @@
 {
-  "last_updated": "2026-01-06T17:57:21.039777+08:00",
-  "blacklist_rules": 839304,
+  "last_updated": "2026-01-06T18:17:21.528235+08:00",
+  "blacklist_rules": 839309,
   "whitelist_rules": 3483,
-  "total_rules": 842787,
+  "total_rules": 842792,
   "sources_used": 17,
   "sources_total": 23,
-  "next_update": "2026-01-07T01:57:21.039777+08:00",
+  "next_update": "2026-01-07T02:17:21.528235+08:00",
   "categories": {
     "popup_ads": "开屏/弹窗广告",
     "video_ads": "视频广告",

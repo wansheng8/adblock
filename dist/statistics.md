@@ -1,71 +1,29 @@
-# 规则统计报告
+# 📊 AdBlock 规则统计报告
 
-生成时间: 2026-01-06 15:10:02.051164+08:00
+> 本报告由 GitHub Actions 自动生成
 
-## 总体统计
+## 📈 总体统计
 
-- 总规则数: 601875
-- 黑名单规则: 599845
-- 白名单规则: 2030
-- 成功规则源: 17
-
-## 规则源详情
-
-| 名称 | 类型 | 状态 |
+| 指标 | 数量 | 说明 |
 |------|------|------|
-| AdGuard Base Filter | blacklist | 失败 |
-| AdGuard Chinese Filter | blacklist | 失败 |
-| AdGuard Mobile Ads Filter | blacklist | 失败 |
-| AdGuard DNS Filter | dns | 成功 |
-| AdRules DNS List | dns | 成功 |
-| CJX's Annoyance List | annoyance | 成功 |
-| EasyList | blacklist | 成功 |
-| EasyList China | blacklist | 成功 |
-| EasyPrivacy | privacy | 成功 |
-| xinggsf mv | blacklist | 成功 |
-| jiekouAD | blacklist | 成功 |
-| AWAvenue Ads Rule | blacklist | 成功 |
-| DNS-Blocklists Light | hosts | 成功 |
-| Hblock | hosts | 成功 |
-| OISD Basic | blacklist | 成功 |
-| StevenBlack hosts | hosts | 成功 |
-| Pollock hosts | hosts | 失败 |
-| Whitelist | whitelist | 失败 |
-| Anti-AD | blacklist | 成功 |
-| NEO DEV HOST | blacklist | 成功 |
-| Peter Lowe's Ad server list | blacklist | 成功 |
-| Fanboy's Annoyance List | annoyance | 成功 |
-| AdGuard Spyware Filter | spyware | 失败 |
+| 黑名单规则 | 839309 条 | 拦截广告和恶意内容的规则 |
+| 白名单规则 | 3483 条 | 避免误拦截的例外规则 |
+| 总规则数 | 842792 条 | 所有规则总和 |
+| 生成时间 | 2026-01-06 18:17:31 | 北京时间 |
 
-## 规则类型分布
+## 🔄 更新信息
 
-- 域名规则: 555388 (92.6%)
-- URL规则: 4510 (0.8%)
-- 元素隐藏: 39802 (6.6%)
-- 正则表达式: 43 (0.0%)
-- 其他: 102 (0.0%)
+- **最后更新时间**: 2026-01-06 18:17:31 (北京时间)
+- **更新频率**: 每8小时自动更新
+- **下次更新时间**: 2026-01-07 02:17:31 (北京时间)
+- **数据来源**: 23个主流广告规则源
 
-## 常见域名统计
+## 📁 文件列表
 
-| 域名 | 出现次数 |
-|------|----------|
-| xnxx | 66 |
-| tk.airfrance | 62 |
-| vlxx | 62 |
-| viet69 | 57 |
-| engage.3m.com | 40 |
-| smetrics.kone | 40 |
-| smetrics.schindler | 40 |
-| smetrics.sony | 35 |
-| xnxxx | 35 |
-| chaturbate | 34 |
-| beeg | 33 |
-| smetrics.marketing.lighting.philips | 33 |
-| www.xnxx | 32 |
-| xvideos | 30 |
-| xxnxx | 30 |
-| saa.dyson | 29 |
-| jav | 28 |
-| xvideoz | 28 |
-| facebook | 27 |
-| tube8 | 27 |
+| 文件名 | 描述 |
+|--------|------|
+| blacklist.txt | 主广告拦截规则 |
+| whitelist.txt | 白名单例外规则 |
+| metadata.json | 规则元数据 |
+| statistics.md | 统计报告 |
+
