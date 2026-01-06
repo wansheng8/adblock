@@ -2,25 +2,35 @@ name: Update AdBlock Rules
 
 on:
   schedule:
+    # 每8小时运行一次 (UTC时间)
     - cron: '0 */8 * * *'
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'sources/sources.json'
+      - 'scripts/**'
 
+# 添加权限设置
 permissions:
   contents: write
 
 jobs:
   update-rules:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        # 使用GITHUB_TOKEN
+        token: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Setup Python
-      uses: actions/setup-python@v5
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
         python-version: '3.9'
     
@@ -29,57 +39,34 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
     
-    - name: Create directories
+    - name: Create necessary directories
       run: |
         mkdir -p dist rules/raw rules/processed
-        if [ ! -f "rules/whitelist_custom.txt" ]; then
-          cat > rules/whitelist_custom.txt << 'EOF'
-! Custom whitelist rules
-! Add sites to exclude from ad blocking
-! Format: @@||example.com^
-EOF
-        fi
     
     - name: Run update script
       run: |
         python scripts/update_rules.py
     
-    - name: Configure Git
-      run: |
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git config --global user.name "github-actions[bot]"
-    
-    - name: Check changes
-      if: success()
-      run: |
-        if [ -n "$(git status --porcelain)" ]; then
-          echo "Changes detected"
-          
-          git add dist/ || true
-          git add rules/raw/ || true
-          
-          BLACKLIST_COUNT=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
-          WHITELIST_COUNT=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
-          TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
-          
-          git commit -m "Auto update rules $(date +'%Y-%m-%d %H:%M:%S')
-          
-          Statistics:
-          - Blacklist rules: $BLACKLIST_COUNT
-          - Whitelist rules: $WHITELIST_COUNT
-          - Total rules: $TOTAL_COUNT
-          
-          [skip ci]" || echo "No changes to commit"
-        else
-          echo "No changes detected"
-        fi
-    
-    - name: Push changes
-      if: success()
+    - name: Commit and push changes
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        if [ -n "$(git log origin/main..HEAD 2>/dev/null)" ]; then
-          git pull --rebase origin main || echo "Pull failed"
-          git push origin HEAD:main
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        # 检查是否有变更
+        if git diff --quiet; then
+          echo "没有变更需要提交"
+          exit 0
         fi
+        
+        # 添加变更
+        git add dist/
+        git add rules/raw/
+        git add rules/invalid_rules.log 2>/dev/null || true
+        
+        # 提交
+        git commit -m "自动更新规则 $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
+        
+        # 推送
+        git push
