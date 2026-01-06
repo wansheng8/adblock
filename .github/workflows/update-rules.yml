@@ -1,113 +1,172 @@
-name: 更新广告拦截规则
+name: AdBlock Rules Auto-Updater
 
 on:
+  workflow_dispatch:    # 手动触发
   schedule:
-    - cron: '0 */8 * * *'
-  workflow_dispatch:
+    - cron: '0 */8 * * *'  # 每8小时运行一次 (UTC 00:00, 08:00, 16:00)
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
-      - 'sources/**'
+      - 'sources/sources.json'
       - 'scripts/**'
-      - '.github/workflows/**'
-
-permissions:
-  contents: write
 
 jobs:
-  更新规则:
+  update-rules:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    permissions:
+      contents: write
     
     steps:
-    - name: 检出代码库
+    - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
-    - name: 设置Python环境
+    - name: Setup Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: '3.11'
+        cache: 'pip'
     
-    - name: 安装依赖
+    - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install requests
+        cd scripts
+        pip install -r requirements.txt
     
-    - name: 创建必要目录
+    # 第一步：规则源同步 (12+个源)
+    - name: Step 1 - 同步规则源
       run: |
-        mkdir -p dist rules/raw
-        
-    - name: 运行更新脚本
-      run: |
-        python scripts/update_rules.py
+        echo "┌─────────────────┐"
+        echo "│   规则源同步    │"
+        echo "│  (12+个源)      │"
+        echo "└─────────────────┘"
+        echo "开始同步规则源..."
+        python scripts/update_rules.py --step sync
+      continue-on-error: true
     
-    - name: 配置Git
+    # 第二步：规则处理引擎 (合并/去重)
+    - name: Step 2 - 规则处理引擎
       run: |
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git config --global user.name "github-actions[bot]"
+        echo "┌─────────────────┐"
+        echo "│   规则处理引擎   │"
+        echo "│  (合并/去重)    │"
+        echo "└─────────────────┘"
+        python scripts/update_rules.py --step process
     
-    - name: 检查是否有变更
-      id: check-changes
+    # 第三步：规则验证器 (语法检查)
+    - name: Step 3 - 规则验证器
       run: |
-        # 只检查dist目录下的重要文件
-        if [ -n "$(git status dist/blacklist.txt dist/whitelist.txt dist/metadata.json 2>/dev/null)" ]; then
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-          echo "检测到规则文件变更"
+        echo "┌─────────────────┐"
+        echo "│   规则验证器    │"
+        echo "│  (语法检查)    │"
+        echo "└─────────────────┘"
+        python scripts/validate_rules.py
+    
+    # 第四步：规则优化器 (性能优化)
+    - name: Step 4 - 规则优化器
+      run: |
+        echo "┌─────────────────┐"
+        echo "│   规则优化器    │"
+        echo "│  (性能优化)    │"
+        echo "└─────────────────┘"
+        if [ -f scripts/format_rules.py ]; then
+          python scripts/format_rules.py --optimize
         else
-          echo "has_changes=false" >> $GITHUB_OUTPUT
-          echo "没有检测到变更"
+          echo "跳过规则优化 (format_rules.py 未找到)"
         fi
     
-    - name: 提交变更
-      if: steps.check-changes.outputs.has_changes == 'true'
+    # 第五步：规则生成器 (格式转换)
+    - name: Step 5 - 规则生成器
       run: |
-        echo "准备提交变更..."
+        echo "┌─────────────────┐"
+        echo "│   规则生成器    │"
+        echo "│  (格式转换)     │"
+        echo "└─────────────────┘"
+        python scripts/update_rules.py --step generate
+    
+    # 第六步：发布准备
+    - name: Step 6 - 发布准备
+      run: |
+        echo "┌─────────────────────────────────────────────────┐"
+        echo "│             发布到 GitHub / CDN                 │"
+        echo "│    • blacklist.txt (主规则)                     │"
+        echo "│    • whitelist.txt (例外规则)                   │"
+        echo "│    • metadata.json (元数据)                     │"
+        echo "└─────────────────────────────────────────────────┘"
         
-        # 只添加dist目录下的特定文件
-        git add dist/blacklist.txt dist/whitelist.txt dist/metadata.json
+        # 统计信息
+        if [ -f dist/metadata.json ]; then
+          echo "规则统计:"
+          cat dist/metadata.json | python -c "import sys,json; data=json.load(sys.stdin); print(f'黑名单: {data[\"blacklist_rules\"]} 条'); print(f'白名单: {data[\"whitelist_rules\"]} 条'); print(f'总计: {data[\"total_rules\"]} 条')"
+        fi
         
-        # 获取规则数量
-        BLACKLIST_COUNT=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
-        WHITELIST_COUNT=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
-        TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
+        # 文件大小检查
+        echo -e "\n文件大小:"
+        ls -lh dist/*.txt | awk '{print $9 ": " $5}'
+    
+    # 第七步：检查变更并提交
+    - name: Step 7 - 检查变更
+      id: check-changes
+      run: |
+        echo "┌─────────────────┐"
+        echo "│   GitHub Actions │"
+        echo "│  (自动调度)      │"
+        echo "└─────────────────┘"
+        
+        git add -A
+        if git diff --cached --quiet; then
+          echo "changes_detected=false" >> $GITHUB_OUTPUT
+          echo "没有检测到变更，跳过提交"
+        else
+          echo "changes_detected=true" >> $GITHUB_OUTPUT
+          
+          # 统计变更
+          blacklist_lines=$(wc -l < dist/blacklist.txt 2>/dev/null || echo "0")
+          whitelist_lines=$(wc -l < dist/whitelist.txt 2>/dev/null || echo "0")
+          echo "blacklist_lines=$blacklist_lines" >> $GITHUB_OUTPUT
+          echo "whitelist_lines=$whitelist_lines" >> $GITHUB_OUTPUT
+          
+          echo "检测到规则变更:"
+          git diff --cached --name-only | grep -E '\.(txt|json)$' || echo "无规则文件变更"
+        fi
+    
+    # 第八步：提交到 GitHub
+    - name: Step 8 - 提交变更
+      if: steps.check-changes.outputs.changes_detected == 'true'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        # 生成提交信息
+        commit_time=$(date +'%Y-%m-%d %H:%M')
+        commit_msg="🤖 自动更新规则 [$commit_time]"
+        
+        # 添加统计信息
+        if [ -f dist/metadata.json ]; then
+          stats=$(cat dist/metadata.json | python -c "import sys,json; data=json.load(sys.stdin); print(f'黑名单: {data[\"blacklist_rules\"]} 条, 白名单: {data[\"whitelist_rules\"]} 条')")
+          commit_msg="$commit_msg\n\n📊 $stats"
+        fi
         
         # 提交
-        git commit -m "自动更新规则 $(date +'%Y-%m-%d %H:%M:%S')
+        git commit -F- <<EOF
+$commit_msg
+
+由 GitHub Actions 自动生成
+更新时间: $commit_time
+规则文件已更新
+EOF
         
-        规则统计:
-        - 黑名单: $BLACKLIST_COUNT 条
-        - 白名单: $WHITELIST_COUNT 条
-        - 总计: $TOTAL_COUNT 条
+        # 推送
+        git push
         
-        [skip ci]"
-        
-        echo "✅ 提交完成"
+        echo "✅ 规则已更新并推送到 GitHub"
     
-    - name: 推送更改
-      if: steps.check-changes.outputs.has_changes == 'true'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # 工作流完成通知
+    - name: 工作流完成
+      if: always()
       run: |
-        echo "推送更改到远程仓库..."
-        
-        # 拉取最新更改
-        git pull --rebase origin main || echo "拉取失败，继续推送"
-        
-        # 推送更改
-        git push origin HEAD:main
-        
-        echo "✅ 推送完成"
-    
-    - name: 验证部署
-      if: success()
-      run: |
-        echo "✅ 规则更新完成!"
-        echo ""
-        echo "订阅链接:"
-        echo "黑名单: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/blacklist.txt"
-        echo "白名单: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/whitelist.txt"
-        echo ""
-        echo "规则统计:"
-        echo "- 黑名单: $(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo '0') 条"
-        echo "- 白名单: $(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo '0') 条"
+        echo "========================================"
+        echo "AdBlock 规则更新工作流执行完成"
+        echo "========================================"
+        echo "下次自动运行时间: 每 8 小时"
+        echo "手动运行: 在 GitHub Actions 页面点击 Run workflow"
