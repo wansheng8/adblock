@@ -4,56 +4,10 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+env/
+venv/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# 系统文件
-.DS_Store
-Thumbs.db
-
-# 临时文件
+# 项目特定
+dist/
 *.log
 *.tmp
-*.temp
-
-# 本地配置
-config.local.json
-.env
-secrets.json
-
-# 原始规则文件 - 我们不提交这些，因为每次更新都会生成新的
-rules/raw/*.txt
-# 但是保留空目录
-!rules/raw/.gitkeep
-
-# 处理后的规则目录
-rules/processed/
-
-# 只提交dist目录下的特定文件，不提交整个目录
-dist/*
-!dist/blacklist.txt
-!dist/whitelist.txt
-!dist/metadata.json
-!dist/.gitkeep
-
-# 测试文件
-test_*
-tests/
