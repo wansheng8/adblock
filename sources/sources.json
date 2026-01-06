@@ -235,6 +235,16 @@
       "license": "MIT",
       "update_frequency": "daily"
     }
+    {
+      "name": "混合规则集合",
+      "url": "https://raw.githubusercontent.com/wansheng8/adblock/main/sources/gz.txt",
+      "type": "mixed",
+      "enabled": true,
+      "priority": 23,
+      "description": "混合多个第三方规则源的集合，包含多种广告拦截规则",
+      "license": "Mixed",
+      "update_frequency": "daily"
+    }
   ],
   "rule_categories": [
     "广告拦截",
