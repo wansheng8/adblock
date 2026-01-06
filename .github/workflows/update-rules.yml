@@ -128,51 +128,33 @@ jobs:
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         
-        commit_time=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M')
+        # 获取统计值 - 安全方式
+        BLACK_COUNT=${{ steps.generate-files.outputs.black_rules || 0 }}
+        WHITE_COUNT=${{ steps.generate-files.outputs.white_rules || 0 }}
+        COMMIT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M')
         
-        # 安全的变量传递方式 - 使用环境变量
-        BLACK_COUNT="${{ steps.generate-files.outputs.black_rules || '0' }}"
-        WHITE_COUNT="${{ steps.generate-files.outputs.white_rules || '0' }}"
-        
-        # 使用Python创建提交信息，避免YAML语法问题
-        python3 << EOF
-import os
-import sys
-
-commit_time = os.environ.get('COMMIT_TIME', '')
-black_count = os.environ.get('BLACK_COUNT', '0')
-white_count = os.environ.get('WHITE_COUNT', '0')
-
-commit_msg = f'''🤖 自动更新广告拦截规则 [{commit_time}]
-
-📊 规则统计:
-- 黑名单: {black_count} 条规则
-- 白名单: {white_count} 条规则
-
-✨ 拦截类型:
-• 开屏广告拦截
-• 弹窗广告拦截
-• 视频广告拦截
-• 横幅广告拦截
-• 内联广告拦截
-
-🛡️ 其他防护:
-• 跟踪器拦截
-• 恶意软件防护
-• 隐私保护
-
-🤖 由 GitHub Actions 自动生成
-'''
-
-with open('/tmp/commit_message.txt', 'w', encoding='utf-8') as f:
-    f.write(commit_msg)
-print('✅ 提交信息已生成')
-EOF
-        
-        # 设置环境变量供Python使用
-        export COMMIT_TIME="$commit_time"
-        export BLACK_COUNT="$BLACK_COUNT"
-        export WHITE_COUNT="$WHITE_COUNT"
+        # 使用纯Shell创建提交信息，避免复杂语法
+        {
+          echo "🤖 自动更新广告拦截规则 [$COMMIT_TIME]"
+          echo ""
+          echo "📊 规则统计:"
+          echo "- 黑名单: $BLACK_COUNT 条规则"
+          echo "- 白名单: $WHITE_COUNT 条规则"
+          echo ""
+          echo "✨ 拦截类型:"
+          echo "• 开屏广告拦截"
+          echo "• 弹窗广告拦截"
+          echo "• 视频广告拦截"
+          echo "• 横幅广告拦截"
+          echo "• 内联广告拦截"
+          echo ""
+          echo "🛡️ 其他防护:"
+          echo "• 跟踪器拦截"
+          echo "• 恶意软件防护"
+          echo "• 隐私保护"
+          echo ""
+          echo "🤖 由 GitHub Actions 自动生成"
+        } > /tmp/commit_message.txt
         
         # 使用文件内容进行提交
         git commit -F /tmp/commit_message.txt
