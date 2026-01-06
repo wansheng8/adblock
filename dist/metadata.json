@@ -1,9 +1,8 @@
 {
-  "last_updated": "2026-01-06T15:24:14.850977+08:00",
-  "total_rules": 793364,
-  "blacklist_rules": 789881,
-  "whitelist_rules": 3483,
+  "last_updated": "2026-01-06T16:21:57.036886+08:00",
+  "blacklist_rules": 844025,
+  "whitelist_rules": 0,
+  "total_rules": 844025,
   "sources_used": 17,
-  "next_update": "2026-01-06T23:24:14.850999+08:00",
-  "version": "20260106.0724"
+  "next_update": "2026-01-07T00:21:57.036906+08:00"
 }
