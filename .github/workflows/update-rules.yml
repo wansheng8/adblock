@@ -127,13 +127,11 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         
         commit_time=$(date +'%Y-%m-%d %H:%M')
+        black_count="${{ steps.generate-files.outputs.black_rules || 0 }}"
+        white_count="${{ steps.generate-files.outputs.white_rules || 0 }}"
         
-        # 安全获取统计值，设置默认值
-        black_count="${{ steps.generate-files.outputs.black_rules || '0' }}"
-        white_count="${{ steps.generate-files.outputs.white_rules || '0' }}"
-        
-        # 创建临时文件来存储提交信息，这是最可靠的方法
-        cat > /tmp/commit_message.txt << 'EOF'
+        # 创建一个临时文件来存储提交信息
+        cat << 'MESSAGE_EOF' > /tmp/commit_message.txt
 🤖 自动更新广告拦截规则 [$commit_time]
 
 📊 规则统计:
@@ -153,7 +151,10 @@ jobs:
 • 隐私保护
 
 🤖 由 GitHub Actions 自动生成
-EOF
+MESSAGE_EOF
+        
+        # 替换变量值
+        sed -i "s/\$black_count/$black_count/g; s/\$white_count/$white_count/g; s/\$commit_time/$commit_time/g" /tmp/commit_message.txt
         
         # 使用文件内容进行提交
         git commit -F /tmp/commit_message.txt
