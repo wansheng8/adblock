@@ -24,7 +24,11 @@ jobs:
       run: |
         pip install requests
     
-    - name: Run update
+    - name: Create directories
+      run: |
+        mkdir -p dist rules/raw
+    
+    - name: Run update script
       run: |
         python scripts/update_rules.py
     
@@ -32,11 +36,11 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        git config --global user.email "action@github.com"
-        git config --global user.name "GitHub Action"
+        git config user.email "action@github.com"
+        git config user.name "GitHub Action"
         
-        if [ -n "$(git status --porcelain)" ]; then
-          git add .
+        if git status --porcelain | grep -q "."; then
+          git add dist/ rules/raw/
           git commit -m "Update rules [skip ci]"
           git pull --rebase origin main
           git push
