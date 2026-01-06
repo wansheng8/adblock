@@ -6,8 +6,16 @@ __pycache__/
 .Python
 env/
 venv/
+*.egg-info/
+dist-packages/
 
-# 项目特定
-dist/
+# 项目文件
 *.log
 *.tmp
+*.bak
+.rules_cache/
+
+# 本地测试文件
+test_*.txt
+debug/
+local_rules/
