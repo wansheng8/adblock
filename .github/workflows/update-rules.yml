@@ -35,80 +35,133 @@ jobs:
     
     - name: Step 1 - 规则源同步
       run: |
-        echo "┌─────────────────┐"
-        echo "│   规则源同步    │"
-        echo "│  (12+个源)      │"
-        echo "└─────────────────┘"
+        echo ""
+        echo "┌─────────────────────────────────────────┐"
+        echo "│          🚀 规则源同步                  │"
+        echo "│       (23个广告拦截源)                 │"
+        echo "└─────────────────────────────────────────┘"
         python scripts/update_rules.py
     
-    - name: Step 2 - 规则处理引擎
+    - name: Step 2 - 规则验证器
       run: |
-        echo "┌─────────────────┐"
-        echo "│   规则处理引擎   │"
-        echo "│  (合并/去重)    │"
-        echo "└─────────────────┘"
-        echo "规则处理已完成"
-    
-    - name: Step 3 - 规则验证器
-      run: |
-        echo "┌─────────────────┐"
-        echo "│   规则验证器    │"
-        echo "│  (语法检查)    │"
-        echo "└─────────────────┘"
+        echo ""
+        echo "┌─────────────────────────────────────────┐"
+        echo "│          🔍 规则验证器                  │"
+        echo "│         (语法检查/格式验证)             │"
+        echo "└─────────────────────────────────────────┘"
         python scripts/validate_rules.py
     
-    - name: Step 4 - 规则优化器
+    - name: Step 3 - 规则优化器
       run: |
-        echo "┌─────────────────┐"
-        echo "│   规则优化器    │"
-        echo "│  (性能优化)    │"
-        echo "└─────────────────┘"
+        echo ""
+        echo "┌─────────────────────────────────────────┐"
+        echo "│          ⚡ 规则优化器                  │"
+        echo "│        (去重/分类/性能优化)             │"
+        echo "└─────────────────────────────────────────┘"
         if [ -f scripts/format_rules.py ]; then
           python scripts/format_rules.py
         else
           echo "跳过规则优化"
         fi
     
-    - name: Step 5 - 规则生成器
+    - name: Step 4 - 生成最终文件
+      id: generate-files
       run: |
-        echo "┌─────────────────┐"
-        echo "│   规则生成器    │"
-        echo "│  (格式转换)     │"
-        echo "└─────────────────┘"
-        echo "规则文件已生成到 dist/"
-    
-    - name: Step 6 - 发布准备
-      run: |
-        echo "┌─────────────────────────────────────────────────┐"
-        echo "│             发布到 GitHub / CDN                 │"
-        echo "│    • blacklist.txt (主规则)                     │"
-        echo "│    • whitelist.txt (例外规则)                   │"
-        echo "│    • metadata.json (元数据)                     │"
-        echo "└─────────────────────────────────────────────────┘"
+        echo ""
+        echo "┌─────────────────────────────────────────┐"
+        echo "│          📁 生成最终文件                │"
+        echo "│       (黑白名单/元数据/hosts)          │"
+        echo "└─────────────────────────────────────────┘"
         
-        if [ -f dist/metadata.json ]; then
-          black_count=$(grep -o '"blacklist_rules":[0-9]*' dist/metadata.json | cut -d: -f2 || echo "0")
-          white_count=$(grep -o '"whitelist_rules":[0-9]*' dist/metadata.json | cut -d: -f2 || echo "0")
-          echo "统计: 黑名单 $black_count 条, 白名单 $white_count 条"
-        fi
+        # 确保文件存在
+        touch dist/blacklist.txt dist/whitelist.txt
+        
+        # 统计规则数量
+        black_rules=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
+        white_rules=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
+        
+        echo "black_rules=$black_rules" >> $GITHUB_OUTPUT
+        echo "white_rules=$white_rules" >> $GITHUB_OUTPUT
+        
+        echo "📊 规则统计:"
+        echo "├── 黑名单: $black_rules 条规则"
+        echo "└── 白名单: $white_rules 条规则"
     
-    - name: Step 7 - 检查变更
-      id: check
+    - name: Step 5 - 发布准备
       run: |
+        echo ""
+        echo "┌─────────────────────────────────────────────────────┐"
+        echo "│            🚀 发布到 GitHub / CDN                   │"
+        echo "├─────────────────────────────────────────────────────┤"
+        echo "│    • 📄 blacklist.txt (主拦截规则)                 │"
+        echo "│    • ✅ whitelist.txt (例外规则)                   │"
+        echo "│    • 📊 metadata.json (规则元数据)                 │"
+        echo "└─────────────────────────────────────────────────────┘"
+        
+        # 显示文件大小
+        echo "📁 文件大小:"
+        ls -lh dist/*.txt dist/*.json 2>/dev/null || echo "dist目录中没有文件"
+    
+    - name: Step 6 - 检查变更
+      id: check-changes
+      run: |
+        echo ""
+        echo "┌─────────────────────────────────────────┐"
+        echo "│          🔄 GitHub Actions               │"
+        echo "│        (自动调度与变更检测)             │"
+        echo "└─────────────────────────────────────────┘"
+        
         git add -A
         if git diff --cached --quiet; then
-          echo "has_changes=false" >> $GITHUB_OUTPUT
-          echo "无变更"
+          echo "✅ 没有检测到变更"
+          echo "changes_detected=false" >> $GITHUB_OUTPUT
         else
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-          echo "检测到变更"
+          echo "🔄 检测到规则变更"
+          echo "changes_detected=true" >> $GITHUB_OUTPUT
         fi
     
-    - name: Step 8 - 提交变更
-      if: steps.check.outputs.has_changes == 'true'
+    - name: Step 7 - 提交变更
+      if: steps.check-changes.outputs.changes_detected == 'true'
       run: |
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        date_str=$(date +'%Y-%m-%d %H:%M')
-        git commit -m "🤖 Auto-update rules [$date_str]" -m "由 GitHub Actions 自动更新"
+        
+        commit_time=$(date +'%Y-%m-%d %H:%M')
+        black_count=${{ steps.generate-files.outputs.black_rules }}
+        white_count=${{ steps.generate-files.outputs.white_rules }}
+        
+        git commit -m "🤖 自动更新广告拦截规则 [$commit_time]
+
+📊 规则统计:
+- 黑名单: $black_count 条规则
+- 白名单: $white_count 条规则
+
+✨ 拦截类型:
+• 开屏广告拦截
+• 弹窗广告拦截  
+• 视频广告拦截
+• 横幅广告拦截
+• 内联广告拦截
+
+🛡️ 其他防护:
+• 跟踪器拦截
+• 恶意软件防护
+• 隐私保护
+
+🤖 由 GitHub Actions 自动生成"
+        
         git push
+        
+        echo "✅ 变更已提交到 GitHub"
+    
+    - name: Step 8 - 工作流完成
+      if: always()
+      run: |
+        echo ""
+        echo "┌─────────────────────────────────────────┐"
+        echo "│          ✅ 工作流执行完成              │"
+        echo "└─────────────────────────────────────────┘"
+        echo ""
+        echo "📅 下次运行时间:"
+        echo "  UTC: 00:00, 08:00, 16:00"
+        echo "  北京时间: 08:00, 16:00, 00:00"
