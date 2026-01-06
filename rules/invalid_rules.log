@@ -9,3 +9,14 @@
   # ^ Used by kojaro.com
   *ad.durasite.net^
   -adrevenue.appsflyersdk.com^
+检查时间: 2026-01-06 06:29:30.740202
+  # ^ Example: eghtesadonline.com
+  # ^ Example: film.tebyan.net
+  # ^ Example: imovie-dl.org
+  # ^ Example: par30games.net
+  # ^ Used by Digiato, Vigiato, Rooziato
+  # ^ Used by digikala.com
+  # ^ Used by irna.ir
+  # ^ Used by kojaro.com
+  *-stats.jpush.cn^
+  *.com/css/showfloatdiv^
