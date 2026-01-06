@@ -3,6 +3,8 @@ name: AdBlock Rules Auto-Updater
 on:
   workflow_dispatch:
   schedule:
+    # 北京时间: 08:00, 16:00, 00:00 (次日)
+    # UTC时间: 00:00, 08:00, 16:00
     - cron: '0 0,8,16 * * *'
   push:
     branches: [main]
@@ -126,30 +128,44 @@ jobs:
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         
-        commit_time=$(date +'%Y-%m-%d %H:%M')
+        commit_time=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M')
         black_count="${{ steps.generate-files.outputs.black_rules || 0 }}"
         white_count="${{ steps.generate-files.outputs.white_rules || 0 }}"
         
-        # 使用多个echo命令创建提交信息文件，避免YAML解析问题
-        echo "🤖 自动更新广告拦截规则 [$commit_time]" > /tmp/commit_message.txt
-        echo "" >> /tmp/commit_message.txt
-        echo "📊 规则统计:" >> /tmp/commit_message.txt
-        echo "- 黑名单: $black_count 条规则" >> /tmp/commit_message.txt
-        echo "- 白名单: $white_count 条规则" >> /tmp/commit_message.txt
-        echo "" >> /tmp/commit_message.txt
-        echo "✨ 拦截类型:" >> /tmp/commit_message.txt
-        echo "• 开屏广告拦截" >> /tmp/commit_message.txt
-        echo "• 弹窗广告拦截" >> /tmp/commit_message.txt
-        echo "• 视频广告拦截" >> /tmp/commit_message.txt
-        echo "• 横幅广告拦截" >> /tmp/commit_message.txt
-        echo "• 内联广告拦截" >> /tmp/commit_message.txt
-        echo "" >> /tmp/commit_message.txt
-        echo "🛡️ 其他防护:" >> /tmp/commit_message.txt
-        echo "• 跟踪器拦截" >> /tmp/commit_message.txt
-        echo "• 恶意软件防护" >> /tmp/commit_message.txt
-        echo "• 隐私保护" >> /tmp/commit_message.txt
-        echo "" >> /tmp/commit_message.txt
-        echo "🤖 由 GitHub Actions 自动生成" >> /tmp/commit_message.txt
+        # 使用Python创建提交信息，避免YAML语法问题
+        python3 -c "
+import sys
+import os
+
+commit_time = '$commit_time'
+black_count = '$black_count'
+white_count = '$white_count'
+
+commit_msg = f'''🤖 自动更新广告拦截规则 [{commit_time}]
+
+📊 规则统计:
+- 黑名单: {black_count} 条规则
+- 白名单: {white_count} 条规则
+
+✨ 拦截类型:
+• 开屏广告拦截
+• 弹窗广告拦截
+• 视频广告拦截
+• 横幅广告拦截
+• 内联广告拦截
+
+🛡️ 其他防护:
+• 跟踪器拦截
+• 恶意软件防护
+• 隐私保护
+
+🤖 由 GitHub Actions 自动生成
+'''
+
+with open('/tmp/commit_message.txt', 'w', encoding='utf-8') as f:
+    f.write(commit_msg)
+print('提交信息已生成')
+"
         
         # 使用文件内容进行提交
         git commit -F /tmp/commit_message.txt
@@ -165,6 +181,8 @@ jobs:
         echo "│          ✅ 工作流执行完成              │"
         echo "└─────────────────────────────────────────┘"
         echo ""
-        echo "📅 下次运行时间:"
-        echo "  UTC: 00:00, 08:00, 16:00"
-        echo "  北京时间: 08:00, 16:00, 00:00"
+        echo "📅 运行时间设置 (北京时间):"
+        echo "  每天 08:00, 16:00, 00:00 (次日)"
+        echo ""
+        echo "🕐 下次自动运行:"
+        TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M (北京时间)'
