@@ -4,6 +4,13 @@ on:
   schedule:
     - cron: '0 */8 * * *'
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'sources/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
 
 permissions:
   contents: write
@@ -20,11 +27,12 @@ jobs:
       with:
         python-version: '3.9'
     
-    - run: |
+    - name: Install dependencies and run update
+      run: |
         pip install requests
         python scripts/update_rules.py
     
-    - name: Commit and Push
+    - name: Commit and push
       if: success()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -32,9 +40,40 @@ jobs:
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions[bot]"
         
+        # 检查是否有变更
         if [ -n "$(git status --porcelain)" ]; then
+          # 获取规则统计
+          if [ -f "dist/blacklist.txt" ]; then
+            BLACKLIST_COUNT=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
+          else
+            BLACKLIST_COUNT="0"
+          fi
+          
+          if [ -f "dist/whitelist.txt" ]; then
+            WHITELIST_COUNT=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
+          else
+            WHITELIST_COUNT="0"
+          fi
+          
+          TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
+          
+          # 添加文件
           git add dist/ rules/raw/
-          git commit -m "Update rules $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
+          
+          # 提交
+          git commit -m "更新规则 $(date +'%Y-%m-%d %H:%M:%S')
+          
+          - 黑名单: $BLACKLIST_COUNT 条
+          - 白名单: $WHITELIST_COUNT 条
+          - 总计: $TOTAL_COUNT 条
+          
+          [skip ci]"
+          
+          # 推送
           git pull --rebase origin main
           git push origin HEAD:main
+          
+          echo "✅ 规则更新完成并已推送"
+        else
+          echo "ℹ️  没有变更，跳过提交"
         fi
