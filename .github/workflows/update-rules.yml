@@ -1,4 +1,4 @@
-name: 广告拦截规则自动更新
+name: AdBlock Rules Auto-Updater
 
 on:
   workflow_dispatch:
@@ -8,8 +8,8 @@ on:
     branches: [main]
     paths:
       - 'sources/sources.json'
-      - 'sources/sources.txt'
       - 'scripts/**'
+      - 'sources/gz.txt'
 
 jobs:
   update:
@@ -39,7 +39,7 @@ jobs:
         echo ""
         echo "┌─────────────────────────────────────────┐"
         echo "│          🚀 规则源同步                  │"
-        echo "│           (广告拦截源)                 │"
+        echo "│       (23+个广告拦截源)                │"
         echo "└─────────────────────────────────────────┘"
         python scripts/update_rules.py
     
@@ -96,10 +96,10 @@ jobs:
         echo "│        (详细规则分析与报告)             │"
         echo "└─────────────────────────────────────────┘"
         
-        # 使用简单的shell命令生成统计报告，避免复杂语法
-        echo "# 📊 AdBlock 规则统计报告" > dist/statistics.md
+        # 使用简单的shell命令生成统计报告
+        echo "# 📊 AdBlock 规则统计报告（含混合规则）" > dist/statistics.md
         echo "" >> dist/statistics.md
-        echo "> 本报告由 GitHub Actions 自动生成" >> dist/statistics.md
+        echo "> 本报告由 GitHub Actions 自动生成，包含混合规则源" >> dist/statistics.md
         echo "" >> dist/statistics.md
         
         # 获取当前时间
@@ -120,6 +120,12 @@ jobs:
         
         TOTAL_COUNT=$((BLACK_COUNT + WHITE_COUNT))
         
+        # 检查混合规则源
+        MIXED_SOURCES=0
+        if [ -f sources/sources.json ]; then
+          MIXED_SOURCES=$(grep -c '"type": "mixed"' sources/sources.json || echo "0")
+        fi
+        
         # 添加总体统计
         echo "## 📈 总体统计" >> dist/statistics.md
         echo "" >> dist/statistics.md
@@ -128,8 +134,28 @@ jobs:
         echo "| 黑名单规则 | $BLACK_COUNT 条 | 拦截广告和恶意内容的规则 |" >> dist/statistics.md
         echo "| 白名单规则 | $WHITE_COUNT 条 | 避免误拦截的例外规则 |" >> dist/statistics.md
         echo "| 总规则数 | $TOTAL_COUNT 条 | 所有规则总和 |" >> dist/statistics.md
+        echo "| 混合规则源 | $MIXED_SOURCES 个 | 包含多个子规则源的混合源 |" >> dist/statistics.md
         echo "| 生成时间 | $CURRENT_TIME | 北京时间 |" >> dist/statistics.md
         echo "" >> dist/statistics.md
+        
+        # 添加混合规则说明
+        if [ $MIXED_SOURCES -gt 0 ]; then
+          echo "## 🌐 混合规则源" >> dist/statistics.md
+          echo "" >> dist/statistics.md
+          echo "混合规则源包含多个第三方规则集合，提供更全面的广告拦截覆盖。" >> dist/statistics.md
+          echo "" >> dist/statistics.md
+          
+          if [ -f sources/gz.txt ]; then
+            echo "**包含的规则源:**" >> dist/statistics.md
+            echo "" >> dist/statistics.md
+            while IFS= read -r line; do
+              if [ -n "$line" ]; then
+                echo "- \`$line\`" >> dist/statistics.md
+              fi
+            done < sources/gz.txt
+            echo "" >> dist/statistics.md
+          fi
+        fi
         
         # 添加更新时间信息
         NEXT_TIME=$(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M:%S')
@@ -138,7 +164,7 @@ jobs:
         echo "- **最后更新时间**: $CURRENT_TIME (北京时间)" >> dist/statistics.md
         echo "- **更新频率**: 每8小时自动更新" >> dist/statistics.md
         echo "- **下次更新时间**: $NEXT_TIME (北京时间)" >> dist/statistics.md
-        echo "- **数据来源**: 23个主流广告规则源" >> dist/statistics.md
+        echo "- **数据来源**: 23+个主流广告规则源（含混合规则）" >> dist/statistics.md
         echo "" >> dist/statistics.md
         
         # 添加文件列表
@@ -164,6 +190,7 @@ jobs:
         echo "│    • ✅ whitelist.txt (例外规则)                   │"
         echo "│    • 📊 metadata.json (规则元数据)                 │"
         echo "│    • 📈 statistics.md (统计报告)                   │"
+        echo "│    • 🌐 混合规则源: 包含6+第三方规则              │"
         echo "└─────────────────────────────────────────────────────┘"
         
         # 显示文件大小
@@ -207,9 +234,13 @@ jobs:
           echo "- 黑名单: $BLACK_COUNT 条规则"
           echo "- 白名单: $WHITE_COUNT 条规则"
           echo ""
-          echo "📈 新增统计报告:"
+          echo "🌐 新增混合规则源:"
+          echo "- 包含6+第三方规则集合"
+          echo "- 提供更全面的广告拦截覆盖"
+          echo ""
+          echo "📈 生成统计报告:"
           echo "- 详细规则分类分析"
-          echo "- 广告类型占比统计"
+          echo "- 混合规则源说明"
           echo "- 完整使用说明文档"
           echo ""
           echo "✨ 拦截类型:"
@@ -245,10 +276,14 @@ jobs:
         echo "  每天 08:00, 16:00, 00:00 (次日)"
         echo ""
         echo "📊 生成文件:"
-        echo "  • dist/blacklist.txt - 主拦截规则"
+        echo "  • dist/blacklist.txt - 主拦截规则（含混合规则）"
         echo "  • dist/whitelist.txt - 白名单规则"
         echo "  • dist/metadata.json - 规则元数据"
         echo "  • dist/statistics.md - 统计报告"
         echo ""
+        echo "🌐 混合规则源:"
+        echo "  • 包含6+第三方规则集合"
+        echo "  • 提供更全面的广告拦截覆盖"
+        echo ""
         echo "🕐 下次自动运行:"
-        TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-d %H:%M (北京时间)'
+        TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M (北京时间)'
