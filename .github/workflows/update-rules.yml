@@ -129,17 +129,19 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         
         commit_time=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M')
-        black_count="${{ steps.generate-files.outputs.black_rules || 0 }}"
-        white_count="${{ steps.generate-files.outputs.white_rules || 0 }}"
+        
+        # 安全的变量传递方式 - 使用环境变量
+        BLACK_COUNT="${{ steps.generate-files.outputs.black_rules || '0' }}"
+        WHITE_COUNT="${{ steps.generate-files.outputs.white_rules || '0' }}"
         
         # 使用Python创建提交信息，避免YAML语法问题
-        python3 -c "
-import sys
+        python3 << EOF
 import os
+import sys
 
-commit_time = '$commit_time'
-black_count = '$black_count'
-white_count = '$white_count'
+commit_time = os.environ.get('COMMIT_TIME', '')
+black_count = os.environ.get('BLACK_COUNT', '0')
+white_count = os.environ.get('WHITE_COUNT', '0')
 
 commit_msg = f'''🤖 自动更新广告拦截规则 [{commit_time}]
 
@@ -164,8 +166,13 @@ commit_msg = f'''🤖 自动更新广告拦截规则 [{commit_time}]
 
 with open('/tmp/commit_message.txt', 'w', encoding='utf-8') as f:
     f.write(commit_msg)
-print('提交信息已生成')
-"
+print('✅ 提交信息已生成')
+EOF
+        
+        # 设置环境变量供Python使用
+        export COMMIT_TIME="$commit_time"
+        export BLACK_COUNT="$BLACK_COUNT"
+        export WHITE_COUNT="$WHITE_COUNT"
         
         # 使用文件内容进行提交
         git commit -F /tmp/commit_message.txt
