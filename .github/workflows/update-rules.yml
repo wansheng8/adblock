@@ -97,97 +97,109 @@ jobs:
         echo "│        (详细规则分析与报告)             │"
         echo "└─────────────────────────────────────────┘"
         
-        # 创建统计报告
-        if [ -f dist/blacklist.txt ] && [ -f dist/whitelist.txt ]; then
-          # 获取当前时间（北京时间）
-          current_time=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')
-          
-          # 统计规则详情
-          total_black_rules=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
-          total_white_rules=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
-          
-          # 按广告类型分类统计
-          echo "开始分类统计..."
-          
-          # 创建统计报告文件
-          cat > dist/statistics.md << 'EOF'
-# 📊 AdBlock 规则统计报告
+        # 创建统计报告生成脚本
+        python3 -c "
+import os
+import datetime
+import subprocess
 
-> 本报告由 GitHub Actions 自动生成，更新时间：${current_time}
+print('开始生成统计报告...')
+
+# 获取当前时间（北京时间）
+os.environ['TZ'] = 'Asia/Shanghai'
+current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+# 统计规则数量
+black_count = 0
+white_count = 0
+
+if os.path.exists('dist/blacklist.txt'):
+    with open('dist/blacklist.txt', 'r', encoding='utf-8') as f:
+        content = f.read()
+        lines = content.split('\\n')
+        black_count = sum(1 for line in lines if line.strip() and not line.startswith('!'))
+
+if os.path.exists('dist/whitelist.txt'):
+    with open('dist/whitelist.txt', 'r', encoding='utf-8') as f:
+        content = f.read()
+        lines = content.split('\\n')
+        white_count = sum(1 for line in lines if line.strip() and not line.startswith('!'))
+
+# 分类统计
+if os.path.exists('dist/blacklist.txt'):
+    with open('dist/blacklist.txt', 'r', encoding='utf-8') as f:
+        content = f.read().lower()
+    
+    categories = {
+        '开屏/弹窗广告': ['popup', 'fullscreen', 'interstitial', 'splash', '弹窗', '弹出'],
+        '视频广告': ['video', 'youtube', 'pre-roll', 'mid-roll', 'post-roll', '视频', '贴片'],
+        '横幅广告': ['banner', 'leaderboard', 'rectangle', 'skyscraper', '横幅', '通栏'],
+        '跟踪器': ['track', 'analytics', 'pixel', 'cookie', 'tracking', '跟踪', '统计'],
+        '恶意软件': ['malware', 'phishing', 'scam', 'fraud', 'virus', '恶意', '钓鱼'],
+        '社交媒体': ['facebook', 'twitter', 'instagram', 'weibo', 'social', '社交']
+    }
+    
+    category_counts = {}
+    for category, keywords in categories.items():
+        count = sum(1 for keyword in keywords if keyword in content)
+        category_counts[category] = count
+
+# 生成统计报告
+report_content = f'''# 📊 AdBlock 规则统计报告
+
+> 本报告由 GitHub Actions 自动生成，更新时间：{current_time} (北京时间)
 
 ## 📈 总体统计
 
 | 指标 | 数量 | 说明 |
 |------|------|------|
-| 黑名单规则 | ${total_black_rules} 条 | 拦截广告和恶意内容的规则 |
-| 白名单规则 | ${total_white_rules} 条 | 避免误拦截的例外规则 |
-| 总规则数 | $((total_black_rules + total_white_rules)) 条 | 所有规则总和 |
-| 规则文件大小 | $(ls -lh dist/blacklist.txt | awk '{print $5}') | 主规则文件大小 |
-| 生成时间 | ${current_time} | 北京时间 |
+| 黑名单规则 | {black_count} 条 | 拦截广告和恶意内容的规则 |
+| 白名单规则 | {white_count} 条 | 避免误拦截的例外规则 |
+| 总规则数 | {black_count + white_count} 条 | 所有规则总和 |
+| 生成时间 | {current_time} | 北京时间 |
 
 ## 🎯 广告拦截分类统计
 
-EOF
-          
-          # 检查blacklist.txt是否存在并统计
-          if [ -f dist/blacklist.txt ]; then
-            # 统计各类型广告规则数量
-            popup_ads=$(grep -ic 'popup\|fullscreen\|interstitial\|splash' dist/blacklist.txt || echo "0")
-            video_ads=$(grep -ic 'video\|youtube\|pre-roll\|mid-roll\|post-roll' dist/blacklist.txt || echo "0")
-            banner_ads=$(grep -ic 'banner\|leaderboard\|rectangle\|skyscraper' dist/blacklist.txt || echo "0")
-            tracking=$(grep -ic 'track\|analytics\|pixel\|cookie\|tracking' dist/blacklist.txt || echo "0")
-            malware=$(grep -ic 'malware\|phishing\|scam\|fraud\|virus' dist/blacklist.txt || echo "0")
-            social_media=$(grep -ic 'facebook\|twitter\|instagram\|weibo\|social' dist/blacklist.txt || echo "0")
-            
-            # 将统计结果追加到报告
-            cat >> dist/statistics.md << EOF
-| 广告类型 | 规则数量 | 占比 | 主要拦截内容 |
-|----------|----------|------|--------------|
-| 开屏/弹窗广告 | ${popup_ads} 条 | $(echo "scale=1; ${popup_ads} * 100 / ${total_black_rules}" | bc -l 2>/dev/null || echo "0")% | 应用启动广告、弹出窗口 |
-| 视频广告 | ${video_ads} 条 | $(echo "scale=1; ${video_ads} * 100 / ${total_black_rules}" | bc -l 2>/dev/null || echo "0")% | 视频前贴片、中插广告 |
-| 横幅广告 | ${banner_ads} 条 | $(echo "scale=1; ${banner_ads} * 100 / ${total_black_rules}" | bc -l 2>/dev/null || echo "0")% | 页面横幅、矩形广告 |
-| 跟踪器 | ${tracking} 条 | $(echo "scale=1; ${tracking} * 100 / ${total_black_rules}" | bc -l 2>/dev/null || echo "0")% | 用户行为跟踪脚本 |
-| 恶意软件防护 | ${malware} 条 | $(echo "scale=1; ${malware} * 100 / ${total_black_rules}" | bc -l 2>/dev/null || echo "0")% | 恶意网站、钓鱼攻击 |
-| 社交媒体跟踪 | ${social_media} 条 | $(echo "scale=1; ${social_media} * 100 / ${total_black_rules}" | bc -l 2>/dev/null || echo "0")% | 社交分享按钮追踪 |
+'''
 
-EOF
-          fi
-          
-          # 添加更新时间信息
-          cat >> dist/statistics.md << 'EOF'
+# 添加分类统计表格
+if os.path.exists('dist/blacklist.txt'):
+    report_content += '''| 广告类型 | 规则数量 | 主要拦截内容 |
+|----------|----------|--------------|
+'''
+    
+    for category, count in category_counts.items():
+        if count > 0:
+            descriptions = {
+                '开屏/弹窗广告': '应用启动广告、弹出窗口',
+                '视频广告': '视频前贴片、中插广告',
+                '横幅广告': '页面横幅、矩形广告',
+                '跟踪器': '用户行为跟踪脚本',
+                '恶意软件': '恶意网站、钓鱼攻击',
+                '社交媒体': '社交分享按钮追踪'
+            }
+            report_content += f'| {category} | {count} 条 | {descriptions.get(category, "")} |\\n'
 
+# 添加更新时间信息
+next_time = datetime.datetime.now() + datetime.timedelta(hours=8)
+next_time_str = next_time.strftime('%Y-%m-%d %H:%M:%S')
+
+report_content += f'''
 ## 🔄 更新信息
 
-- **最后更新时间**: ${current_time} (北京时间)
+- **最后更新时间**: {current_time} (北京时间)
 - **更新频率**: 每8小时自动更新
-- **下次更新时间**: $(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M:%S')
+- **下次更新时间**: {next_time_str} (北京时间)
 - **数据来源**: 23个主流广告规则源
 
 ## 📁 文件列表
 
-EOF
-          
-          # 添加文件列表
-          echo "| 文件名 | 大小 | 描述 |" >> dist/statistics.md
-          echo "|--------|------|------|" >> dist/statistics.md
-          
-          if [ -f dist/blacklist.txt ]; then
-            size=$(ls -lh dist/blacklist.txt | awk '{print $5}')
-            echo "| blacklist.txt | ${size} | 主广告拦截规则 |" >> dist/statistics.md
-          fi
-          
-          if [ -f dist/whitelist.txt ]; then
-            size=$(ls -lh dist/whitelist.txt | awk '{print $5}')
-            echo "| whitelist.txt | ${size} | 白名单例外规则 |" >> dist/statistics.md
-          fi
-          
-          if [ -f dist/metadata.json ]; then
-            size=$(ls -lh dist/metadata.json | awk '{print $5}')
-            echo "| metadata.json | ${size} | 规则元数据 |" >> dist/statistics.md
-          fi
-          
-          # 添加使用说明
-          cat >> dist/statistics.md << 'EOF'
+| 文件名 | 描述 |
+|--------|------|
+| blacklist.txt | 主广告拦截规则 |
+| whitelist.txt | 白名单例外规则 |
+| metadata.json | 规则元数据 |
+| statistics.md | 统计报告 |
 
 ## 📋 使用说明
 
@@ -209,24 +221,16 @@ EOF
 ---
 
 > 本报告由自动化系统生成，数据仅供参考。如有误拦截，请通过白名单规则添加例外。
-EOF
-          
-          # 替换变量值
-          sed -i "s/\${current_time}/${current_time}/g; \
-                  s/\${total_black_rules}/${total_black_rules}/g; \
-                  s/\${total_white_rules}/${total_white_rules}/g; \
-                  s/\${popup_ads}/${popup_ads}/g; \
-                  s/\${video_ads}/${video_ads}/g; \
-                  s/\${banner_ads}/${banner_ads}/g; \
-                  s/\${tracking}/${tracking}/g; \
-                  s/\${malware}/${malware}/g; \
-                  s/\${social_media}/${social_media}/g" dist/statistics.md
-          
-          echo "✅ 统计报告已生成: dist/statistics.md"
-          echo "📄 报告包含详细的规则分类统计和使用说明"
-        else
-          echo "⚠️ 规则文件不存在，跳过统计报告生成"
-        fi
+'''
+
+# 写入文件
+with open('dist/statistics.md', 'w', encoding='utf-8') as f:
+    f.write(report_content)
+
+print(f'✅ 统计报告已生成: dist/statistics.md')
+print(f'📊 黑名单规则: {black_count} 条')
+print(f'📊 白名单规则: {white_count} 条')
+"
     
     - name: Step 6 - 发布准备
       run: |
