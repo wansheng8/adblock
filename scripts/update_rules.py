@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-广告拦截规则更新脚本 - 完整版
+广告拦截规则更新脚本 - 完整版（支持混合规则）
 生成 blacklist.txt 和 whitelist.txt
 """
 
@@ -27,8 +27,65 @@ class RuleUpdater:
         self.sources = self.config.get('sources', [])
         print(f"📋 已加载 {len(self.sources)} 个规则源")
         
-    def fetch_source(self, source):
-        """获取单个规则源"""
+    def fetch_mixed_source(self, source):
+        """获取混合规则源（包含多个URL）"""
+        try:
+            print(f"🌐 正在获取混合规则: {source['name']}")
+            
+            # 首先获取混合规则索引文件
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            
+            response = requests.get(source['url'], headers=headers, timeout=30)
+            response.raise_for_status()
+            
+            # 解析混合规则URL列表
+            mixed_urls = response.text.strip().split('\n')
+            mixed_urls = [url.strip() for url in mixed_urls if url.strip()]
+            
+            print(f"  找到 {len(mixed_urls)} 个子规则源")
+            
+            all_content = []
+            successful_sub_sources = 0
+            
+            # 逐个获取子规则源
+            for i, sub_url in enumerate(mixed_urls, 1):
+                try:
+                    print(f"  正在获取子源 {i}/{len(mixed_urls)}: {sub_url[:60]}...")
+                    sub_response = requests.get(sub_url, headers=headers, timeout=20)
+                    sub_response.raise_for_status()
+                    
+                    sub_content = sub_response.text
+                    all_content.append(sub_content)
+                    successful_sub_sources += 1
+                    
+                    # 保存原始文件（仅供调试）
+                    source_name = re.sub(r'[^\w\-_]', '_', source['name'].lower())
+                    sub_name = re.sub(r'[^\w\-_]', '_', sub_url.split('/')[-1])
+                    raw_file = self.base_dir / f"rules/raw/{source_name}_{sub_name}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                    raw_file.parent.mkdir(parents=True, exist_ok=True)
+                    
+                    with open(raw_file, 'w', encoding='utf-8') as f:
+                        f.write(sub_content)
+                        
+                except Exception as e:
+                    print(f"    ❌ 子源获取失败: {str(e)[:50]}")
+                    continue
+            
+            if successful_sub_sources > 0:
+                print(f"  ✅ 混合规则获取完成: {successful_sub_sources}/{len(mixed_urls)} 成功")
+                return True, '\n'.join(all_content)
+            else:
+                print(f"  ❌ 所有子源获取失败")
+                return False, ""
+            
+        except Exception as e:
+            print(f"❌ 获取混合规则失败 {source['name']}: {str(e)}")
+            return False, ""
+    
+    def fetch_standard_source(self, source):
+        """获取标准规则源（单个URL）"""
         try:
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -53,6 +110,15 @@ class RuleUpdater:
         except Exception as e:
             print(f"❌ 获取失败 {source['name']}: {str(e)}")
             return False, ""
+    
+    def fetch_source(self, source):
+        """获取规则源（根据类型调用不同方法）"""
+        source_type = source.get('type', 'blacklist')
+        
+        if source_type == 'mixed':
+            return self.fetch_mixed_source(source)
+        else:
+            return self.fetch_standard_source(source)
     
     def extract_rules(self, content, source_type):
         """从内容中提取规则"""
@@ -99,7 +165,7 @@ class RuleUpdater:
     def generate_header(self, black_count, white_count, source_count, update_time):
         """生成规则文件头部"""
         return f"""! 标题: 广告拦截规则
-! 描述: 自动合并的多源广告拦截规则
+! 描述: 自动合并的多源广告拦截规则（包含混合规则）
 ! 版本: {datetime.datetime.now().strftime('%Y%m%d.%H%M')}
 ! 生成时间: {update_time} (北京时间)
 ! 黑名单规则: {black_count} 条
@@ -193,7 +259,7 @@ class RuleUpdater:
     def run(self):
         """执行更新流程"""
         print("=" * 60)
-        print("🚀 开始更新广告拦截规则")
+        print("🚀 开始更新广告拦截规则（包含混合规则）")
         print("=" * 60)
         
         self.load_config()
@@ -217,11 +283,16 @@ class RuleUpdater:
             success, content = self.fetch_source(source)
             
             if success and content:
-                black_rules, white_rules = self.extract_rules(content, source.get('type', 'blacklist'))
+                source_type = source.get('type', 'blacklist')
+                black_rules, white_rules = self.extract_rules(content, source_type)
                 
-                if source.get('type') == 'whitelist':
+                if source_type == 'whitelist':
                     all_white_rules.extend(white_rules)
                     print(f"  ✅ {source['name']} (白名单): {len(white_rules)} 条规则")
+                elif source_type == 'mixed':
+                    all_black_rules.extend(black_rules)
+                    all_white_rules.extend(white_rules)
+                    print(f"  ✅ {source['name']} (混合): {len(black_rules)} 条黑名单, {len(white_rules)} 条白名单")
                 else:
                     all_black_rules.extend(black_rules)
                     all_white_rules.extend(white_rules)
@@ -277,6 +348,9 @@ class RuleUpdater:
                 "trackers": "跟踪器",
                 "malware": "恶意软件",
                 "social_media": "社交媒体"
+            },
+            "source_types": {
+                "mixed_sources": sum(1 for s in sorted_sources if s.get('type') == 'mixed' and s.get('enabled', True))
             }
         }
         
@@ -288,6 +362,7 @@ class RuleUpdater:
         print(f"📊 黑名单: {len(black_rules)} 条规则")
         print(f"📊 白名单: {len(white_rules)} 条规则")
         print(f"📊 总计: {len(black_rules) + len(white_rules)} 条规则")
+        print(f"📦 混合规则源: {metadata['source_types']['mixed_sources']} 个")
         print(f"⏰ 下次更新: {(now + datetime.timedelta(hours=8)).strftime('%Y-%m-%d %H:%M')}")
         print("=" * 60)
         
