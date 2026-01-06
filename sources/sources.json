@@ -1,0 +1,84 @@
+{
+  "update_frequency": 8,
+  "timezone": "Asia/Shanghai",
+  "language": "zh-CN",
+  "sources": [
+    {
+      "name": "AdGuard Base Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adblock.txt",
+      "type": "blacklist",
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "name": "AdGuard Chinese Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/ChineseFilter/sections/adblock.txt",
+      "type": "blacklist",
+      "enabled": true,
+      "priority": 2
+    },
+    {
+      "name": "EasyList China",
+      "url": "https://easylist-downloads.adblockplus.org/easylistchina.txt",
+      "type": "blacklist",
+      "enabled": true,
+      "priority": 3
+    },
+    {
+      "name": "AdGuard Spyware Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/SpywareFilter/sections/adblock.txt",
+      "type": "blacklist",
+      "enabled": true,
+      "priority": 4
+    },
+    {
+      "name": "Fanboy's Annoyance List",
+      "url": "https://secure.fanboy.co.nz/fanboy-annoyance.txt",
+      "type": "blacklist",
+      "enabled": true,
+      "priority": 5
+    },
+    {
+      "name": "Peter Lowe's Ad server list",
+      "url": "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=adblockplus&showintro=0&mimetype=plaintext",
+      "type": "blacklist",
+      "enabled": true,
+      "priority": 6
+    },
+    {
+      "name": "AdGuard DNS Filter",
+      "url": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
+      "type": "dns",
+      "enabled": true,
+      "priority": 7
+    },
+    {
+      "name": "EasyPrivacy",
+      "url": "https://easylist-downloads.adblockplus.org/easyprivacy.txt",
+      "type": "privacy",
+      "enabled": true,
+      "priority": 8
+    },
+    {
+      "name": "Anti-AD",
+      "url": "https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/anti-ad-easylist.txt",
+      "type": "blacklist",
+      "enabled": true,
+      "priority": 9
+    },
+    {
+      "name": "NEO DEV HOST",
+      "url": "https://raw.githubusercontent.com/neodevpro/neodevhost/master/adblocker",
+      "type": "blacklist",
+      "enabled": true,
+      "priority": 10
+    },
+    {
+      "name": "Whitelist",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/ChineseFilter/sections/whitelist.txt",
+      "type": "whitelist",
+      "enabled": true,
+      "priority": 100
+    }
+  ]
+}

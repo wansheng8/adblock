@@ -1,0 +1,75 @@
+name: Update AdBlock Rules
+
+on:
+  schedule:
+    # 每8小时运行一次 (UTC时间)
+    - cron: '0 */8 * * *'
+  workflow_dispatch:  # 允许手动触发
+  push:
+    branches:
+      - main
+    paths:
+      - 'sources/sources.json'
+      - 'scripts/**'
+
+jobs:
+  update-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
+    
+    - name: Run update script
+      run: |
+        python scripts/update_rules.py
+    
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # 检查是否有变更
+        if git diff --quiet; then
+          echo "没有变更需要提交"
+          exit 0
+        fi
+        
+        # 添加变更
+        git add dist/
+        git add rules/raw/
+        git add rules/invalid_rules.log 2>/dev/null || true
+        
+        # 提交
+        git commit -m "自动更新规则 $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
+        
+        # 推送
+        git push
+      
+    - name: Create release (每月)
+      if: github.event_name == 'schedule' && github.ref == 'refs/heads/main'
+      run: |
+        # 检查是否是每月第一天
+        if [ $(date +%d) = "01" ]; then
+          VERSION=$(date +'%Y.%m')
+          gh release create "v$VERSION" \
+            --title "规则更新 $VERSION" \
+            --notes "每月规则更新" \
+            dist/blacklist.txt \
+            dist/whitelist.txt
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
