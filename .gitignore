@@ -6,7 +6,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -30,7 +29,7 @@ wheels/
 .DS_Store
 Thumbs.db
 
-# 日志文件
+# 临时文件
 *.log
 *.tmp
 *.temp
@@ -40,12 +39,33 @@ config.local.json
 .env
 secrets.json
 
-# 规则备份
-dist/backup/
+# 测试文件
+test_*
+tests/
 
-# 原始规则文件（保留最新几个）
+# 备份文件
+*.bak
+*.backup
+*.old
+
+# 原始规则文件（保留最新的）
 rules/raw/*.txt
 !rules/raw/.gitkeep
 
-# 处理后的规则文件
+# 处理后的规则目录
 rules/processed/
+
+# 日志文件
+rules/invalid_rules.log
+
+# 确保 dist/ 目录下的重要文件不被忽略
+# 我们只忽略 dist/ 目录下的临时文件，但保留规则文件
+dist/*.tmp
+dist/*.temp
+dist/*.bak
+dist/backup/
+
+# 注意：我们特意不忽略以下文件：
+# !dist/blacklist.txt
+# !dist/whitelist.txt
+# !dist/metadata.json
