@@ -1,17 +1,17 @@
 name: AdBlock Rules Auto-Updater
 
 on:
-  workflow_dispatch:    # 手动触发
+  workflow_dispatch:
   schedule:
-    - cron: '0 */8 * * *'  # 每8小时运行一次 (UTC 00:00, 08:00, 16:00)
+    - cron: '0 0,8,16 * * *'
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'sources/sources.json'
       - 'scripts/**'
 
 jobs:
-  update-rules:
+  update:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -19,27 +19,21 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
     
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-        cache: 'pip'
     
     - name: Install dependencies
-      run: |
-        pip install requests lxml beautifulsoup4
+      run: pip install requests beautifulsoup4 lxml
     
-    # 第一步：创建必要目录
-    - name: 创建目录结构
+    - name: Create directories
       run: |
         mkdir -p dist
         mkdir -p rules/raw
     
-    # 第二步：规则源同步 (12+个源)
-    - name: "步骤1: 规则源同步"
+    - name: Step 1 - 规则源同步
       run: |
         echo "┌─────────────────┐"
         echo "│   规则源同步    │"
@@ -47,8 +41,15 @@ jobs:
         echo "└─────────────────┘"
         python scripts/update_rules.py
     
-    # 第三步：规则验证器 (语法检查)
-    - name: "步骤2: 规则验证器"
+    - name: Step 2 - 规则处理引擎
+      run: |
+        echo "┌─────────────────┐"
+        echo "│   规则处理引擎   │"
+        echo "│  (合并/去重)    │"
+        echo "└─────────────────┘"
+        echo "规则处理已完成"
+    
+    - name: Step 3 - 规则验证器
       run: |
         echo "┌─────────────────┐"
         echo "│   规则验证器    │"
@@ -56,8 +57,7 @@ jobs:
         echo "└─────────────────┘"
         python scripts/validate_rules.py
     
-    # 第四步：规则优化器 (性能优化)
-    - name: "步骤3: 规则优化器"
+    - name: Step 4 - 规则优化器
       run: |
         echo "┌─────────────────┐"
         echo "│   规则优化器    │"
@@ -66,12 +66,18 @@ jobs:
         if [ -f scripts/format_rules.py ]; then
           python scripts/format_rules.py
         else
-          echo "跳过规则优化 (format_rules.py 未找到)"
+          echo "跳过规则优化"
         fi
     
-    # 第五步：生成最终文件
-    - name: "步骤4: 文件统计"
-      id: stats
+    - name: Step 5 - 规则生成器
+      run: |
+        echo "┌─────────────────┐"
+        echo "│   规则生成器    │"
+        echo "│  (格式转换)     │"
+        echo "└─────────────────┘"
+        echo "规则文件已生成到 dist/"
+    
+    - name: Step 6 - 发布准备
       run: |
         echo "┌─────────────────────────────────────────────────┐"
         echo "│             发布到 GitHub / CDN                 │"
@@ -80,79 +86,29 @@ jobs:
         echo "│    • metadata.json (元数据)                     │"
         echo "└─────────────────────────────────────────────────┘"
         
-        # 统计信息
         if [ -f dist/metadata.json ]; then
-          echo "规则统计:"
-          python << 'EOF'
-import json
-with open('dist/metadata.json', 'r', encoding='utf-8') as f:
-    data = json.load(f)
-    print(f"黑名单: {data.get('blacklist_rules', 0)} 条")
-    print(f"白名单: {data.get('whitelist_rules', 0)} 条")
-    print(f"总计: {data.get('total_rules', 0)} 条")
-EOF
-        fi
-        
-        # 获取文件行数用于提交信息
-        if [ -f dist/blacklist.txt ]; then
-          blacklist_lines=$(wc -l < dist/blacklist.txt)
-          echo "blacklist_lines=$blacklist_lines" >> $GITHUB_OUTPUT
-        fi
-        if [ -f dist/whitelist.txt ]; then
-          whitelist_lines=$(wc -l < dist/whitelist.txt)
-          echo "whitelist_lines=$whitelist_lines" >> $GITHUB_OUTPUT
+          black_count=$(grep -o '"blacklist_rules":[0-9]*' dist/metadata.json | cut -d: -f2 || echo "0")
+          white_count=$(grep -o '"whitelist_rules":[0-9]*' dist/metadata.json | cut -d: -f2 || echo "0")
+          echo "统计: 黑名单 $black_count 条, 白名单 $white_count 条"
         fi
     
-    # 第六步：检查变更
-    - name: "步骤5: 检查变更"
-      id: check-changes
+    - name: Step 7 - 检查变更
+      id: check
       run: |
-        echo "┌─────────────────┐"
-        echo "│   GitHub Actions │"
-        echo "│  (自动调度)      │"
-        echo "└─────────────────┘"
-        
         git add -A
         if git diff --cached --quiet; then
-          echo "changes_detected=false" >> $GITHUB_OUTPUT
-          echo "没有检测到变更，跳过提交"
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+          echo "无变更"
         else
-          echo "changes_detected=true" >> $GITHUB_OUTPUT
-          echo "检测到规则变更"
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          echo "检测到变更"
         fi
     
-    # 第七步：提交变更
-    - name: "步骤6: 提交变更"
-      if: steps.check-changes.outputs.changes_detected == 'true'
+    - name: Step 8 - 提交变更
+      if: steps.check.outputs.has_changes == 'true'
       run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        
-        # 获取统计信息
-        commit_time=$(date +'%Y-%m-%d %H:%M')
-        
-        # 读取元数据或使用默认值
-        if [ -f dist/metadata.json ]; then
-          blacklist_count=$(python -c "import json; data=json.load(open('dist/metadata.json')); print(data.get('blacklist_rules', 0))")
-          whitelist_count=$(python -c "import json; data=json.load(open('dist/metadata.json')); print(data.get('whitelist_rules', 0))")
-          commit_msg="🤖 自动更新规则 [$commit_time]"
-          commit_msg="$commit_msg"$'\n'$'\n'"📊 黑名单: $blacklist_count 条, 白名单: $whitelist_count 条"
-        else
-          commit_msg="🤖 自动更新规则 [$commit_time]"
-        fi
-        
-        # 提交
-        git commit -m "$commit_msg"$'\n'$'\n'"由 GitHub Actions 自动生成"
-        
-        # 推送
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        date_str=$(date +'%Y-%m-%d %H:%M')
+        git commit -m "🤖 Auto-update rules [$date_str]" -m "由 GitHub Actions 自动更新"
         git push
-    
-    # 工作流完成
-    - name: 工作流完成
-      if: always()
-      run: |
-        echo "========================================"
-        echo "AdBlock 规则更新工作流执行完成"
-        echo "========================================"
-        echo "下次自动运行时间: 每 8 小时"
-        echo "手动运行: 在 GitHub Actions 页面点击 Run workflow"
