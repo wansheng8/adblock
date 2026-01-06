@@ -2,17 +2,15 @@ name: 更新广告拦截规则
 
 on:
   schedule:
-    # 每8小时运行一次 (UTC时间)
     - cron: '0 */8 * * *'
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
   push:
     branches:
       - main
     paths:
-      - 'sources/sources.json'
+      - 'sources/**'
       - 'scripts/**'
 
-# 添加权限设置
 permissions:
   contents: write
 
@@ -26,7 +24,6 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -38,7 +35,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
     
-    - name: Create necessary directories
+    - name: Create directories
       run: |
         mkdir -p dist rules/raw rules/processed
     
@@ -46,54 +43,42 @@ jobs:
       run: |
         python scripts/update_rules.py
     
-    - name: Check for changes
-      id: check-changes
+    - name: Configure Git
       run: |
-        if git diff --quiet; then
-          echo "has_changes=false" >> $GITHUB_OUTPUT
-          echo "没有变更需要提交"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+    
+    - name: Commit changes
+      if: success()
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Changes detected"
+          
+          git add dist/ || true
+          git add rules/raw/ || true
+          
+          BLACKLIST_COUNT=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
+          WHITELIST_COUNT=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
+          TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
+          
+          git commit -m "Auto update rules $(date +'%Y-%m-%d %H:%M:%S')
+          
+          Statistics:
+          - Blacklist rules: $BLACKLIST_COUNT
+          - Whitelist rules: $WHITELIST_COUNT
+          - Total rules: $TOTAL_COUNT
+          
+          [skip ci]" || echo "No changes to commit"
         else
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-          echo "检测到变更"
+          echo "No changes detected"
         fi
     
-    - name: Commit and push changes
-      if: steps.check-changes.outputs.has_changes == 'true'
+    - name: Push changes
+      if: success()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        
-        # 添加变更
-        git add dist/
-        git add rules/raw/
-        git add rules/invalid_rules.log 2>/dev/null || true
-        
-        # 获取规则数量统计
-        if [ -f "dist/blacklist.txt" ]; then
-          BLACKLIST_COUNT=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
-        else
-          BLACKLIST_COUNT="0"
+        if [ -n "$(git log origin/main..HEAD 2>/dev/null)" ]; then
+          git pull --rebase origin main || echo "Pull failed"
+          git push origin HEAD:main
         fi
-        
-        if [ -f "dist/whitelist.txt" ]; then
-          WHITELIST_COUNT=$(grep -c '^[^!]' dist/whitelist.txt 2>/dev/null || echo "0")
-        else
-          WHITELIST_COUNT="0"
-        fi
-        
-        TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
-        
-        # 提交
-        git commit -m "自动更新规则 $(date +'%Y-%m-%d %H:%M:%S')
-        
-        规则统计:
-        - 黑名单规则: $BLACKLIST_COUNT
-        - 白名单规则: $WHITELIST_COUNT
-        - 总规则数: $TOTAL_COUNT
-        
-        [skip ci]"
-        
-        # 推送
-        git push
