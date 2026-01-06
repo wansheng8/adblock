@@ -2,6 +2,7 @@ name: Update AdBlock Rules
 
 on:
   schedule:
+    # 每8小时运行一次 (UTC时间)
     - cron: '0 */8 * * *'
   workflow_dispatch:
 
@@ -11,11 +12,11 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -24,9 +25,10 @@ jobs:
     
     - name: Install dependencies
       run: |
+        python -m pip install --upgrade pip
         pip install requests
     
-    - name: Create directories
+    - name: Create necessary directories
       run: |
         mkdir -p dist rules/raw
     
@@ -34,61 +36,45 @@ jobs:
       run: |
         python scripts/update_rules.py
     
-    - name: Clean old raw files
+    - name: Clean old raw files (keep last 5)
       run: |
-        # 保留最近10个原始文件，删除更早的
         echo "清理旧的原始规则文件..."
-        if [ -d "rules/raw" ]; then
-          # 按时间排序，保留最新的10个文件
-          cd rules/raw
-          ls -1t *.txt 2>/dev/null | tail -n +11 | xargs -r rm -f
-          echo "原始文件清理完成"
-        fi
+        # 保留最新的5个文件
+        cd rules/raw
+        ls -t *.txt | tail -n +6 | xargs rm -f 2>/dev/null || true
+        echo "清理完成"
     
     - name: Configure Git
       run: |
-        git config user.email "action@github.com"
-        git config user.name "GitHub Action"
-    
-    - name: Stage files
-      run: |
-        echo "暂存文件..."
-        
-        # 先清除缓存，确保跟踪规则生效
-        git rm -r --cached dist/ 2>/dev/null || true
-        git rm -r --cached rules/raw/ 2>/dev/null || true
-        
-        # 添加文件
-        git add dist/blacklist.txt 2>/dev/null || echo "黑名单文件不存在"
-        git add dist/whitelist.txt 2>/dev/null || echo "白名单文件不存在"
-        git add dist/metadata.json 2>/dev/null || echo "元数据文件不存在"
-        
-        # 添加最近的原始规则文件（只保留最近5个）
-        if [ -d "rules/raw" ]; then
-          cd rules/raw
-          ls -1t *.txt 2>/dev/null | head -5 | while read file; do
-            cd ../..
-            git add "rules/raw/$file" 2>/dev/null || echo "无法添加 $file"
-          done
-        fi
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
     
     - name: Check for changes
       id: check-changes
       run: |
-        if git diff --cached --quiet; then
-          echo "没有需要提交的变更"
-          echo "has_changes=false" >> $GITHUB_OUTPUT
-        else
-          echo "检测到变更，准备提交"
+        # 检查是否有文件变更
+        if [ -n "$(git status --porcelain dist/ rules/raw/ 2>/dev/null)" ]; then
           echo "has_changes=true" >> $GITHUB_OUTPUT
+          echo "检测到变更"
+        else
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+          echo "没有检测到变更"
         fi
     
     - name: Commit changes
       if: steps.check-changes.outputs.has_changes == 'true'
       run: |
-        echo "提交变更..."
+        echo "添加变更文件..."
         
-        # 获取规则数量
+        # 先删除旧的 .gitignore 缓存
+        git rm -r --cached dist/ 2>/dev/null || true
+        git rm -r --cached rules/raw/ 2>/dev/null || true
+        
+        # 添加文件
+        git add dist/ || true
+        git add rules/raw/ || true
+        
+        # 获取规则统计
         if [ -f "dist/blacklist.txt" ]; then
           BLACKLIST_COUNT=$(grep -c '^[^!]' dist/blacklist.txt 2>/dev/null || echo "0")
         else
@@ -103,37 +89,29 @@ jobs:
         
         TOTAL_COUNT=$((BLACKLIST_COUNT + WHITELIST_COUNT))
         
+        # 提交
         git commit -m "自动更新规则 $(date +'%Y-%m-%d %H:%M:%S')
+
+规则统计:
+- 黑名单: $BLACKLIST_COUNT 条
+- 白名单: $WHITELIST_COUNT 条
+- 总计: $TOTAL_COUNT 条
+
+[skip ci]" || echo "没有新的变更"
         
-        规则统计:
-        - 黑名单: $BLACKLIST_COUNT
-        - 白名单: $WHITELIST_COUNT
-        - 总计: $TOTAL_COUNT
-        
-        [skip ci]"
-        
-        echo "✅ 提交完成"
+        echo "提交完成"
     
     - name: Push changes
       if: steps.check-changes.outputs.has_changes == 'true'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        echo "推送变更..."
+        echo "推送变更到远程仓库..."
         
-        # 先拉取最新更改
-        git pull --rebase origin main || echo "拉取失败，继续推送"
+        # 拉取最新更改
+        git pull --rebase origin main 2>/dev/null || echo "拉取失败，继续推送"
         
         # 推送更改
         git push origin HEAD:main
         
-        echo "✅ 推送完成"
-    
-    - name: Show result
-      if: always()
-      run: |
-        echo "===== 更新结果 ====="
-        echo "订阅链接:"
-        echo "黑名单: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/blacklist.txt"
-        echo "白名单: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/whitelist.txt"
-        echo "元数据: https://raw.githubusercontent.com/${{ github.repository }}/main/dist/metadata.json"
+        echo "推送完成"
