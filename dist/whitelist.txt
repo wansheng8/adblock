@@ -1,9 +1,9 @@
 ! 标题: 广告拦截规则
 ! 描述: 自动合并的多源广告拦截规则（包含混合规则）
-! 版本: 20260107.0815
-! 生成时间: 2026-01-07 16:15:05 (北京时间)
-! 黑名单规则: 900092 条
-! 白名单规则: 20110 条
+! 版本: 20260107.1615
+! 生成时间: 2026-01-08 00:15:17 (北京时间)
+! 黑名单规则: 900209 条
+! 白名单规则: 20108 条
 ! 规则源数量: 18 个
 ! 更新周期: 每8小时
 ! 项目地址: https://github.com/wansheng8/adblock.git
@@ -22,12 +22,12 @@
 ! ============================================================
 
 ! ============================================================
-! ✅ 白名单规则 (20110条)
+! ✅ 白名单规则 (20108条)
 ! 说明: 以下规则不会被拦截，用于解决误拦截问题
 ! ============================================================
 
 ! ============================================================
-! ✅ 白名单规则 (20110条)
+! ✅ 白名单规则 (20108条)
 ! 说明: 以下域名/元素不会被拦截
 ! ============================================================
 
@@ -2911,7 +2911,6 @@
 @@||alicdn.com/??*/tracker/
 @@||alicdn.com/dt/tracker/2.5.1/tracker.js$domain=alimama.com
 @@||alicdn.com/dt/tracker/4.2.0/??tracker.
-@@||alicdn.com/img/ibank/2019/975/700/12603007579_1230538058.jpg
 @@||alicdn.com/js/*/cookie-info.js$script
 @@||alicdn.com/js/*/ws-cookie.js$script
 @@||alicdn.com/js/*/xpopup.js
@@ -14466,7 +14465,6 @@
 @@||pandora.com^$generichide
 @@||panel.flops.ru/js/member/evercookie_init.js
 @@||panel.play.hosting/js/jquery.openxtag.js
-@@||panjiachen.github.io^$generichide
 @@||pantagraph.com^$generichide
 @@||papagiovannipaoloii.altervista.org^$generichide
 @@||papalah.com^$generichide
@@ -15691,7 +15689,6 @@
 @@||riverside.fm^$generichide
 @@||riwal.com/includes/js/components/cookiebar.js$script
 @@||rizonesoft.com^$generichide
-@@||rltdxt.com/files/h5/app.js
 @@||rm.freex2line.online/loadon/?link=$stealth=referrer
 @@||rm.sina.com.cn/minisite/*/css/art_normal.css$domain=client.sina.cn
 @@||rmbooru.org/data/image/$domain=rmbooru.org
@@ -18600,6 +18597,7 @@
 @@||uim.tifbs.net/js/*.js$domain=web.de|gmx.net|gmx.ch|gmx.at
 @@||uim.tifbs.net/js/3423.js$domain=top.de
 @@||uim.tifbs.net/js/7732.js$domain=gewinnspiel.gmx.de|gewinnspiel.web.de
+@@||uin-sports.pt^$extension='AdGuard Popup Blocker'|'AdGuard Popup Blocker (Beta)'
 @@||ujinbi.com/UpLoadFile/guanggao/
 @@||ujjivansfb.in^$stealth=dpi
 @@||ukbride.co.uk/css/*/adverts.css
