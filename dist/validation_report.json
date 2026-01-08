@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-01-08 10:06:14",
+  "timestamp": "2026-01-08 11:39:45",
   "files": {
     "blacklist": {
-      "total": 2786424,
-      "valid": 1322720,
-      "adjusted_valid": 2286363,
-      "invalid": 1463704,
+      "total": 2786433,
+      "valid": 1322716,
+      "adjusted_valid": 2286364,
+      "invalid": 1463717,
       "details": [
         {
           "line": 2280,
@@ -199,10 +199,10 @@
       "rule_types": {
         "comment": 7594,
         "element_hiding": 51193,
-        "unknown": 1927287,
-        "modifier_rule": 246165,
+        "unknown": 1927296,
+        "modifier_rule": 246164,
         "hosts_rule": 543301,
-        "domain_block": 10603,
+        "domain_block": 10604,
         "adblock_comment": 78,
         "element_hiding_exception": 50,
         "element_removal": 18,
@@ -225,20 +225,20 @@
     }
   },
   "summary": {
-    "total_rules": 2802324,
-    "valid_rules": 1338620,
-    "adjusted_valid_rules": 2302263,
-    "invalid_rules": 1463704,
-    "validity_rate": 47.76820952894811,
-    "adjusted_validity_rate": 82.15548951513101
+    "total_rules": 2802333,
+    "valid_rules": 1338616,
+    "adjusted_valid_rules": 2302264,
+    "invalid_rules": 1463717,
+    "validity_rate": 47.767913377889066,
+    "adjusted_validity_rate": 82.15526134831228
   },
   "rule_type_distribution": {
     "comment": 7619,
     "element_hiding": 51193,
-    "unknown": 1928399,
-    "modifier_rule": 246659,
+    "unknown": 1928408,
+    "modifier_rule": 246658,
     "hosts_rule": 543301,
-    "domain_block": 24872,
+    "domain_block": 24873,
     "adblock_comment": 78,
     "element_hiding_exception": 50,
     "element_removal": 18,
