@@ -11,6 +11,7 @@ on:
       - 'scripts/**'
       - 'sources/gz.txt'
       - 'rules/custom/**'
+      - 'rules/whitelist_custom.txt'
       - '.github/workflows/update-rules.yml'
 
 env:
@@ -110,6 +111,21 @@ jobs:
           echo "  ✅ scripts/update_rules.py"
         fi
         
+        # 检查白名单自定义文件
+        if [ -f "rules/whitelist_custom.txt" ]; then
+          echo "✅ 找到 rules/whitelist_custom.txt 文件"
+          # 显示文件信息
+          size=$(wc -c < "rules/whitelist_custom.txt" 2>/dev/null || echo "0")
+          lines=$(wc -l < "rules/whitelist_custom.txt" 2>/dev/null || echo "0")
+          rules=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          echo "  ├── 文件大小: $((size/1024))KB"
+          echo "  ├── 总行数: $lines 行"
+          echo "  └── 有效规则: $rules 条"
+        else
+          echo "⚠️  rules/whitelist_custom.txt 文件不存在，将创建空文件"
+          touch "rules/whitelist_custom.txt"
+        fi
+        
         # 检查Python脚本权限
         echo "🔧 设置脚本权限..."
         chmod +x scripts/*.py 2>/dev/null || true
@@ -199,7 +215,7 @@ jobs:
           echo "  ⚠️  whitelist.txt 可能为空"
         fi
     
-    - name: Step 3 - 规则合并
+    - name: Step 3 - 规则合并（包含白名单自定义）
       id: merge-rules
       if: steps.update-rules.outputs.update_success == 'true'
       run: |
@@ -211,31 +227,54 @@ jobs:
         echo ""
         
         echo "📂 检查自定义规则..."
-        if [ ! -d "rules/custom" ]; then
-          echo "ℹ️  自定义规则目录不存在，跳过合并步骤"
-          echo "skip_merge=true" >> "$GITHUB_OUTPUT"
-          exit 0
+        CUSTOM_FOUND=false
+        
+        # 检查 rules/custom 目录
+        if [ -d "rules/custom" ]; then
+          CUSTOM_FILES=$(find rules/custom -name "*.txt" -type f 2>/dev/null | wc -l)
+          if [ $CUSTOM_FILES -gt 0 ]; then
+            echo "📄 在 rules/custom 中找到 $CUSTOM_FILES 个自定义规则文件"
+            CUSTOM_FOUND=true
+          fi
         fi
         
-        CUSTOM_FILES=$(find rules/custom -name "*.txt" -type f 2>/dev/null | wc -l)
-        if [ $CUSTOM_FILES -eq 0 ]; then
+        # 检查白名单自定义文件
+        if [ -f "rules/whitelist_custom.txt" ] && [ -s "rules/whitelist_custom.txt" ]; then
+          WHITE_CUSTOM_SIZE=$(wc -c < "rules/whitelist_custom.txt")
+          WHITE_CUSTOM_LINES=$(wc -l < "rules/whitelist_custom.txt")
+          WHITE_CUSTOM_RULES=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          
+          echo "📄 找到 whitelist_custom.txt 文件:"
+          echo "  ├── 文件大小: $((WHITE_CUSTOM_SIZE/1024))KB"
+          echo "  ├── 总行数: $WHITE_CUSTOM_LINES 行"
+          echo "  └── 有效规则: $WHITE_CUSTOM_RULES 条"
+          CUSTOM_FOUND=true
+          
+          # 确保处理脚本能访问到这个文件
+          echo "🔧 将 whitelist_custom.txt 复制到处理目录..."
+          mkdir -p rules/processed
+          cp "rules/whitelist_custom.txt" "rules/processed/whitelist_custom.txt"
+        fi
+        
+        if [ "$CUSTOM_FOUND" = false ]; then
           echo "ℹ️  未找到自定义规则文件，跳过合并步骤"
           echo "skip_merge=true" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         
-        echo "📄 找到 $CUSTOM_FILES 个自定义规则文件"
-        
+        echo "📄 开始合并自定义规则..."
         START_TIME=$(date +%s)
         
-        # 清理 processed 目录
+        # 清理 processed 目录（保留我们刚复制的文件）
         if [ -d rules/processed ]; then
-          echo "🧹 清理处理过的规则目录..."
-          rm -rf rules/processed/*
+          echo "🧹 清理处理过的规则目录（保留自定义文件）..."
+          # 保留 whitelist_custom.txt，删除其他
+          find rules/processed -type f ! -name "whitelist_custom.txt" -delete 2>/dev/null || true
         fi
         
         # 运行规则合并脚本
         if [ -f scripts/merge_rules.py ]; then
+          # 运行合并脚本
           python scripts/merge_rules.py
           MERGE_STATUS=$?
           
@@ -281,6 +320,15 @@ jobs:
           echo "validation_passed=false" >> "$GITHUB_OUTPUT"
           echo "validation_exit_code=4" >> "$GITHUB_OUTPUT"
           exit 0
+        fi
+        
+        # 检查白名单文件（如果有的话）
+        if [ -f dist/whitelist.txt ]; then
+          echo "📄 发现白名单文件，将进行验证..."
+          WHITE_SIZE=$(wc -c < dist/whitelist.txt 2>/dev/null || echo "0")
+          if [ "$WHITE_SIZE" -gt 0 ]; then
+            echo "  ✅ whitelist.txt 非空 ($((WHITE_SIZE/1024))KB)"
+          fi
         fi
         
         # 运行验证脚本
@@ -342,7 +390,7 @@ jobs:
           echo "ℹ️  规则优化脚本不存在，跳过此步骤"
         fi
     
-    - name: Step 6 - 生成最终文件
+    - name: Step 6 - 生成最终文件（包含白名单统计）
       id: generate-files
       run: |
         echo ""
@@ -389,6 +437,16 @@ jobs:
           echo "❌ 白名单文件不存在"
         fi
         
+        # 统计白名单自定义文件的贡献
+        CUSTOM_WHITE_RULES=0
+        if [ -f "rules/whitelist_custom.txt" ]; then
+          CUSTOM_WHITE_RULES=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          if [ "$CUSTOM_WHITE_RULES" -gt 0 ]; then
+            echo "📄 白名单自定义文件贡献:"
+            echo "  └── 自定义规则: $CUSTOM_WHITE_RULES 条"
+          fi
+        fi
+        
         TOTAL_RULES=$((BLACK_RULES + WHITE_RULES))
         TOTAL_SIZE=$((BLACK_SIZE + WHITE_SIZE))
         
@@ -414,6 +472,7 @@ jobs:
         # 输出到环境变量
         echo "black_rules=$BLACK_RULES" >> "$GITHUB_OUTPUT"
         echo "white_rules=$WHITE_RULES" >> "$GITHUB_OUTPUT"
+        echo "custom_white_rules=$CUSTOM_WHITE_RULES" >> "$GITHUB_OUTPUT"
         echo "total_rules=$TOTAL_RULES" >> "$GITHUB_OUTPUT"
         echo "advanced_rules=$ADVANCED_RULES" >> "$GITHUB_OUTPUT"
         echo "black_size=$BLACK_SIZE" >> "$GITHUB_OUTPUT"
@@ -422,7 +481,7 @@ jobs:
         
         echo "✅ 文件统计完成"
     
-    - name: Step 7 - 生成高级统计报告
+    - name: Step 7 - 生成高级统计报告（包含白名单自定义）
       run: |
         echo ""
         echo "┌─────────────────────────────────────────┐"
@@ -453,6 +512,12 @@ jobs:
         else
           WHITE_RULES=0
           WHITE_SIZE=0
+        fi
+        
+        # 获取白名单自定义规则数量
+        CUSTOM_WHITE_RULES=0
+        if [ -f "rules/whitelist_custom.txt" ]; then
+          CUSTOM_WHITE_RULES=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
         fi
         
         TOTAL_RULES=$((BLACK_RULES + WHITE_RULES))
@@ -502,6 +567,7 @@ jobs:
           echo "|------|------|------|"
           echo "| 黑名单规则 | $BLACK_RULES 条 | 拦截广告和恶意内容 |"
           echo "| 白名单规则 | $WHITE_RULES 条 | 避免误拦截的例外 |"
+          echo "| 白名单自定义规则 | $CUSTOM_WHITE_RULES 条 | 用户自定义例外 |"
           echo "| 总规则数 | $TOTAL_RULES 条 | 所有规则总和 |"
           echo "| 高级规则 | $ADVANCED_RULES 条 | 包含高级语法 |"
           echo "| 黑名单大小 | $BLACK_SIZE_HUMAN | 文件占用空间 |"
@@ -530,6 +596,26 @@ jobs:
           
           echo ""
           
+          echo "## 🎯 规则来源"
+          echo ""
+          echo "### 白名单自定义规则"
+          if [ "$CUSTOM_WHITE_RULES" -gt 0 ]; then
+            echo "- **文件**: rules/whitelist_custom.txt"
+            echo "- **规则数**: $CUSTOM_WHITE_RULES 条"
+            echo "- **用途**: 用户自定义的白名单例外规则，避免误拦截"
+            echo ""
+            echo "### 自定义规则示例"
+            echo "您可以在 \`rules/whitelist_custom.txt\` 文件中添加以下类型的规则:"
+            echo "- \`@@||example.com^\` - 允许 example.com 域名的所有请求"
+            echo "- \`@@||ads.example.com^$script\` - 允许 ads.example.com 的脚本"
+            echo "- \`@@||example.com^$image\` - 允许 example.com 的图片"
+            echo "- \`@@/ad-banner.png\` - 允许特定广告图片"
+          else
+            echo "⚠️ 当前没有白名单自定义规则"
+            echo "您可以在 \`rules/whitelist_custom.txt\` 文件中添加自定义白名单规则"
+          fi
+          
+          echo ""
           echo "## 🎯 规则类型分布"
           echo ""
           echo "| 规则类型 | 描述 | 示例 |"
@@ -539,6 +625,7 @@ jobs:
           echo "| 高级选择器 | 复杂元素选择 | \`#?#div:-abp-has(> .ad)\` |"
           echo "| 参数移除 | 移除URL参数 | \`||example.com^\$removeparam=utm_\*\` |"
           echo "| 域名限定 | 特定域名生效 | \`||ads.com^\$domain=example.com\` |"
+          echo "| 白名单规则 | 允许特定内容 | \`@@||example.com^\` |"
           echo ""
           
           echo "## 🔄 更新信息"
@@ -547,6 +634,7 @@ jobs:
           echo "- **更新频率**: 每8小时自动更新"
           echo "- **下次更新时间**: $NEXT_TIME (北京时间)"
           echo "- **数据来源**: 23+个主流广告规则源"
+          echo "- **自定义白名单**: rules/whitelist_custom.txt"
           echo "- **验证标准**: 宽松验证（阈值${VALIDITY_THRESHOLD}%）"
           echo ""
           
@@ -567,7 +655,7 @@ jobs:
                     desc="主广告拦截规则"
                     ;;
                   "whitelist.txt")
-                    desc="白名单例外规则"
+                    desc="白名单例外规则（包含自定义）"
                     ;;
                   "metadata.json")
                     desc="规则元数据"
@@ -586,6 +674,13 @@ jobs:
                 echo "| $filename | $desc | $human_size |"
               fi
             done
+          fi
+          
+          # 添加白名单自定义文件
+          if [ -f "rules/whitelist_custom.txt" ]; then
+            size=$(wc -c < "rules/whitelist_custom.txt" 2>/dev/null || echo "0")
+            human_size=$(format_size "$size")
+            echo "| whitelist_custom.txt | 用户自定义白名单规则 | $human_size |"
           fi
           
           echo ""
@@ -626,7 +721,22 @@ jobs:
           ERROR_COUNT=$((ERROR_COUNT + 1))
         fi
         
-        # 2. 检查文件编码
+        # 2. 检查白名单自定义文件
+        if [ -f "rules/whitelist_custom.txt" ]; then
+          echo "📝 检查白名单自定义文件..."
+          if python3 -c "import re" 2>/dev/null; then
+            # 检查是否有语法错误（简单检查）
+            BAD_LINES=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | grep -v '^@@' 2>/dev/null | wc -l || echo "0")
+            if [ "$BAD_LINES" -gt 0 ]; then
+              echo "  ⚠️  whitelist_custom.txt 中有 $BAD_LINES 行可能不是有效的白名单规则"
+              WARNING_COUNT=$((WARNING_COUNT + 1))
+            else
+              echo "  ✅ whitelist_custom.txt 格式检查通过"
+            fi
+          fi
+        fi
+        
+        # 3. 检查文件编码
         echo "📝 检查文件编码..."
         # 使用 find 命令来查找文件，避免 glob 扩展问题
         find dist -maxdepth 1 \( -name "*.txt" -o -name "*.md" \) 2>/dev/null | while read -r file; do
@@ -640,7 +750,7 @@ jobs:
           fi
         done
         
-        # 3. 检查JSON格式
+        # 4. 检查JSON格式
         if [ -f dist/metadata.json ]; then
           if python3 -m json.tool dist/metadata.json > /dev/null 2>&1; then
             echo "✅ metadata.json: JSON格式正确"
@@ -659,7 +769,7 @@ jobs:
           fi
         fi
         
-        # 4. 统计摘要
+        # 5. 统计摘要
         echo ""
         echo "📋 质量检查摘要:"
         echo "  ├── 错误: $ERROR_COUNT 个"
@@ -686,6 +796,7 @@ jobs:
         echo "│    • 🌐 混合规则源: 包含6+第三方规则              │"
         echo "│    • ⚡ 高级规则: 支持15种规则类型                 │"
         echo "│    • 🛡️  宽松验证: 阈值$VALIDITY_THRESHOLD%       │"
+        echo "│    • ✨ 白名单自定义: rules/whitelist_custom.txt   │"
         echo "└─────────────────────────────────────────────────────┘"
         echo ""
         
@@ -754,6 +865,28 @@ jobs:
           echo ""
         fi
         
+        # 显示白名单自定义文件
+        if [ -f "rules/whitelist_custom.txt" ]; then
+          echo "📄 白名单自定义文件:"
+          size=$(wc -c < "rules/whitelist_custom.txt" 2>/dev/null || echo "0")
+          lines=$(wc -l < "rules/whitelist_custom.txt" 2>/dev/null || echo "0")
+          rules=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          
+          if [ "$size" -ge 1048576 ]; then
+            human_size="$((size/1048576))MB"
+          elif [ "$size" -ge 1024 ]; then
+            human_size="$((size/1024))KB"
+          else
+            human_size="${size}B"
+          fi
+          
+          echo "  📝 whitelist_custom.txt"
+          echo "     ├── 规则数: $rules 条"
+          echo "     ├── 行数: $lines 行"
+          echo "     └── 大小: $human_size"
+          echo ""
+        fi
+        
         # 显示目录大小
         if [ -d dist ]; then
           DIST_SIZE=$(du -sh dist 2>/dev/null | cut -f1 || echo "未知")
@@ -806,7 +939,11 @@ jobs:
               fi
               echo "  📄 $file ($size_human)"
             elif echo "$file" | grep -q "^rules/"; then
-              echo "  📁 $file"
+              if echo "$file" | grep -q "whitelist_custom.txt"; then
+                echo "  ⭐ $file (白名单自定义规则)"
+              else
+                echo "  📁 $file"
+              fi
             elif echo "$file" | grep -q "^scripts/"; then
               echo "  🛠️  $file"
             elif echo "$file" | grep -q "^sources/"; then
@@ -834,6 +971,7 @@ jobs:
         # 获取统计值（设置默认值）
         BLACK_COUNT="${BLACK_COUNT:-0}"
         WHITE_COUNT="${WHITE_COUNT:-0}"
+        CUSTOM_WHITE_COUNT="${CUSTOM_WHITE_COUNT:-0}"
         TOTAL_COUNT="${TOTAL_COUNT:-0}"
         ADVANCED_COUNT="${ADVANCED_COUNT:-0}"
         
@@ -844,6 +982,10 @@ jobs:
         
         if [ -n "${{ steps.generate-files.outputs.white_rules }}" ]; then
           WHITE_COUNT="${{ steps.generate-files.outputs.white_rules }}"
+        fi
+        
+        if [ -n "${{ steps.generate-files.outputs.custom_white_rules }}" ]; then
+          CUSTOM_WHITE_COUNT="${{ steps.generate-files.outputs.custom_white_rules }}"
         fi
         
         if [ -n "${{ steps.generate-files.outputs.total_rules }}" ]; then
@@ -864,6 +1006,9 @@ jobs:
           echo "📊 规则统计:"
           echo "- 黑名单: $BLACK_COUNT 条规则"
           echo "- 白名单: $WHITE_COUNT 条规则"
+          if [ "$CUSTOM_WHITE_COUNT" -gt 0 ]; then
+            echo "- 白名单自定义规则: $CUSTOM_WHITE_COUNT 条"
+          fi
           echo "- 总计: $TOTAL_COUNT 条规则"
           echo "- 高级规则: $ADVANCED_COUNT 条"
           echo ""
@@ -873,16 +1018,19 @@ jobs:
           echo "- 语法验证和错误检查"
           echo "- 智能规则合并优化"
           echo "- 宽松验证标准 ($VALIDITY_THRESHOLD%阈值)"
+          echo "- 白名单自定义规则支持"
           echo ""
           echo "🌐 规则源更新:"
           echo "- 混合规则源: 包含6+第三方规则集合"
           echo "- 提供更全面的广告拦截覆盖"
           echo "- 高级规则语法支持"
+          echo "- 集成白名单自定义规则"
           echo ""
           echo "📈 生成报告:"
           echo "- 详细规则分类分析"
           echo "- 高级统计报告"
           echo "- 验证报告和冲突检测"
+          echo "- 白名单自定义规则统计"
           echo ""
           echo "✨ 拦截类型:"
           echo "• 开屏广告拦截"
@@ -899,6 +1047,7 @@ jobs:
           echo "• 自动冲突检测"
           echo "• 智能去重优化"
           echo "• 文件完整性检查"
+          echo "• 白名单自定义规则验证"
           echo ""
           echo "🔗 提交哈希: $COMMIT_HASH"
           echo "🤖 由 GitHub Actions 自动生成"
@@ -947,6 +1096,12 @@ jobs:
           WHITE_COUNT=0
         fi
         
+        # 获取白名单自定义规则数量
+        CUSTOM_WHITE_COUNT=0
+        if [ -f "rules/whitelist_custom.txt" ]; then
+          CUSTOM_WHITE_COUNT=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        fi
+        
         TOTAL_COUNT=$((BLACK_COUNT + WHITE_COUNT))
         
         if [ -d dist ] && [ -f dist/blacklist.txt ]; then
@@ -972,6 +1127,13 @@ jobs:
         |------|------|
         | 黑名单规则 | $BLACK_COUNT 条 |
         | 白名单规则 | $WHITE_COUNT 条 |
+        EOF
+        
+        if [ "$CUSTOM_WHITE_COUNT" -gt 0 ]; then
+          echo "| 白名单自定义规则 | $CUSTOM_WHITE_COUNT 条 |" >> "$SUMMARY_FILE"
+        fi
+        
+        cat >> "$SUMMARY_FILE" << EOF
         | 总规则数 | $TOTAL_COUNT 条 |
         | 高级规则 | $ADVANCED_COUNT 条 |
         
@@ -1038,6 +1200,19 @@ jobs:
           echo "- 没有生成文件" >> "$SUMMARY_FILE"
         fi
         
+        # 添加白名单自定义文件
+        if [ -f "rules/whitelist_custom.txt" ]; then
+          size=$(wc -c < "rules/whitelist_custom.txt" 2>/dev/null || echo "0")
+          if [ "$size" -ge 1048576 ]; then
+            human_size="$((size/1048576))MB"
+          elif [ "$size" -ge 1024 ]; then
+            human_size="$((size/1024))KB"
+          else
+            human_size="${size}B"
+          fi
+          echo "- **whitelist_custom.txt** - 用户自定义白名单规则 ($human_size)" >> "$SUMMARY_FILE"
+        fi
+        
         cat >> "$SUMMARY_FILE" << EOF
         
         #### 🔄 更新信息
@@ -1046,6 +1221,7 @@ jobs:
         - **更新频率**: 每8小时自动更新
         - **下次更新**: $NEXT_TIME (北京时间)
         - **验证标准**: 宽松验证（阈值${VALIDITY_THRESHOLD}%）
+        - **自定义白名单**: rules/whitelist_custom.txt
         
         #### 📋 步骤执行状态
         
@@ -1098,15 +1274,17 @@ jobs:
         
         echo "📊 生成文件:"
         echo "  • dist/blacklist.txt - 主拦截规则（含混合规则）"
-        echo "  • dist/whitelist.txt - 白名单规则"
+        echo "  • dist/whitelist.txt - 白名单规则（包含自定义）"
         echo "  • dist/metadata.json - 规则元数据"
         echo "  • dist/validation_report.json - 验证报告"
         echo "  • dist/advanced_statistics.md - 高级统计报告"
+        echo "  • rules/whitelist_custom.txt - 用户自定义白名单规则"
         echo ""
         
         echo "🌐 混合规则源:"
         echo "  • 包含6+第三方规则集合"
         echo "  • 提供更全面的广告拦截覆盖"
+        echo "  • 集成白名单自定义规则"
         echo ""
         
         echo "⚡ 高级功能:"
@@ -1116,11 +1294,12 @@ jobs:
         echo "  • 智能规则合并优化"
         echo "  • 详细统计报告生成"
         echo "  • 宽松验证标准 ($VALIDITY_THRESHOLD%阈值)"
+        echo "  • 白名单自定义规则支持"
         echo ""
         
         # 下次运行时间
         echo "🕐 下次自动运行:"
-        TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M (北京时间)'
+        TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-d %H:%M (北京时间)'
         echo ""
         
         echo "🎉 广告拦截规则更新流程已完成!"
