@@ -375,12 +375,12 @@ jobs:
         echo ""
         
         # 获取统计值
-        BLACK_COUNT=${{ steps.generate-files.outputs.black_rules || 0 }}
-        WHITE_COUNT=${{ steps.generate-files.outputs.white_rules || 0 }}
-        TOTAL_COUNT=${{ steps.generate-files.outputs.total_rules || 0 }}
-        ADVANCED_COUNT=${{ steps.generate-files.outputs.advanced_rules || 0 }}
-        BLACK_SIZE=${{ steps.generate-files.outputs.black_size || 0 }}
-        WHITE_SIZE=${{ steps.generate-files.outputs.white_size || 0 }}
+        BLACK_COUNT="${{ steps.generate-files.outputs.black_rules || 0 }}"
+        WHITE_COUNT="${{ steps.generate-files.outputs.white_rules || 0 }}"
+        TOTAL_COUNT="${{ steps.generate-files.outputs.total_rules || 0 }}"
+        ADVANCED_COUNT="${{ steps.generate-files.outputs.advanced_rules || 0 }}"
+        BLACK_SIZE="${{ steps.generate-files.outputs.black_size || 0 }}"
+        WHITE_SIZE="${{ steps.generate-files.outputs.white_size || 0 }}"
         
         # 时间信息
         CURRENT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')
@@ -427,13 +427,13 @@ jobs:
         echo "## 🔍 验证状态" >> dist/advanced_statistics.md
         echo "" >> dist/advanced_statistics.md
         
-        VALIDATION_EXIT_CODE=${{ steps.validate-rules.outputs.validation_exit_code || 0 }}
+        VALIDATION_EXIT_CODE="${{ steps.validate-rules.outputs.validation_exit_code || 0 }}"
         case $VALIDATION_EXIT_CODE in
           0)
             echo "✅ **验证通过** - 所有规则语法检查通过" >> dist/advanced_statistics.md
             ;;
           1)
-            echo "⚠️ **验证警告** - 规则有效性低于$VALIDITY_THRESHOLD%，但已通过宽松验证" >> dist/advanced_statistics.md
+            echo "⚠️ **验证警告** - 规则有效性低于${VALIDITY_THRESHOLD}%，但已通过宽松验证" >> dist/advanced_statistics.md
             ;;
           2)
             echo "❌ **验证失败** - 没有有效规则" >> dist/advanced_statistics.md
@@ -464,7 +464,7 @@ jobs:
         echo "- **更新频率**: 每8小时自动更新" >> dist/advanced_statistics.md
         echo "- **下次更新时间**: $NEXT_TIME (北京时间)" >> dist/advanced_statistics.md
         echo "- **数据来源**: 23+个主流广告规则源" >> dist/advanced_statistics.md
-        echo "- **验证标准**: 宽松验证（阈值$VALIDITY_THRESHOLD%）" >> dist/advanced_statistics.md
+        echo "- **验证标准**: 宽松验证（阈值${VALIDITY_THRESHOLD}%）" >> dist/advanced_statistics.md
         echo "" >> dist/advanced_statistics.md
         
         # 文件列表
@@ -681,7 +681,7 @@ jobs:
         echo "┌─────────────────────────────────────────┐"
         echo "│          🔄 检查变更                    │"
         echo "│    (自动调度与变更检测)                 │"
-        echo "└─────────────────────────────────────────┘"
+        echo "└─────────────────────────────────────────┐"
         echo ""
         
         echo "🔍 检查Git状态..."
@@ -741,10 +741,10 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         
         # 获取统计值
-        BLACK_COUNT=${{ steps.generate-files.outputs.black_rules || 0 }}
-        WHITE_COUNT=${{ steps.generate-files.outputs.white_rules || 0 }}
-        TOTAL_COUNT=${{ steps.generate-files.outputs.total_rules || 0 }}
-        ADVANCED_COUNT=${{ steps.generate-files.outputs.advanced_rules || 0 }}
+        BLACK_COUNT="${{ steps.generate-files.outputs.black_rules || 0 }}"
+        WHITE_COUNT="${{ steps.generate-files.outputs.white_rules || 0 }}"
+        TOTAL_COUNT="${{ steps.generate-files.outputs.total_rules || 0 }}"
+        ADVANCED_COUNT="${{ steps.generate-files.outputs.advanced_rules || 0 }}"
         COMMIT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M')
         COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
         
@@ -817,19 +817,20 @@ jobs:
         NEXT_TIME=$(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M:%S')
         
         # 获取统计
-        BLACK_COUNT=${{ steps.generate-files.outputs.black_rules || 0 }}
-        WHITE_COUNT=${{ steps.generate-files.outputs.white_rules || 0 }}
-        TOTAL_COUNT=${{ steps.generate-files.outputs.total_rules || 0 }}
-        ADVANCED_COUNT=${{ steps.generate-files.outputs.advanced_rules || 0 }}
+        BLACK_COUNT="${{ steps.generate-files.outputs.black_rules || 0 }}"
+        WHITE_COUNT="${{ steps.generate-files.outputs.white_rules || 0 }}"
+        TOTAL_COUNT="${{ steps.generate-files.outputs.total_rules || 0 }}"
+        ADVANCED_COUNT="${{ steps.generate-files.outputs.advanced_rules || 0 }}"
         
         # 验证状态
-        VALIDATION_EXIT_CODE=${{ steps.validate-rules.outputs.validation_exit_code || 0 }}
-        VALIDATION_PASSED=${{ steps.validate-rules.outputs.validation_passed || 'false' }}
+        VALIDATION_EXIT_CODE="${{ steps.validate-rules.outputs.validation_exit_code || 0 }}"
+        VALIDATION_PASSED="${{ steps.validate-rules.outputs.validation_passed || 'false' }}"
         
         # 总体状态
-        if [ "${{ job.status }}" = "success" ]; then
+        JOB_STATUS="${{ job.status }}"
+        if [ "$JOB_STATUS" = "success" ]; then
           echo "### ✅ 规则更新成功" >> $GITHUB_STEP_SUMMARY
-        elif [ "${{ job.status }}" = "failure" ]; then
+        elif [ "$JOB_STATUS" = "failure" ]; then
           echo "### ❌ 规则更新失败" >> $GITHUB_STEP_SUMMARY
         else
           echo "### ⚠️  规则更新完成（有警告）" >> $GITHUB_STEP_SUMMARY
@@ -857,7 +858,7 @@ jobs:
             echo "✅ **验证通过** - 所有规则语法检查通过" >> $GITHUB_STEP_SUMMARY
             ;;
           1)
-            echo "⚠️ **验证警告** - 规则有效性低于$VALIDITY_THRESHOLD%，但已通过宽松验证" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **验证警告** - 规则有效性低于${VALIDITY_THRESHOLD}%，但已通过宽松验证" >> $GITHUB_STEP_SUMMARY
             ;;
           2)
             echo "❌ **验证失败** - 没有有效规则" >> $GITHUB_STEP_SUMMARY
@@ -915,7 +916,7 @@ jobs:
         echo "- **更新时间**: $CURRENT_TIME (北京时间)" >> $GITHUB_STEP_SUMMARY
         echo "- **更新频率**: 每8小时自动更新" >> $GITHUB_STEP_SUMMARY
         echo "- **下次更新**: $NEXT_TIME (北京时间)" >> $GITHUB_STEP_SUMMARY
-        echo "- **验证标准**: 宽松验证（阈值$VALIDITY_THRESHOLD%）" >> $GITHUB_STEP_SUMMARY
+        echo "- **验证标准**: 宽松验证（阈值${VALIDITY_THRESHOLD}%）" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
         # 步骤执行状态
@@ -924,13 +925,41 @@ jobs:
         
         echo "| 步骤 | 状态 |" >> $GITHUB_STEP_SUMMARY
         echo "|------|------|" >> $GITHUB_STEP_SUMMARY
-        echo "| 规则源同步 | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| 规则合并 | $( [ '${{ steps.merge-rules.outputs.skip_merge }}' = 'true' ] && echo '⏭️' || echo '✅' ) |" >> $GITHUB_STEP_SUMMARY
-        echo "| 规则验证 | $( [ $VALIDATION_EXIT_CODE -eq 0 ] && echo '✅' || ( [ $VALIDATION_EXIT_CODE -eq 1 ] && echo '⚠️' || echo '❌' ) ) |" >> $GITHUB_STEP_SUMMARY
+        
+        # 判断各步骤状态
+        if [ -n "${{ steps.update-rules.outputs.update_success }}" ]; then
+          echo "| 规则源同步 | ✅ |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| 规则源同步 | ❌ |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ -n "${{ steps.merge-rules.outputs.skip_merge }}" ] && [ "${{ steps.merge-rules.outputs.skip_merge }}" = "true" ]; then
+          echo "| 规则合并 | ⏭️ |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| 规则合并 | ✅ |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        case $VALIDATION_EXIT_CODE in
+          0)
+            echo "| 规则验证 | ✅ |" >> $GITHUB_STEP_SUMMARY
+            ;;
+          1)
+            echo "| 规则验证 | ⚠️ |" >> $GITHUB_STEP_SUMMARY
+            ;;
+          *)
+            echo "| 规则验证 | ❌ |" >> $GITHUB_STEP_SUMMARY
+            ;;
+        esac
+        
         echo "| 规则优化 | ✅ |" >> $GITHUB_STEP_SUMMARY
         echo "| 文件生成 | ✅ |" >> $GITHUB_STEP_SUMMARY
         echo "| 质量检查 | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| 变更提交 | $( [ '${{ steps.check-changes.outputs.changes_detected }}' = 'true' ] && echo '✅' || echo '⏭️' ) |" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -n "${{ steps.check-changes.outputs.changes_detected }}" ] && [ "${{ steps.check-changes.outputs.changes_detected }}" = "true" ]; then
+          echo "| 变更提交 | ✅ |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| 变更提交 | ⏭️ |" >> $GITHUB_STEP_SUMMARY
+        fi
         
         echo "" >> $GITHUB_STEP_SUMMARY
         
@@ -984,9 +1013,10 @@ jobs:
         echo ""
         
         # 工作流状态
-        if [ "${{ job.status }}" = "success" ]; then
+        JOB_STATUS="${{ job.status }}"
+        if [ "$JOB_STATUS" = "success" ]; then
           echo "🎉 广告拦截规则已成功更新!"
-        elif [ "${{ job.status }}" = "failure" ]; then
+        elif [ "$JOB_STATUS" = "failure" ]; then
           echo "⚠️  广告拦截规则更新失败，请检查日志"
         else
           echo "ℹ️  广告拦截规则更新完成（有警告）"
