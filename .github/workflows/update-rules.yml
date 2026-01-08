@@ -65,7 +65,31 @@ jobs:
         echo "└─────────────────────────────────────────┘"
         echo ""
         
-        # 创建必要目录
+        # 清理并重新创建目录结构
+        echo "🧹 清理旧规则文件..."
+        
+        # 清空临时和中间目录，保留自定义规则
+        if [ -d dist ]; then
+          echo "  📁 清空 dist 目录..."
+          rm -rf dist/*
+        fi
+        
+        if [ -d rules/raw ]; then
+          echo "  📁 清空 rules/raw 目录..."
+          rm -rf rules/raw/*
+        fi
+        
+        if [ -d rules/processed ]; then
+          echo "  📁 清空 rules/processed 目录..."
+          rm -rf rules/processed/*
+        fi
+        
+        if [ -d docs/reports ]; then
+          echo "  📁 清空 docs/reports 目录..."
+          rm -rf docs/reports/*
+        fi
+        
+        # 创建必要目录（如果不存在）
         echo "📁 创建目录结构..."
         mkdir -p dist rules/raw rules/processed rules/custom docs/reports
         
@@ -102,6 +126,13 @@ jobs:
         echo "└─────────────────────────────────────────┘"
         echo ""
         
+        # 确保 raw 目录是干净的
+        echo "🧹 确保规则源目录干净..."
+        if [ -d rules/raw ]; then
+          find rules/raw -type f -name "*.txt" -delete 2>/dev/null || true
+          find rules/raw -type f -name "*.json" -delete 2>/dev/null || true
+        fi
+        
         echo "📊 开始规则源同步..."
         START_TIME=$(date +%s)
         
@@ -128,6 +159,26 @@ jobs:
           echo "❌ 规则更新脚本不存在"
           echo "update_success=false" >> "$GITHUB_OUTPUT"
           exit 1
+        fi
+        
+        # 显示下载的规则文件
+        echo "📄 下载的规则文件:"
+        if [ -d rules/raw ]; then
+          RAW_FILES=$(find rules/raw -type f -name "*.txt" | wc -l)
+          echo "  在 rules/raw 中找到 $RAW_FILES 个规则文件"
+          
+          # 显示前5个文件
+          find rules/raw -type f -name "*.txt" | head -5 | while read -r file; do
+            size=$(wc -c < "$file" 2>/dev/null || echo "0")
+            lines=$(wc -l < "$file" 2>/dev/null || echo "0")
+            echo "    📄 $(basename "$file") - ${lines}行, $((size/1024))KB"
+          done
+          
+          if [ $RAW_FILES -gt 5 ]; then
+            echo "    ... 还有 $((RAW_FILES - 5)) 个文件"
+          fi
+        else
+          echo "  ⚠️  rules/raw 目录不存在"
         fi
         
         # 检查生成的文件
@@ -176,6 +227,12 @@ jobs:
         echo "📄 找到 $CUSTOM_FILES 个自定义规则文件"
         
         START_TIME=$(date +%s)
+        
+        # 清理 processed 目录
+        if [ -d rules/processed ]; then
+          echo "🧹 清理处理过的规则目录..."
+          rm -rf rules/processed/*
+        fi
         
         # 运行规则合并脚本
         if [ -f scripts/merge_rules.py ]; then
