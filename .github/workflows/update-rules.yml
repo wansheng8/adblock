@@ -115,18 +115,18 @@ jobs:
           
           if [ $UPDATE_STATUS -eq 0 ]; then
             echo "✅ 规则源同步成功 (耗时 ${DURATION}秒)"
-            echo "update_success=true" >> $GITHUB_OUTPUT
+            echo "update_success=true" >> "$GITHUB_OUTPUT"
           elif [ $UPDATE_STATUS -eq 1 ]; then
             echo "⚠️  规则源同步部分失败，继续执行 (耗时 ${DURATION}秒)"
-            echo "update_success=true" >> $GITHUB_OUTPUT
+            echo "update_success=true" >> "$GITHUB_OUTPUT"
           else
             echo "❌ 规则源同步失败，退出码: $UPDATE_STATUS (耗时 ${DURATION}秒)"
-            echo "update_success=false" >> $GITHUB_OUTPUT
+            echo "update_success=false" >> "$GITHUB_OUTPUT"
             exit $UPDATE_STATUS
           fi
         else
           echo "❌ 规则更新脚本不存在"
-          echo "update_success=false" >> $GITHUB_OUTPUT
+          echo "update_success=false" >> "$GITHUB_OUTPUT"
           exit 1
         fi
         
@@ -137,7 +137,7 @@ jobs:
           echo "  ✅ blacklist.txt ($((BLACK_SIZE/1024))KB)"
         else
           echo "  ❌ blacklist.txt 生成失败"
-          echo "update_success=false" >> $GITHUB_OUTPUT
+          echo "update_success=false" >> "$GITHUB_OUTPUT"
           exit 1
         fi
         
@@ -162,14 +162,14 @@ jobs:
         echo "📂 检查自定义规则..."
         if [ ! -d "rules/custom" ]; then
           echo "ℹ️  自定义规则目录不存在，跳过合并步骤"
-          echo "skip_merge=true" >> $GITHUB_OUTPUT
+          echo "skip_merge=true" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         
         CUSTOM_FILES=$(find rules/custom -name "*.txt" -type f 2>/dev/null | wc -l)
         if [ $CUSTOM_FILES -eq 0 ]; then
           echo "ℹ️  未找到自定义规则文件，跳过合并步骤"
-          echo "skip_merge=true" >> $GITHUB_OUTPUT
+          echo "skip_merge=true" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         
@@ -187,14 +187,14 @@ jobs:
           
           if [ $MERGE_STATUS -eq 0 ]; then
             echo "✅ 规则合并成功 (耗时 ${DURATION}秒)"
-            echo "skip_merge=false" >> $GITHUB_OUTPUT
+            echo "skip_merge=false" >> "$GITHUB_OUTPUT"
           else
             echo "⚠️  规则合并过程出现警告 (耗时 ${DURATION}秒)"
-            echo "skip_merge=false" >> $GITHUB_OUTPUT
+            echo "skip_merge=false" >> "$GITHUB_OUTPUT"
           fi
         else
           echo "ℹ️  规则合并脚本不存在，跳过此步骤"
-          echo "skip_merge=true" >> $GITHUB_OUTPUT
+          echo "skip_merge=true" >> "$GITHUB_OUTPUT"
         fi
     
     - name: Step 4 - 规则验证器
@@ -214,15 +214,15 @@ jobs:
         
         if [ ! -f scripts/validate_rules.py ]; then
           echo "❌ 规则验证脚本不存在"
-          echo "validation_passed=false" >> $GITHUB_OUTPUT
-          echo "validation_exit_code=3" >> $GITHUB_OUTPUT
+          echo "validation_passed=false" >> "$GITHUB_OUTPUT"
+          echo "validation_exit_code=3" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         
         if [ ! -f dist/blacklist.txt ] || [ ! -s dist/blacklist.txt ]; then
           echo "❌ 黑名单文件不存在或为空"
-          echo "validation_passed=false" >> $GITHUB_OUTPUT
-          echo "validation_exit_code=4" >> $GITHUB_OUTPUT
+          echo "validation_passed=false" >> "$GITHUB_OUTPUT"
+          echo "validation_exit_code=4" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         
@@ -236,21 +236,21 @@ jobs:
         # 根据退出码判断验证结果
         if [ $VALIDATION_STATUS -eq 0 ]; then
           echo "✅ 规则验证通过 (耗时 ${DURATION}秒)"
-          echo "validation_passed=true" >> $GITHUB_OUTPUT
-          echo "validation_exit_code=0" >> $GITHUB_OUTPUT
+          echo "validation_passed=true" >> "$GITHUB_OUTPUT"
+          echo "validation_exit_code=0" >> "$GITHUB_OUTPUT"
         elif [ $VALIDATION_STATUS -eq 1 ]; then
           echo "⚠️  规则验证警告，有效性低于$VALIDITY_THRESHOLD% (耗时 ${DURATION}秒)"
           echo "ℹ️  注意：使用宽松验证标准，大多数规则被接受"
-          echo "validation_passed=true" >> $GITHUB_OUTPUT
-          echo "validation_exit_code=1" >> $GITHUB_OUTPUT
+          echo "validation_passed=true" >> "$GITHUB_OUTPUT"
+          echo "validation_exit_code=1" >> "$GITHUB_OUTPUT"
         elif [ $VALIDATION_STATUS -eq 2 ]; then
           echo "❌ 规则验证失败，没有有效规则 (耗时 ${DURATION}秒)"
-          echo "validation_passed=false" >> $GITHUB_OUTPUT
-          echo "validation_exit_code=2" >> $GITHUB_OUTPUT
+          echo "validation_passed=false" >> "$GITHUB_OUTPUT"
+          echo "validation_exit_code=2" >> "$GITHUB_OUTPUT"
         else
           echo "⚠️  规则验证过程出现未知错误，退出码: $VALIDATION_STATUS (耗时 ${DURATION}秒)"
-          echo "validation_passed=false" >> $GITHUB_OUTPUT
-          echo "validation_exit_code=$VALIDATION_STATUS" >> $GITHUB_OUTPUT
+          echo "validation_passed=false" >> "$GITHUB_OUTPUT"
+          echo "validation_exit_code=$VALIDATION_STATUS" >> "$GITHUB_OUTPUT"
         fi
         
         # 验证步骤不阻塞后续流程
@@ -355,13 +355,13 @@ jobs:
         fi
         
         # 输出到环境变量
-        echo "black_rules=$BLACK_RULES" >> $GITHUB_OUTPUT
-        echo "white_rules=$WHITE_RULES" >> $GITHUB_OUTPUT
-        echo "total_rules=$TOTAL_RULES" >> $GITHUB_OUTPUT
-        echo "advanced_rules=$ADVANCED_RULES" >> $GITHUB_OUTPUT
-        echo "black_size=$BLACK_SIZE" >> $GITHUB_OUTPUT
-        echo "white_size=$WHITE_SIZE" >> $GITHUB_OUTPUT
-        echo "total_size=$TOTAL_SIZE" >> $GITHUB_OUTPUT
+        echo "black_rules=$BLACK_RULES" >> "$GITHUB_OUTPUT"
+        echo "white_rules=$WHITE_RULES" >> "$GITHUB_OUTPUT"
+        echo "total_rules=$TOTAL_RULES" >> "$GITHUB_OUTPUT"
+        echo "advanced_rules=$ADVANCED_RULES" >> "$GITHUB_OUTPUT"
+        echo "black_size=$BLACK_SIZE" >> "$GITHUB_OUTPUT"
+        echo "white_size=$WHITE_SIZE" >> "$GITHUB_OUTPUT"
+        echo "total_size=$TOTAL_SIZE" >> "$GITHUB_OUTPUT"
         
         echo "✅ 文件统计完成"
     
@@ -389,17 +389,17 @@ jobs:
         # 文件大小格式化函数
         format_size() {
           local size=$1
-          if [ $size -ge $((1024*1024)) ]; then
+          if [ "$size" -ge $((1024*1024)) ]; then
             echo "$((size/1024/1024))MB"
-          elif [ $size -ge 1024 ]; then
+          elif [ "$size" -ge 1024 ]; then
             echo "$((size/1024))KB"
           else
             echo "${size}B"
           fi
         }
         
-        BLACK_SIZE_HUMAN=$(format_size $BLACK_SIZE)
-        WHITE_SIZE_HUMAN=$(format_size $WHITE_SIZE)
+        BLACK_SIZE_HUMAN=$(format_size "$BLACK_SIZE")
+        WHITE_SIZE_HUMAN=$(format_size "$WHITE_SIZE")
         TOTAL_SIZE_HUMAN=$(format_size $((BLACK_SIZE + WHITE_SIZE)))
         
         # 创建高级统计报告
@@ -428,7 +428,7 @@ jobs:
         echo "" >> dist/advanced_statistics.md
         
         VALIDATION_EXIT_CODE="${{ steps.validate-rules.outputs.validation_exit_code || 0 }}"
-        case $VALIDATION_EXIT_CODE in
+        case "$VALIDATION_EXIT_CODE" in
           0)
             echo "✅ **验证通过** - 所有规则语法检查通过" >> dist/advanced_statistics.md
             ;;
@@ -479,9 +479,9 @@ jobs:
           if [ -f "$file" ]; then
             filename=$(basename "$file")
             size=$(wc -c < "$file" 2>/dev/null || echo "0")
-            human_size=$(format_size $size)
+            human_size=$(format_size "$size")
             
-            case $filename in
+            case "$filename" in
               "blacklist.txt")
                 desc="主广告拦截规则"
                 ;;
@@ -532,7 +532,7 @@ jobs:
           else
             # 检查是否有内容（不只是注释）
             CONTENT_LINES=$(grep -v '^!' dist/blacklist.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-            if [ $CONTENT_LINES -eq 0 ]; then
+            if [ "$CONTENT_LINES" -eq 0 ]; then
               echo "⚠️  黑名单文件没有有效规则（只有注释）"
               WARNING_COUNT=$((WARNING_COUNT + 1))
             fi
@@ -547,9 +547,9 @@ jobs:
         for file in dist/*.txt dist/*.md 2>/dev/null; do
           if [ -f "$file" ]; then
             if file "$file" | grep -q "UTF-8"; then
-              echo "  ✅ $(basename $file): UTF-8 编码"
+              echo "  ✅ $(basename "$file"): UTF-8 编码"
             else
-              echo "  ⚠️  $(basename $file): 非UTF-8编码"
+              echo "  ⚠️  $(basename "$file"): 非UTF-8编码"
               WARNING_COUNT=$((WARNING_COUNT + 1))
             fi
           fi
@@ -581,7 +581,7 @@ jobs:
         echo "  ├── 警告: $WARNING_COUNT 个"
         echo "  └── 文件数: $(ls -1 dist/* 2>/dev/null | wc -l) 个"
         
-        if [ $ERROR_COUNT -gt 0 ]; then
+        if [ "$ERROR_COUNT" -gt 0 ]; then
           echo "⚠️  质量检查发现错误"
         else
           echo "✅ 质量检查通过"
@@ -615,15 +615,15 @@ jobs:
             size=$(wc -c < "$file" 2>/dev/null || echo "0")
             
             # 格式化大小
-            if [ $size -ge $((1024*1024)) ]; then
+            if [ "$size" -ge $((1024*1024)) ]; then
               human_size="$((size/1024/1024))MB"
-            elif [ $size -ge 1024 ]; then
+            elif [ "$size" -ge 1024 ]; then
               human_size="$((size/1024))KB"
             else
               human_size="${size}B"
             fi
             
-            case $filename in
+            case "$filename" in
               "blacklist.txt")
                 rules=$(grep -v '^!' "$file" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
                 echo "  📄 $filename"
@@ -696,17 +696,17 @@ jobs:
         # 检查是否有变更
         if git diff --cached --quiet; then
           echo "✅ 没有检测到变更"
-          echo "changes_detected=false" >> $GITHUB_OUTPUT
+          echo "changes_detected=false" >> "$GITHUB_OUTPUT"
           echo "✅ 工作流完成，无需提交"
         else
           echo "🔄 检测到规则变更"
-          echo "changes_detected=true" >> $GITHUB_OUTPUT
+          echo "changes_detected=true" >> "$GITHUB_OUTPUT"
           
           # 显示变更摘要
           echo ""
           echo "📋 变更摘要:"
           git diff --cached --name-only | while read -r file; do
-            if [[ $file == dist/* ]]; then
+            if [[ "$file" == dist/* ]]; then
               size=$(wc -c < "$file" 2>/dev/null || echo "0")
               if [ "$size" -ge 1024 ]; then
                 size_human="$((size/1024))KB"
@@ -714,11 +714,11 @@ jobs:
                 size_human="${size}B"
               fi
               echo "  📄 $file ($size_human)"
-            elif [[ $file == rules/* ]]; then
+            elif [[ "$file" == rules/* ]]; then
               echo "  📁 $file"
-            elif [[ $file == scripts/* ]]; then
+            elif [[ "$file" == scripts/* ]]; then
               echo "  🛠️  $file"
-            elif [[ $file == sources/* ]]; then
+            elif [[ "$file" == sources/* ]]; then
               echo "  🌐 $file"
             else
               echo "  📝 $file"
@@ -809,8 +809,8 @@ jobs:
     - name: Step 12 - 生成工作流摘要
       if: always()
       run: |
-        echo "## 📋 AdBlock 规则更新摘要" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📋 AdBlock 规则更新摘要" > "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
         
         # 获取时间
         CURRENT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')
@@ -826,122 +826,124 @@ jobs:
         VALIDATION_EXIT_CODE="${{ steps.validate-rules.outputs.validation_exit_code || 0 }}"
         VALIDATION_PASSED="${{ steps.validate-rules.outputs.validation_passed || 'false' }}"
         
-        # 总体状态 - 使用GITHUB_JOB_STATUS环境变量
-        echo "### 📊 规则更新摘要" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+        # 总体状态
+        echo "### 📊 规则更新摘要" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
         
         # 规则统计表格
-        echo "#### 📊 规则统计" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| 类型 | 数量 |" >> $GITHUB_STEP_SUMMARY
-        echo "|------|------|" >> $GITHUB_STEP_SUMMARY
-        echo "| 黑名单规则 | $BLACK_COUNT 条 |" >> $GITHUB_STEP_SUMMARY
-        echo "| 白名单规则 | $WHITE_COUNT 条 |" >> $GITHUB_STEP_SUMMARY
-        echo "| 总规则数 | $TOTAL_COUNT 条 |" >> $GITHUB_STEP_SUMMARY
-        echo "| 高级规则 | $ADVANCED_COUNT 条 |" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "#### 📊 规则统计" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "| 类型 | 数量 |" >> "$GITHUB_STEP_SUMMARY"
+        echo "|------|------|" >> "$GITHUB_STEP_SUMMARY"
+        echo "| 黑名单规则 | $BLACK_COUNT 条 |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| 白名单规则 | $WHITE_COUNT 条 |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| 总规则数 | $TOTAL_COUNT 条 |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| 高级规则 | $ADVANCED_COUNT 条 |" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
         
         # 验证状态
-        echo "#### 🔍 验证状态" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "#### 🔍 验证状态" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
         
-        case $VALIDATION_EXIT_CODE in
+        case "$VALIDATION_EXIT_CODE" in
           0)
-            echo "✅ **验证通过** - 所有规则语法检查通过" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **验证通过** - 所有规则语法检查通过" >> "$GITHUB_STEP_SUMMARY"
             ;;
           1)
-            echo "⚠️ **验证警告** - 规则有效性低于${VALIDITY_THRESHOLD}%，但已通过宽松验证" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **验证警告** - 规则有效性低于${VALIDITY_THRESHOLD}%，但已通过宽松验证" >> "$GITHUB_STEP_SUMMARY"
             ;;
           2)
-            echo "❌ **验证失败** - 没有有效规则" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **验证失败** - 没有有效规则" >> "$GITHUB_STEP_SUMMARY"
             ;;
           *)
-            echo "❓ **验证状态未知** - 退出码: $VALIDATION_EXIT_CODE" >> $GITHUB_STEP_SUMMARY
+            echo "❓ **验证状态未知** - 退出码: $VALIDATION_EXIT_CODE" >> "$GITHUB_STEP_SUMMARY"
             ;;
         esac
         
-        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "" >> "$GITHUB_STEP_SUMMARY"
         
         # 生成的文件
-        echo "#### 📁 生成的文件" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "#### 📁 生成的文件" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
         
-        for file in dist/* 2>/dev/null; do
-          if [ -f "$file" ]; then
-            filename=$(basename "$file")
-            size=$(wc -c < "$file" 2>/dev/null || echo "0")
-            
-            # 格式化大小
-            if [ "$size" -ge $((1024*1024)) ]; then
-              human_size="$((size/1024/1024))MB"
-            elif [ "$size" -ge 1024 ]; then
-              human_size="$((size/1024))KB"
-            else
-              human_size="${size}B"
+        if [ -d dist ]; then
+          for file in dist/*; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              size=$(wc -c < "$file" 2>/dev/null || echo "0")
+              
+              # 格式化大小
+              if [ "$size" -ge 1048576 ]; then
+                human_size="$((size/1048576))MB"
+              elif [ "$size" -ge 1024 ]; then
+                human_size="$((size/1024))KB"
+              else
+                human_size="${size}B"
+              fi
+              
+              case "$filename" in
+                "blacklist.txt")
+                  echo "- **blacklist.txt** - 主广告拦截规则 ($human_size)" >> "$GITHUB_STEP_SUMMARY"
+                  ;;
+                "whitelist.txt")
+                  echo "- **whitelist.txt** - 白名单例外规则 ($human_size)" >> "$GITHUB_STEP_SUMMARY"
+                  ;;
+                "metadata.json")
+                  echo "- **metadata.json** - 规则元数据 ($human_size)" >> "$GITHUB_STEP_SUMMARY"
+                  ;;
+                "validation_report.json")
+                  echo "- **validation_report.json** - 验证报告 ($human_size)" >> "$GITHUB_STEP_SUMMARY"
+                  ;;
+                "advanced_statistics.md")
+                  echo "- **advanced_statistics.md** - 高级统计报告 ($human_size)" >> "$GITHUB_STEP_SUMMARY"
+                  ;;
+              esac
             fi
-            
-            case $filename in
-              "blacklist.txt")
-                echo "- **blacklist.txt** - 主广告拦截规则 ($human_size)" >> $GITHUB_STEP_SUMMARY
-                ;;
-              "whitelist.txt")
-                echo "- **whitelist.txt** - 白名单例外规则 ($human_size)" >> $GITHUB_STEP_SUMMARY
-                ;;
-              "metadata.json")
-                echo "- **metadata.json** - 规则元数据 ($human_size)" >> $GITHUB_STEP_SUMMARY
-                ;;
-              "validation_report.json")
-                echo "- **validation_report.json** - 验证报告 ($human_size)" >> $GITHUB_STEP_SUMMARY
-                ;;
-              "advanced_statistics.md")
-                echo "- **advanced_statistics.md** - 高级统计报告 ($human_size)" >> $GITHUB_STEP_SUMMARY
-                ;;
-            esac
-          fi
-        done
+          done
+        else
+          echo "- 没有生成文件" >> "$GITHUB_STEP_SUMMARY"
+        fi
         
-        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "" >> "$GITHUB_STEP_SUMMARY"
         
         # 更新信息
-        echo "#### 🔄 更新信息" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "- **更新时间**: $CURRENT_TIME (北京时间)" >> $GITHUB_STEP_SUMMARY
-        echo "- **更新频率**: 每8小时自动更新" >> $GITHUB_STEP_SUMMARY
-        echo "- **下次更新**: $NEXT_TIME (北京时间)" >> $GITHUB_STEP_SUMMARY
-        echo "- **验证标准**: 宽松验证（阈值${VALIDITY_THRESHOLD}%）" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "#### 🔄 更新信息" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "- **更新时间**: $CURRENT_TIME (北京时间)" >> "$GITHUB_STEP_SUMMARY"
+        echo "- **更新频率**: 每8小时自动更新" >> "$GITHUB_STEP_SUMMARY"
+        echo "- **下次更新**: $NEXT_TIME (北京时间)" >> "$GITHUB_STEP_SUMMARY"
+        echo "- **验证标准**: 宽松验证（阈值${VALIDITY_THRESHOLD}%）" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
         
         # 步骤执行状态
-        echo "#### 📋 步骤执行状态" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "#### 📋 步骤执行状态" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
         
-        echo "| 步骤 | 状态 |" >> $GITHUB_STEP_SUMMARY
-        echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+        echo "| 步骤 | 状态 |" >> "$GITHUB_STEP_SUMMARY"
+        echo "|------|------|" >> "$GITHUB_STEP_SUMMARY"
+        echo "| 规则源同步 | ✅ |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| 规则合并 | ✅ |" >> "$GITHUB_STEP_SUMMARY"
         
-        # 判断各步骤状态 - 使用更简单的方式
-        echo "| 规则源同步 | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| 规则合并 | ✅ |" >> $GITHUB_STEP_SUMMARY
-        
-        case $VALIDATION_EXIT_CODE in
+        case "$VALIDATION_EXIT_CODE" in
           0)
-            echo "| 规则验证 | ✅ |" >> $GITHUB_STEP_SUMMARY
+            echo "| 规则验证 | ✅ |" >> "$GITHUB_STEP_SUMMARY"
             ;;
           1)
-            echo "| 规则验证 | ⚠️ |" >> $GITHUB_STEP_SUMMARY
+            echo "| 规则验证 | ⚠️ |" >> "$GITHUB_STEP_SUMMARY"
             ;;
           *)
-            echo "| 规则验证 | ❌ |" >> $GITHUB_STEP_SUMMARY
+            echo "| 规则验证 | ❌ |" >> "$GITHUB_STEP_SUMMARY"
             ;;
         esac
         
-        echo "| 规则优化 | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| 文件生成 | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| 质量检查 | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| 变更提交 | ✅ |" >> $GITHUB_STEP_SUMMARY
+        echo "| 规则优化 | ✅ |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| 文件生成 | ✅ |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| 质量检查 | ✅ |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| 变更提交 | ✅ |" >> "$GITHUB_STEP_SUMMARY"
         
-        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "" >> "$GITHUB_STEP_SUMMARY"
         
-        echo "🤖 由 GitHub Actions 自动执行" >> $GITHUB_STEP_SUMMARY
+        echo "🤖 由 GitHub Actions 自动执行" >> "$GITHUB_STEP_SUMMARY"
     
     - name: Step 13 - 工作流完成
       if: always()
