@@ -374,7 +374,7 @@ jobs:
         echo "└─────────────────────────────────────────┘"
         echo ""
         
-        # 获取统计值
+        # 获取统计值 - 这里需要特别注意 ${{ }} 的表达
         BLACK_COUNT="${{ steps.generate-files.outputs.black_rules || 0 }}"
         WHITE_COUNT="${{ steps.generate-files.outputs.white_rules || 0 }}"
         TOTAL_COUNT="${{ steps.generate-files.outputs.total_rules || 0 }}"
@@ -681,7 +681,7 @@ jobs:
         echo "┌─────────────────────────────────────────┐"
         echo "│          🔄 检查变更                    │"
         echo "│    (自动调度与变更检测)                 │"
-        echo "└─────────────────────────────────────────┐"
+        echo "└─────────────────────────────────────────┘"
         echo ""
         
         echo "🔍 检查Git状态..."
