@@ -827,10 +827,9 @@ jobs:
         VALIDATION_PASSED="${{ steps.validate-rules.outputs.validation_passed || 'false' }}"
         
         # 总体状态
-        JOB_STATUS="${{ job.status }}"
-        if [ "$JOB_STATUS" = "success" ]; then
+        if [ "${{ job.status }}" == "success" ]; then
           echo "### ✅ 规则更新成功" >> $GITHUB_STEP_SUMMARY
-        elif [ "$JOB_STATUS" = "failure" ]; then
+        elif [ "${{ job.status }}" == "failure" ]; then
           echo "### ❌ 规则更新失败" >> $GITHUB_STEP_SUMMARY
         else
           echo "### ⚠️  规则更新完成（有警告）" >> $GITHUB_STEP_SUMMARY
