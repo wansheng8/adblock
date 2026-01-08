@@ -572,7 +572,7 @@ jobs:
         # 2. 检查文件编码
         echo "📝 检查文件编码..."
         # 使用 find 命令来查找文件，避免 glob 扩展问题
-        find dist -maxdepth 1 -name "*.txt" -o -name "*.md" 2>/dev/null | while read -r file; do
+        find dist -maxdepth 1 \( -name "*.txt" -o -name "*.md" \) 2>/dev/null | while read -r file; do
           if [ -f "$file" ]; then
             if file "$file" | grep -q "UTF-8"; then
               echo "  ✅ $(basename "$file"): UTF-8 编码"
@@ -636,60 +636,66 @@ jobs:
         echo "📁 生成的文件详情:"
         echo ""
         
-        for file in dist/* 2>/dev/null; do
-          if [ -f "$file" ]; then
-            filename=$(basename "$file")
-            lines=$(wc -l < "$file" 2>/dev/null || echo "0")
-            size=$(wc -c < "$file" 2>/dev/null || echo "0")
-            
-            # 格式化大小
-            if [ "$size" -ge 1048576 ]; then
-              human_size="$((size/1048576))MB"
-            elif [ "$size" -ge 1024 ]; then
-              human_size="$((size/1024))KB"
-            else
-              human_size="${size}B"
+        # 检查dist目录是否存在
+        if [ -d dist ]; then
+          for file in dist/*; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              lines=$(wc -l < "$file" 2>/dev/null || echo "0")
+              size=$(wc -c < "$file" 2>/dev/null || echo "0")
+              
+              # 格式化大小
+              if [ "$size" -ge 1048576 ]; then
+                human_size="$((size/1048576))MB"
+              elif [ "$size" -ge 1024 ]; then
+                human_size="$((size/1024))KB"
+              else
+                human_size="${size}B"
+              fi
+              
+              case "$filename" in
+                "blacklist.txt")
+                  rules=$(grep -v '^!' "$file" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+                  echo "  📄 $filename"
+                  echo "     ├── 规则数: $rules 条"
+                  echo "     ├── 行数: $lines 行"
+                  echo "     └── 大小: $human_size"
+                  ;;
+                "whitelist.txt")
+                  rules=$(grep -v '^!' "$file" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+                  echo "  ✅ $filename"
+                  echo "     ├── 规则数: $rules 条"
+                  echo "     ├── 行数: $lines 行"
+                  echo "     └── 大小: $human_size"
+                  ;;
+                "metadata.json")
+                  echo "  📊 $filename"
+                  echo "     ├── 行数: $lines 行"
+                  echo "     └── 大小: $human_size"
+                  ;;
+                "validation_report.json")
+                  echo "  🔍 $filename"
+                  echo "     ├── 行数: $lines 行"
+                  echo "     └── 大小: $human_size"
+                  ;;
+                "advanced_statistics.md")
+                  echo "  📈 $filename"
+                  echo "     ├── 行数: $lines 行"
+                  echo "     └── 大小: $human_size"
+                  ;;
+                *)
+                  echo "  📝 $filename"
+                  echo "     ├── 行数: $lines 行"
+                  echo "     └── 大小: $human_size"
+                  ;;
+              esac
+              echo ""
             fi
-            
-            case "$filename" in
-              "blacklist.txt")
-                rules=$(grep -v '^!' "$file" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-                echo "  📄 $filename"
-                echo "     ├── 规则数: $rules 条"
-                echo "     ├── 行数: $lines 行"
-                echo "     └── 大小: $human_size"
-                ;;
-              "whitelist.txt")
-                rules=$(grep -v '^!' "$file" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-                echo "  ✅ $filename"
-                echo "     ├── 规则数: $rules 条"
-                echo "     ├── 行数: $lines 行"
-                echo "     └── 大小: $human_size"
-                ;;
-              "metadata.json")
-                echo "  📊 $filename"
-                echo "     ├── 行数: $lines 行"
-                echo "     └── 大小: $human_size"
-                ;;
-              "validation_report.json")
-                echo "  🔍 $filename"
-                echo "     ├── 行数: $lines 行"
-                echo "     └── 大小: $human_size"
-                ;;
-              "advanced_statistics.md")
-                echo "  📈 $filename"
-                echo "     ├── 行数: $lines 行"
-                echo "     └── 大小: $human_size"
-                ;;
-              *)
-                echo "  📝 $filename"
-                echo "     ├── 行数: $lines 行"
-                echo "     └── 大小: $human_size"
-                ;;
-            esac
-            echo ""
-          fi
-        done
+          done
+        else
+          echo "⚠️  dist目录不存在，没有生成文件"
+          echo ""
+        fi
         
         # 显示目录大小
         if [ -d dist ]; then
@@ -734,7 +740,7 @@ jobs:
           echo ""
           echo "📋 变更摘要:"
           git diff --cached --name-only | while read -r file; do
-            if [[ "$file" == dist/* ]]; then
+            if echo "$file" | grep -q "^dist/"; then
               size=$(wc -c < "$file" 2>/dev/null || echo "0")
               if [ "$size" -ge 1024 ]; then
                 size_human="$((size/1024))KB"
@@ -742,11 +748,11 @@ jobs:
                 size_human="${size}B"
               fi
               echo "  📄 $file ($size_human)"
-            elif [[ "$file" == rules/* ]]; then
+            elif echo "$file" | grep -q "^rules/"; then
               echo "  📁 $file"
-            elif [[ "$file" == scripts/* ]]; then
+            elif echo "$file" | grep -q "^scripts/"; then
               echo "  🛠️  $file"
-            elif [[ "$file" == sources/* ]]; then
+            elif echo "$file" | grep -q "^sources/"; then
               echo "  🌐 $file"
             else
               echo "  📝 $file"
@@ -768,11 +774,29 @@ jobs:
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         
-        # 获取统计值
-        BLACK_COUNT="${{ steps.generate-files.outputs.black_rules || 0 }}"
-        WHITE_COUNT="${{ steps.generate-files.outputs.white_rules || 0 }}"
-        TOTAL_COUNT="${{ steps.generate-files.outputs.total_rules || 0 }}"
-        ADVANCED_COUNT="${{ steps.generate-files.outputs.advanced_rules || 0 }}"
+        # 获取统计值（设置默认值）
+        BLACK_COUNT="${BLACK_COUNT:-0}"
+        WHITE_COUNT="${WHITE_COUNT:-0}"
+        TOTAL_COUNT="${TOTAL_COUNT:-0}"
+        ADVANCED_COUNT="${ADVANCED_COUNT:-0}"
+        
+        # 从环境变量获取（如果在之前的步骤中设置了）
+        if [ -n "${{ steps.generate-files.outputs.black_rules }}" ]; then
+          BLACK_COUNT="${{ steps.generate-files.outputs.black_rules }}"
+        fi
+        
+        if [ -n "${{ steps.generate-files.outputs.white_rules }}" ]; then
+          WHITE_COUNT="${{ steps.generate-files.outputs.white_rules }}"
+        fi
+        
+        if [ -n "${{ steps.generate-files.outputs.total_rules }}" ]; then
+          TOTAL_COUNT="${{ steps.generate-files.outputs.total_rules }}"
+        fi
+        
+        if [ -n "${{ steps.generate-files.outputs.advanced_rules }}" ]; then
+          ADVANCED_COUNT="${{ steps.generate-files.outputs.advanced_rules }}"
+        fi
+        
         COMMIT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M')
         COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
         
@@ -826,13 +850,19 @@ jobs:
         
         # 使用文件内容进行提交
         echo "💾 提交变更..."
-        git commit -F /tmp/commit_message.txt
-        
-        echo "📤 推送到远程仓库..."
-        git push origin HEAD:main
-        
-        echo "✅ 变更已提交到 GitHub"
-        echo "🔗 查看提交: https://github.com/${{ github.repository }}/commit/$(git rev-parse HEAD)"
+        if git commit -F /tmp/commit_message.txt; then
+          echo "📤 推送到远程仓库..."
+          if git push origin HEAD:main; then
+            echo "✅ 变更已提交到 GitHub"
+            echo "🔗 查看提交: https://github.com/${{ github.repository }}/commit/$(git rev-parse HEAD)"
+          else
+            echo "❌ 推送失败，请检查权限"
+            exit 1
+          fi
+        else
+          echo "❌ 提交失败，可能没有变更需要提交"
+          exit 0
+        fi
     
     - name: Step 12 - 生成工作流摘要
       if: always()
@@ -848,13 +878,13 @@ jobs:
         NEXT_TIME=$(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M:%S')
         
         # 获取统计（直接从文件读取，避免复杂的变量传递）
-        if [ -f dist/blacklist.txt ]; then
+        if [ -d dist ] && [ -f dist/blacklist.txt ]; then
           BLACK_COUNT=$(grep -v '^!' dist/blacklist.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
         else
           BLACK_COUNT=0
         fi
         
-        if [ -f dist/whitelist.txt ]; then
+        if [ -d dist ] && [ -f dist/whitelist.txt ]; then
           WHITE_COUNT=$(grep -v '^!' dist/whitelist.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
         else
           WHITE_COUNT=0
@@ -862,7 +892,7 @@ jobs:
         
         TOTAL_COUNT=$((BLACK_COUNT + WHITE_COUNT))
         
-        if [ -f dist/blacklist.txt ]; then
+        if [ -d dist ] && [ -f dist/blacklist.txt ]; then
           ADVANCED_COUNT=$(grep -c -E '#@#|#?#|\$\$' dist/blacklist.txt 2>/dev/null || echo "0")
         else
           ADVANCED_COUNT=0
@@ -874,23 +904,23 @@ jobs:
           VALIDATION_EXIT_CODE="${{ steps.validate-rules.outputs.validation_exit_code }}"
         fi
         
-        echo "### 📊 规则更新摘要" >> "$SUMMARY_FILE"
-        echo "" >> "$SUMMARY_FILE"
+        # 使用heredoc简化输出
+        cat >> "$SUMMARY_FILE" << EOF
         
-        # 规则统计表格
-        echo "#### 📊 规则统计" >> "$SUMMARY_FILE"
-        echo "" >> "$SUMMARY_FILE"
-        echo "| 类型 | 数量 |" >> "$SUMMARY_FILE"
-        echo "|------|------|" >> "$SUMMARY_FILE"
-        echo "| 黑名单规则 | $BLACK_COUNT 条 |" >> "$SUMMARY_FILE"
-        echo "| 白名单规则 | $WHITE_COUNT 条 |" >> "$SUMMARY_FILE"
-        echo "| 总规则数 | $TOTAL_COUNT 条 |" >> "$SUMMARY_FILE"
-        echo "| 高级规则 | $ADVANCED_COUNT 条 |" >> "$SUMMARY_FILE"
-        echo "" >> "$SUMMARY_FILE"
+        ### 📊 规则更新摘要
         
-        # 验证状态
-        echo "#### 🔍 验证状态" >> "$SUMMARY_FILE"
-        echo "" >> "$SUMMARY_FILE"
+        #### 📊 规则统计
+        
+        | 类型 | 数量 |
+        |------|------|
+        | 黑名单规则 | $BLACK_COUNT 条 |
+        | 白名单规则 | $WHITE_COUNT 条 |
+        | 总规则数 | $TOTAL_COUNT 条 |
+        | 高级规则 | $ADVANCED_COUNT 条 |
+        
+        #### 🔍 验证状态
+        
+        EOF
         
         case "$VALIDATION_EXIT_CODE" in
           0)
@@ -907,11 +937,11 @@ jobs:
             ;;
         esac
         
-        echo "" >> "$SUMMARY_FILE"
+        cat >> "$SUMMARY_FILE" << EOF
         
-        # 生成的文件
-        echo "#### 📁 生成的文件" >> "$SUMMARY_FILE"
-        echo "" >> "$SUMMARY_FILE"
+        #### 📁 生成的文件
+        
+        EOF
         
         if [ -d dist ]; then
           for file in dist/*; do
@@ -951,25 +981,22 @@ jobs:
           echo "- 没有生成文件" >> "$SUMMARY_FILE"
         fi
         
-        echo "" >> "$SUMMARY_FILE"
+        cat >> "$SUMMARY_FILE" << EOF
         
-        # 更新信息
-        echo "#### 🔄 更新信息" >> "$SUMMARY_FILE"
-        echo "" >> "$SUMMARY_FILE"
-        echo "- **更新时间**: $CURRENT_TIME (北京时间)" >> "$SUMMARY_FILE"
-        echo "- **更新频率**: 每8小时自动更新" >> "$SUMMARY_FILE"
-        echo "- **下次更新**: $NEXT_TIME (北京时间)" >> "$SUMMARY_FILE"
-        echo "- **验证标准**: 宽松验证（阈值${VALIDITY_THRESHOLD}%）" >> "$SUMMARY_FILE"
-        echo "" >> "$SUMMARY_FILE"
+        #### 🔄 更新信息
         
-        # 步骤执行状态
-        echo "#### 📋 步骤执行状态" >> "$SUMMARY_FILE"
-        echo "" >> "$SUMMARY_FILE"
+        - **更新时间**: $CURRENT_TIME (北京时间)
+        - **更新频率**: 每8小时自动更新
+        - **下次更新**: $NEXT_TIME (北京时间)
+        - **验证标准**: 宽松验证（阈值${VALIDITY_THRESHOLD}%）
         
-        echo "| 步骤 | 状态 |" >> "$SUMMARY_FILE"
-        echo "|------|------|" >> "$SUMMARY_FILE"
-        echo "| 规则源同步 | ✅ |" >> "$SUMMARY_FILE"
-        echo "| 规则合并 | ✅ |" >> "$SUMMARY_FILE"
+        #### 📋 步骤执行状态
+        
+        | 步骤 | 状态 |
+        |------|------|
+        | 规则源同步 | ✅ |
+        | 规则合并 | ✅ |
+        EOF
         
         case "$VALIDATION_EXIT_CODE" in
           0)
@@ -983,14 +1010,14 @@ jobs:
             ;;
         esac
         
-        echo "| 规则优化 | ✅ |" >> "$SUMMARY_FILE"
-        echo "| 文件生成 | ✅ |" >> "$SUMMARY_FILE"
-        echo "| 质量检查 | ✅ |" >> "$SUMMARY_FILE"
-        echo "| 变更提交 | ✅ |" >> "$SUMMARY_FILE"
+        cat >> "$SUMMARY_FILE" << EOF
+        | 规则优化 | ✅ |
+        | 文件生成 | ✅ |
+        | 质量检查 | ✅ |
+        | 变更提交 | ✅ |
         
-        echo "" >> "$SUMMARY_FILE"
-        
-        echo "🤖 由 GitHub Actions 自动执行" >> "$SUMMARY_FILE"
+        🤖 由 GitHub Actions 自动执行
+        EOF
     
     - name: Step 13 - 工作流完成
       if: always()
