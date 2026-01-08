@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-01-08 11:39:45",
+  "timestamp": "2026-01-08 12:08:52",
   "files": {
     "blacklist": {
-      "total": 2786433,
+      "total": 2786439,
       "valid": 1322716,
-      "adjusted_valid": 2286364,
-      "invalid": 1463717,
+      "adjusted_valid": 2286367,
+      "invalid": 1463723,
       "details": [
         {
           "line": 2280,
@@ -199,7 +199,7 @@
       "rule_types": {
         "comment": 7594,
         "element_hiding": 51193,
-        "unknown": 1927296,
+        "unknown": 1927302,
         "modifier_rule": 246164,
         "hosts_rule": 543301,
         "domain_block": 10604,
@@ -225,17 +225,17 @@
     }
   },
   "summary": {
-    "total_rules": 2802333,
+    "total_rules": 2802339,
     "valid_rules": 1338616,
-    "adjusted_valid_rules": 2302264,
-    "invalid_rules": 1463717,
-    "validity_rate": 47.767913377889066,
-    "adjusted_validity_rate": 82.15526134831228
+    "adjusted_valid_rules": 2302267,
+    "invalid_rules": 1463723,
+    "validity_rate": 47.76781110351032,
+    "adjusted_validity_rate": 82.15519250169233
   },
   "rule_type_distribution": {
     "comment": 7619,
     "element_hiding": 51193,
-    "unknown": 1928408,
+    "unknown": 1928414,
     "modifier_rule": 246658,
     "hosts_rule": 543301,
     "domain_block": 24873,
