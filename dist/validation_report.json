@@ -1,0 +1,248 @@
+{
+  "timestamp": "2026-01-08 06:39:35",
+  "files": {
+    "blacklist": {
+      "total": 2786531,
+      "valid": 1322863,
+      "adjusted_valid": 2286560,
+      "invalid": 1463668,
+      "details": [
+        {
+          "line": 2280,
+          "rule": "bloomberg.com#%#(()=>{const e=\"3.453.0\",t=function(){},s={},n=function(e){const ...",
+          "errors": [
+            "规则过长 (8023 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        },
+        {
+          "line": 12890,
+          "rule": "$document,replace=/<script(?: data-cfasync=\"false\")?(?: nowprocket)?(?: type=\"[a...",
+          "errors": [
+            "规则过长 (22606 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        },
+        {
+          "line": 12892,
+          "rule": "$document,replace=/<script(?: data-cfasync=\"false\")?(?: nowprocket)?(?: type=\"[a...",
+          "errors": [
+            "规则过长 (9732 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        },
+        {
+          "line": 13113,
+          "rule": "0rechner.de,1mmo.at,1pmobile.com,4-pfoten-fuer-sie.de,4dimension.de,a1.si,abser-...",
+          "errors": [
+            "规则过长 (7653 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        },
+        {
+          "line": 13114,
+          "rule": "0rechner.de,1mmo.at,1pmobile.com,4-pfoten-fuer-sie.de,4dimension.de,a1.si,abser-...",
+          "errors": [
+            "规则过长 (7662 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        },
+        {
+          "line": 17680,
+          "rule": "leader-t.ru,pos.gosuslugi.ru,recyclemap.ru,apkvision.org,kinoteatr.ru,filoz.net,...",
+          "errors": [
+            "规则过长 (16453 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        },
+        {
+          "line": 18803,
+          "rule": "ogretmenlersitesi.com,siirthaberci.com,base.shop,ramen.community,cohenmilstein.c...",
+          "errors": [
+            "规则过长 (5311 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        },
+        {
+          "line": 21298,
+          "rule": "vidnest.io,shah4u.*,mangalivre.tv,sd4u.net,nonixxx.cc,pelisflix1.digital,stmup.*...",
+          "errors": [
+            "规则过长 (9052 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        },
+        {
+          "line": 21299,
+          "rule": "vidnest.io,shah4u.*,mangalivre.tv,sd4u.net,nonixxx.cc,pelisflix1.digital,stmup.*...",
+          "errors": [
+            "规则过长 (9074 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        },
+        {
+          "line": 22829,
+          "rule": "/:\\/\\/yandex\\.(ru|com)$/$app=~acr.browser.barebones|~acr.browser.lightning|~cn.m...",
+          "errors": [
+            "规则过长 (5543 字符)"
+          ],
+          "warnings": []
+        },
+        {
+          "line": 22830,
+          "rule": "/:\\/\\/yandex\\.(ru|com)/$app=ab.exchangerate|altergames.carlauncher|altergames.in...",
+          "errors": [
+            "规则过长 (9074 字符)"
+          ],
+          "warnings": []
+        },
+        {
+          "line": 22857,
+          "rule": "/^5\\.255\\.255\\.77/$network,app=ab.exchangerate|altergames.carlauncher|altergames...",
+          "errors": [
+            "规则过长 (9077 字符)"
+          ],
+          "warnings": []
+        },
+        {
+          "line": 22858,
+          "rule": "/^5\\.255\\.255\\.77/$network,app=~acr.browser.barebones|~acr.browser.lightning|~cn...",
+          "errors": [
+            "规则过长 (5545 字符)"
+          ],
+          "warnings": []
+        },
+        {
+          "line": 22859,
+          "rule": "/^77\\.88\\.(4|5){2}.(5|8){2}/$network,app=ab.exchangerate|altergames.carlauncher|...",
+          "errors": [
+            "规则过长 (9087 字符)"
+          ],
+          "warnings": []
+        },
+        {
+          "line": 22860,
+          "rule": "/^77\\.88\\.(4|5){2}.(5|8){2}/$network,app=~acr.browser.barebones|~acr.browser.lig...",
+          "errors": [
+            "规则过长 (5555 字符)"
+          ],
+          "warnings": []
+        },
+        {
+          "line": 28585,
+          "rule": "01net.it,2gb.com,4investors.de,aawsat.com,addictivetips.com,administradores.com....",
+          "errors": [
+            "规则过长 (5208 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        },
+        {
+          "line": 28590,
+          "rule": "1000rr.net,10thcivicforum.com,1130cc.com,123easy4me.com,124spider.org,125ccsport...",
+          "errors": [
+            "规则过长 (22438 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        },
+        {
+          "line": 28591,
+          "rule": "1000rr.net,10thcivicforum.com,1130cc.com,123easy4me.com,124spider.org,125ccsport...",
+          "errors": [
+            "规则过长 (22453 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        },
+        {
+          "line": 28592,
+          "rule": "1000rr.net,10thcivicforum.com,1130cc.com,123easy4me.com,124spider.org,125ccsport...",
+          "errors": [
+            "规则过长 (22424 字符)"
+          ],
+          "warnings": [
+            "修饰符格式可能有误"
+          ]
+        },
+        {
+          "line": 28601,
+          "rule": "112brabant.nl,112nederland.nl,12tomatoes.com,20minutes.fr,20minutos.es,6abc.com,...",
+          "errors": [
+            "规则过长 (7996 字符)"
+          ],
+          "warnings": [
+            "未知规则格式"
+          ]
+        }
+      ],
+      "rule_types": {
+        "comment": 7595,
+        "element_hiding": 51193,
+        "unknown": 1927394,
+        "modifier_rule": 246164,
+        "hosts_rule": 543301,
+        "domain_block": 10603,
+        "adblock_comment": 78,
+        "element_hiding_exception": 50,
+        "element_removal": 18,
+        "domain_restriction": 13,
+        "regex_rule": 122
+      }
+    },
+    "whitelist": {
+      "total": 15900,
+      "valid": 15900,
+      "adjusted_valid": 15900,
+      "invalid": 0,
+      "details": [],
+      "rule_types": {
+        "comment": 25,
+        "modifier_rule": 494,
+        "unknown": 1112,
+        "domain_block": 14269
+      }
+    }
+  },
+  "summary": {
+    "total_rules": 2802431,
+    "valid_rules": 1338763,
+    "adjusted_valid_rules": 2302460,
+    "invalid_rules": 1463668,
+    "validity_rate": 47.77148839703814,
+    "adjusted_validity_rate": 82.15938233626447
+  },
+  "rule_type_distribution": {
+    "comment": 7620,
+    "element_hiding": 51193,
+    "unknown": 1928506,
+    "modifier_rule": 246658,
+    "hosts_rule": 543301,
+    "domain_block": 24872,
+    "adblock_comment": 78,
+    "element_hiding_exception": 50,
+    "element_removal": 18,
+    "domain_restriction": 13,
+    "regex_rule": 122
+  }
+}
