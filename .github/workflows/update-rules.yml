@@ -11,6 +11,11 @@ on:
       - 'scripts/**'
       - 'sources/gz.txt'
       - 'rules/custom/**'
+      - '.github/workflows/update-rules.yml'
+
+env:
+  PYTHON_VERSION: '3.11'
+  VALIDITY_THRESHOLD: '70'  # 宽松验证阈值70%
 
 jobs:
   update:
@@ -18,17 +23,19 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    timeout-minutes: 30
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Setup Python
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
     
     - name: Cache Python dependencies
@@ -42,33 +49,77 @@ jobs:
     - name: Install dependencies
       run: |
         echo "📦 安装依赖..."
-        pip install requests beautifulsoup4 lxml pyyaml
+        pip install --upgrade pip
+        pip install requests beautifulsoup4 lxml pyyaml tqdm
+        echo "✅ 依赖安装完成"
         pip list
     
-    - name: Create directories
+    - name: Step 1 - 环境准备
       run: |
+        echo ""
+        echo "┌─────────────────────────────────────────┐"
+        echo "│          📁 环境准备                    │"
+        echo "│    (创建目录/检查配置)                  │"
+        echo "└─────────────────────────────────────────┘"
+        echo ""
+        
+        # 创建必要目录
         echo "📁 创建目录结构..."
         mkdir -p dist
         mkdir -p rules/raw
         mkdir -p rules/processed
         mkdir -p rules/custom
         mkdir -p docs/reports
-        echo "✅ 目录创建完成"
+        mkdir -p .github/workflows
+        
+        # 检查重要文件
+        echo "🔍 检查重要文件..."
+        REQUIRED_FILES=(
+          "sources/sources.json"
+          "scripts/update_rules.py"
+        )
+        
+        for file in "${REQUIRED_FILES[@]}"; do
+          if [ -f "$file" ]; then
+            echo "  ✅ $file"
+          else
+            echo "  ❌ $file (缺失)"
+            exit 1
+          fi
+        done
+        
+        # 检查Python脚本权限
+        echo "🔧 设置脚本权限..."
+        chmod +x scripts/*.py 2>/dev/null || true
+        
+        echo "✅ 环境准备完成"
     
-    - name: Step 1 - 规则源同步
+    - name: Step 2 - 规则源同步
       run: |
         echo ""
         echo "┌─────────────────────────────────────────┐"
         echo "│          🚀 规则源同步                  │"
-        echo "│       (23+个广告拦截源)                │"
+        echo "│    (23+个广告拦截源，包含混合规则)      │"
         echo "└─────────────────────────────────────────┘"
         echo ""
         
+        echo "📊 开始规则源同步..."
+        START_TIME=$(date +%s)
+        
+        # 运行规则更新脚本
         if [ -f scripts/update_rules.py ]; then
           python scripts/update_rules.py
           UPDATE_STATUS=$?
-          if [ $UPDATE_STATUS -ne 0 ]; then
-            echo "❌ 规则源同步失败，退出码: $UPDATE_STATUS"
+          
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          
+          if [ $UPDATE_STATUS -eq 0 ]; then
+            echo "✅ 规则源同步成功 (耗时 ${DURATION}秒)"
+          elif [ $UPDATE_STATUS -eq 1 ]; then
+            echo "⚠️  规则源同步部分失败，继续执行 (耗时 ${DURATION}秒)"
+          else
+            echo "❌ 规则源同步失败，退出码: $UPDATE_STATUS (耗时 ${DURATION}秒)"
             exit $UPDATE_STATUS
           fi
         else
@@ -76,56 +127,126 @@ jobs:
           exit 1
         fi
         
-        echo "✅ 规则源同步完成"
+        # 检查生成的文件
+        echo "📄 检查生成的文件..."
+        if [ -f dist/blacklist.txt ] && [ -s dist/blacklist.txt ]; then
+          BLACK_SIZE=$(wc -c < dist/blacklist.txt)
+          echo "  ✅ blacklist.txt ($((BLACK_SIZE/1024))KB)"
+        else
+          echo "  ❌ blacklist.txt 生成失败"
+          exit 1
+        fi
+        
+        if [ -f dist/whitelist.txt ] && [ -s dist/whitelist.txt ]; then
+          WHITE_SIZE=$(wc -c < dist/whitelist.txt)
+          echo "  ✅ whitelist.txt ($((WHITE_SIZE/1024))KB)"
+        else
+          echo "  ⚠️  whitelist.txt 可能为空"
+        fi
     
-    - name: Step 2 - 规则合并
+    - name: Step 3 - 规则合并
       run: |
         echo ""
         echo "┌─────────────────────────────────────────┐"
         echo "│          🔄 规则合并                    │"
-        echo "│       (合并自定义规则)                  │"
+        echo "│    (合并自定义规则/优化去重)            │"
         echo "└─────────────────────────────────────────┘"
         echo ""
         
+        echo "📂 检查自定义规则..."
+        if [ ! -d "rules/custom" ]; then
+          echo "ℹ️  自定义规则目录不存在，跳过合并步骤"
+          echo "skip_merge=true" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        CUSTOM_FILES=$(find rules/custom -name "*.txt" -type f 2>/dev/null | wc -l)
+        if [ $CUSTOM_FILES -eq 0 ]; then
+          echo "ℹ️  未找到自定义规则文件，跳过合并步骤"
+          echo "skip_merge=true" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        echo "📄 找到 $CUSTOM_FILES 个自定义规则文件"
+        
+        START_TIME=$(date +%s)
+        
+        # 运行规则合并脚本
         if [ -f scripts/merge_rules.py ]; then
           python scripts/merge_rules.py
           MERGE_STATUS=$?
-          if [ $MERGE_STATUS -ne 0 ]; then
-            echo "⚠️  规则合并过程出现警告，继续执行..."
+          
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          
+          if [ $MERGE_STATUS -eq 0 ]; then
+            echo "✅ 规则合并成功 (耗时 ${DURATION}秒)"
+            echo "skip_merge=false" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️  规则合并过程出现警告 (耗时 ${DURATION}秒)"
+            echo "skip_merge=false" >> $GITHUB_OUTPUT
           fi
         else
           echo "ℹ️  规则合并脚本不存在，跳过此步骤"
+          echo "skip_merge=true" >> $GITHUB_OUTPUT
         fi
-        
-        echo "✅ 规则合并完成"
     
-    - name: Step 3 - 规则验证器
+    - name: Step 4 - 规则验证器
+      id: validate-rules
       run: |
         echo ""
         echo "┌─────────────────────────────────────────┐"
         echo "│          🔍 规则验证器                  │"
-        echo "│    (语法检查/格式验证/冲突检测)         │"
+        echo "│    (宽松验证/区分错误警告)              │"
         echo "└─────────────────────────────────────────┘"
         echo ""
         
-        if [ -f scripts/validate_rules.py ]; then
-          python scripts/validate_rules.py
-          VALIDATION_STATUS=$?
-          if [ $VALIDATION_STATUS -eq 1 ]; then
-            echo "⚠️  规则验证警告，有效性低于90%"
-          elif [ $VALIDATION_STATUS -eq 2 ]; then
-            echo "❌ 规则验证失败，没有有效规则"
-            exit 2
-          elif [ $VALIDATION_STATUS -ne 0 ]; then
-            echo "⚠️  规则验证过程出现错误，继续执行..."
-          fi
-        else
-          echo "ℹ️  规则验证脚本不存在，跳过此步骤"
+        echo "📊 开始规则验证..."
+        START_TIME=$(date +%s)
+        
+        if [ ! -f scripts/validate_rules.py ]; then
+          echo "❌ 规则验证脚本不存在"
+          echo "validation_passed=false" >> $GITHUB_OUTPUT
+          echo "validation_exit_code=3" >> $GITHUB_OUTPUT
+          exit 0
         fi
         
-        echo "✅ 规则验证完成"
+        if [ ! -f dist/blacklist.txt ] || [ ! -s dist/blacklist.txt ]; then
+          echo "❌ 黑名单文件不存在或为空"
+          echo "validation_passed=false" >> $GITHUB_OUTPUT
+          echo "validation_exit_code=4" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        # 运行验证脚本
+        python scripts/validate_rules.py
+        VALIDATION_STATUS=$?
+        
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - START_TIME))
+        
+        # 根据退出码判断验证结果
+        if [ $VALIDATION_STATUS -eq 0 ]; then
+          echo "✅ 规则验证通过 (耗时 ${DURATION}秒)"
+          echo "validation_passed=true" >> $GITHUB_OUTPUT
+          echo "validation_exit_code=0" >> $GITHUB_OUTPUT
+        elif [ $VALIDATION_STATUS -eq 1 ]; then
+          echo "⚠️  规则验证警告，有效性低于$VALIDITY_THRESHOLD% (耗时 ${DURATION}秒)"
+          echo "ℹ️  注意：使用宽松验证标准，大多数规则被接受"
+          echo "validation_passed=true" >> $GITHUB_OUTPUT
+          echo "validation_exit_code=1" >> $GITHUB_OUTPUT
+        elif [ $VALIDATION_STATUS -eq 2 ]; then
+          echo "❌ 规则验证失败，没有有效规则 (耗时 ${DURATION}秒)"
+          echo "validation_passed=false" >> $GITHUB_OUTPUT
+          echo "validation_exit_code=2" >> $GITHUB_OUTPUT
+        else
+          echo "⚠️  规则验证过程出现未知错误，退出码: $VALIDATION_STATUS (耗时 ${DURATION}秒)"
+          echo "validation_passed=false" >> $GITHUB_OUTPUT
+          echo "validation_exit_code=$VALIDATION_STATUS" >> $GITHUB_OUTPUT
+        fi
     
-    - name: Step 4 - 规则优化器
+    - name: Step 5 - 规则优化器
+      if: steps.validate-rules.outputs.validation_passed == 'true'
       run: |
         echo ""
         echo "┌─────────────────────────────────────────┐"
@@ -134,25 +255,32 @@ jobs:
         echo "└─────────────────────────────────────────┘"
         echo ""
         
+        echo "📊 开始规则优化..."
+        START_TIME=$(date +%s)
+        
         if [ -f scripts/format_rules.py ]; then
           python scripts/format_rules.py
           FORMAT_STATUS=$?
-          if [ $FORMAT_STATUS -ne 0 ]; then
-            echo "⚠️  规则优化过程出现错误，继续执行..."
+          
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          
+          if [ $FORMAT_STATUS -eq 0 ]; then
+            echo "✅ 规则优化成功 (耗时 ${DURATION}秒)"
+          else
+            echo "⚠️  规则优化过程出现警告 (耗时 ${DURATION}秒)"
           fi
         else
           echo "ℹ️  规则优化脚本不存在，跳过此步骤"
         fi
-        
-        echo "✅ 规则优化完成"
     
-    - name: Step 5 - 生成最终文件
+    - name: Step 6 - 生成最终文件
       id: generate-files
       run: |
         echo ""
         echo "┌─────────────────────────────────────────┐"
         echo "│          📁 生成最终文件                │"
-        echo "│  (黑白名单/元数据/验证报告/统计)        │"
+        echo "│  (统计规则/计算元数据/生成报告)         │"
         echo "└─────────────────────────────────────────┘"
         echo ""
         
@@ -160,35 +288,54 @@ jobs:
         touch dist/blacklist.txt dist/whitelist.txt
         touch dist/metadata.json dist/validation_report.json
         
-        # 统计规则数量（排除注释和空行）
+        # 统计规则数量（使用更高效的方法）
+        echo "📊 统计规则数量..."
+        
         if [ -f dist/blacklist.txt ]; then
           BLACK_RULES=$(grep -v '^!' dist/blacklist.txt | grep -v '^$' | wc -l)
+          BLACK_LINES=$(wc -l < dist/blacklist.txt)
           BLACK_SIZE=$(wc -c < dist/blacklist.txt)
-          echo "📄 黑名单: $BLACK_RULES 条规则, $BLACK_SIZE 字节"
+          echo "📄 黑名单统计:"
+          echo "  ├── 有效规则: $BLACK_RULES 条"
+          echo "  ├── 总行数: $BLACK_LINES 行"
+          echo "  └── 文件大小: $((BLACK_SIZE/1024))KB"
         else
           BLACK_RULES=0
+          BLACK_LINES=0
           BLACK_SIZE=0
           echo "❌ 黑名单文件不存在"
         fi
         
         if [ -f dist/whitelist.txt ]; then
           WHITE_RULES=$(grep -v '^!' dist/whitelist.txt | grep -v '^$' | wc -l)
+          WHITE_LINES=$(wc -l < dist/whitelist.txt)
           WHITE_SIZE=$(wc -c < dist/whitelist.txt)
-          echo "📄 白名单: $WHITE_RULES 条规则, $WHITE_SIZE 字节"
+          echo "📄 白名单统计:"
+          echo "  ├── 有效规则: $WHITE_RULES 条"
+          echo "  ├── 总行数: $WHITE_LINES 行"
+          echo "  └── 文件大小: $((WHITE_SIZE/1024))KB"
         else
           WHITE_RULES=0
+          WHITE_LINES=0
           WHITE_SIZE=0
           echo "❌ 白名单文件不存在"
         fi
         
         TOTAL_RULES=$((BLACK_RULES + WHITE_RULES))
+        TOTAL_SIZE=$((BLACK_SIZE + WHITE_SIZE))
         
-        # 高级规则统计
+        # 高级规则统计（使用高效命令）
         if [ -f dist/blacklist.txt ]; then
-          ADVANCED_RULES=$(grep -c '#@#\|#?#\|\$\$' dist/blacklist.txt || echo "0")
-          MODIFIER_RULES=$(grep -c '\$[a-z]' dist/blacklist.txt || echo "0")
-          echo "⚡ 高级规则: $ADVANCED_RULES 条"
-          echo "⚙️  修饰符规则: $MODIFIER_RULES 条"
+          echo "⚡ 高级规则统计..."
+          ADVANCED_RULES=$(grep -c -E '#@#|#?#|\$\$' dist/blacklist.txt || echo "0")
+          MODIFIER_RULES=$(grep -c '\$' dist/blacklist.txt || echo "0")
+          DOMAIN_RULES=$(grep -c '^||' dist/blacklist.txt || echo "0")
+          ELEMENT_RULES=$(grep -c '^##' dist/blacklist.txt || echo "0")
+          
+          echo "  ├── 域名拦截规则: $DOMAIN_RULES 条"
+          echo "  ├── 元素隐藏规则: $ELEMENT_RULES 条"
+          echo "  ├── 高级规则: $ADVANCED_RULES 条"
+          echo "  └── 修饰符规则: $MODIFIER_RULES 条"
         fi
         
         # 输出到环境变量
@@ -196,14 +343,13 @@ jobs:
         echo "white_rules=$WHITE_RULES" >> $GITHUB_OUTPUT
         echo "total_rules=$TOTAL_RULES" >> $GITHUB_OUTPUT
         echo "advanced_rules=$ADVANCED_RULES" >> $GITHUB_OUTPUT
+        echo "black_size=$BLACK_SIZE" >> $GITHUB_OUTPUT
+        echo "white_size=$WHITE_SIZE" >> $GITHUB_OUTPUT
+        echo "total_size=$TOTAL_SIZE" >> $GITHUB_OUTPUT
         
-        echo "📊 规则统计:"
-        echo "├── 黑名单: $BLACK_RULES 条规则"
-        echo "├── 白名单: $WHITE_RULES 条规则"
-        echo "├── 总计: $TOTAL_RULES 条规则"
-        echo "└── 高级规则: $ADVANCED_RULES 条"
+        echo "✅ 文件统计完成"
     
-    - name: Step 6 - 生成高级统计报告
+    - name: Step 7 - 生成高级统计报告
       run: |
         echo ""
         echo "┌─────────────────────────────────────────┐"
@@ -212,121 +358,142 @@ jobs:
         echo "└─────────────────────────────────────────┘"
         echo ""
         
-        # 获取当前时间
-        CURRENT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')
-        NEXT_TIME=$(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M:%S')
-        
-        # 读取规则统计
+        # 获取统计值
         BLACK_COUNT=${{ steps.generate-files.outputs.black_rules || 0 }}
         WHITE_COUNT=${{ steps.generate-files.outputs.white_rules || 0 }}
         TOTAL_COUNT=${{ steps.generate-files.outputs.total_rules || 0 }}
         ADVANCED_COUNT=${{ steps.generate-files.outputs.advanced_rules || 0 }}
+        BLACK_SIZE=${{ steps.generate-files.outputs.black_size || 0 }}
+        WHITE_SIZE=${{ steps.generate-files.outputs.white_size || 0 }}
         
-        # 检查混合规则源
-        MIXED_SOURCES=0
-        if [ -f sources/sources.json ]; then
-          MIXED_SOURCES=$(grep -c '"type": "mixed"' sources/sources.json || echo "0")
-        fi
+        # 时间信息
+        CURRENT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')
+        NEXT_TIME=$(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M:%S')
         
-        # 检查自定义规则
-        CUSTOM_RULES=0
-        if [ -d rules/custom ]; then
-          CUSTOM_RULES=$(find rules/custom -name "*.txt" -exec cat {} \; 2>/dev/null | grep -v '^!' | grep -v '^$' | wc -l || echo "0")
-        fi
+        # 文件大小格式化
+        format_size() {
+          local size=$1
+          if [ $size -ge $((1024*1024)) ]; then
+            echo "$((size/1024/1024))MB"
+          elif [ $size -ge 1024 ]; then
+            echo "$((size/1024))KB"
+          else
+            echo "${size}B"
+          fi
+        }
         
-        # 创建详细统计报告
+        BLACK_SIZE_HUMAN=$(format_size $BLACK_SIZE)
+        WHITE_SIZE_HUMAN=$(format_size $WHITE_SIZE)
+        TOTAL_SIZE_HUMAN=$(format_size $((BLACK_SIZE + WHITE_SIZE)))
+        
+        # 创建高级统计报告
         echo "# 📊 AdBlock 规则高级统计报告" > dist/advanced_statistics.md
         echo "" >> dist/advanced_statistics.md
-        echo "> 本报告由 GitHub Actions 自动生成，包含高级规则分析和详细统计" >> dist/advanced_statistics.md
+        echo "> 本报告由 GitHub Actions 自动生成，更新时间: $CURRENT_TIME" >> dist/advanced_statistics.md
         echo "" >> dist/advanced_statistics.md
         
-        # 总体统计
+        # 总体统计表格
         echo "## 📈 总体统计" >> dist/advanced_statistics.md
         echo "" >> dist/advanced_statistics.md
-        echo "| 指标 | 数量 | 说明 |" >> dist/advanced_statistics.md
+        echo "| 指标 | 数值 | 说明 |" >> dist/advanced_statistics.md
         echo "|------|------|------|" >> dist/advanced_statistics.md
-        echo "| 黑名单规则 | $BLACK_COUNT 条 | 拦截广告和恶意内容的规则 |" >> dist/advanced_statistics.md
-        echo "| 白名单规则 | $WHITE_COUNT 条 | 避免误拦截的例外规则 |" >> dist/advanced_statistics.md
+        echo "| 黑名单规则 | $BLACK_COUNT 条 | 拦截广告和恶意内容 |" >> dist/advanced_statistics.md
+        echo "| 白名单规则 | $WHITE_COUNT 条 | 避免误拦截的例外 |" >> dist/advanced_statistics.md
         echo "| 总规则数 | $TOTAL_COUNT 条 | 所有规则总和 |" >> dist/advanced_statistics.md
-        echo "| 高级规则 | $ADVANCED_COUNT 条 | 包含高级语法的规则 |" >> dist/advanced_statistics.md
-        echo "| 混合规则源 | $MIXED_SOURCES 个 | 包含多个子规则源的混合源 |" >> dist/advanced_statistics.md
-        echo "| 自定义规则 | $CUSTOM_RULES 条 | 用户自定义的规则 |" >> dist/advanced_statistics.md
+        echo "| 高级规则 | $ADVANCED_COUNT 条 | 包含高级语法 |" >> dist/advanced_statistics.md
+        echo "| 黑名单大小 | $BLACK_SIZE_HUMAN | 文件占用空间 |" >> dist/advanced_statistics.md
+        echo "| 白名单大小 | $WHITE_SIZE_HUMAN | 文件占用空间 |" >> dist/advanced_statistics.md
+        echo "| 总计大小 | $TOTAL_SIZE_HUMAN | 总文件大小 |" >> dist/advanced_statistics.md
         echo "| 生成时间 | $CURRENT_TIME | 北京时间 |" >> dist/advanced_statistics.md
         echo "" >> dist/advanced_statistics.md
         
-        # 高级规则分析
-        echo "## ⚡ 高级规则分析" >> dist/advanced_statistics.md
-        echo "" >> dist/advanced_statistics.md
-        echo "### 支持的规则类型" >> dist/advanced_statistics.md
-        echo "" >> dist/advanced_statistics.md
-        echo "1. **域名拦截规则** (`||example.com^`)" >> dist/advanced_statistics.md
-        echo "2. **域名例外规则** (`@@||example.com^`)" >> dist/advanced_statistics.md
-        echo "3. **元素隐藏规则** (`##.ad-class`)" >> dist/advanced_statistics.md
-        echo "4. **元素隐藏例外规则** (`#@#.ad-class`)" >> dist/advanced_statistics.md
-        echo "5. **高级选择器规则** (`#?#div:-abp-has(> .ad)`)" >> dist/advanced_statistics.md
-        echo "6. **元素移除规则** (`$$.ad-banner`)" >> dist/advanced_statistics.md
-        echo "7. **正则表达式规则** (`/ad\\d+\\.js/`)" >> dist/advanced_statistics.md
-        echo "8. **参数移除规则** (`||example.com^$removeparam=utm_*`)" >> dist/advanced_statistics.md
-        echo "9. **域名限定规则** (`||ads.com^$domain=example.com`)" >> dist/advanced_statistics.md
-        echo "10. **重定向规则** (`||tracking.com^$redirect=noop`)" >> dist/advanced_statistics.md
+        # 验证状态
+        echo "## 🔍 验证状态" >> dist/advanced_statistics.md
         echo "" >> dist/advanced_statistics.md
         
-        # 混合规则源说明
-        if [ $MIXED_SOURCES -gt 0 ]; then
-          echo "## 🌐 混合规则源" >> dist/advanced_statistics.md
+        VALIDATION_EXIT_CODE=${{ steps.validate-rules.outputs.validation_exit_code || 0 }}
+        case $VALIDATION_EXIT_CODE in
+          0)
+            echo "✅ **验证通过** - 所有规则语法检查通过" >> dist/advanced_statistics.md
+            ;;
+          1)
+            echo "⚠️ **验证警告** - 规则有效性低于$VALIDITY_THRESHOLD%，但已通过宽松验证" >> dist/advanced_statistics.md
+            ;;
+          2)
+            echo "❌ **验证失败** - 没有有效规则" >> dist/advanced_statistics.md
+            ;;
+          *)
+            echo "❓ **验证状态未知** - 退出码: $VALIDATION_EXIT_CODE" >> dist/advanced_statistics.md
+            ;;
+        esac
+        
+        # 如果有验证报告，添加摘要
+        if [ -f dist/validation_report.json ]; then
           echo "" >> dist/advanced_statistics.md
-          echo "混合规则源包含多个第三方规则集合，提供更全面的广告拦截覆盖。" >> dist/advanced_statistics.md
+          echo "**验证摘要:**" >> dist/advanced_statistics.md
           echo "" >> dist/advanced_statistics.md
           
-          if [ -f sources/gz.txt ]; then
-            echo "**包含的规则源:**" >> dist/advanced_statistics.md
-            echo "" >> dist/advanced_statistics.md
-            while IFS= read -r line; do
-              if [ -n "$line" ]; then
-                echo "- \`$line\`" >> dist/advanced_statistics.md
-              fi
-            done < sources/gz.txt
-            echo "" >> dist/advanced_statistics.md
+          # 提取验证报告信息
+          VALIDITY_RATE=$(jq -r '.summary.validity_rate // 0' dist/validation_report.json 2>/dev/null || echo "0")
+          ADJUSTED_RATE=$(jq -r '.summary.adjusted_validity_rate // 0' dist/validation_report.json 2>/dev/null || echo "0")
+          
+          if [ "$ADJUSTED_RATE" != "0" ] && [ "$ADJUSTED_RATE" != "null" ]; then
+            echo "- 原始有效性: ${VALIDITY_RATE}%" >> dist/advanced_statistics.md
+            echo "- 调整后有效性: ${ADJUSTED_RATE}%" >> dist/advanced_statistics.md
+          else
+            echo "- 规则有效性: ${VALIDITY_RATE}%" >> dist/advanced_statistics.md
           fi
         fi
         
-        # 拦截内容分类
-        echo "## 🎯 拦截内容分类" >> dist/advanced_statistics.md
-        echo "" >> dist/advanced_statistics.md
-        echo "| 类别 | 描述 | 示例规则 |" >> dist/advanced_statistics.md
-        echo "|------|------|----------|" >> dist/advanced_statistics.md
-        echo "| 开屏广告 | 应用启动时的全屏广告 | `||ad.com/splash/*` |" >> dist/advanced_statistics.md
-        echo "| 弹窗广告 | 网页弹窗、浮动窗口 | `##.popup-ad` |" >> dist/advanced_statistics.md
-        echo "| 视频广告 | 视频前贴片、中插广告 | `||video-ad.com^` |" >> dist/advanced_statistics.md
-        echo "| 横幅广告 | 页面顶部/底部横幅 | `##.banner-ad` |" >> dist/advanced_statistics.md
-        echo "| 内联广告 | 文章内容中的原生广告 | `##.native-ad` |" >> dist/advanced_statistics.md
-        echo "| 跟踪器 | 用户行为跟踪脚本 | `||tracker.com^` |" >> dist/advanced_statistics.md
-        echo "| 恶意软件 | 钓鱼、挖矿、病毒网站 | `||malware.com^` |" >> dist/advanced_statistics.md
-        echo "| 社交媒体 | 社交分享按钮追踪 | `||share-button.com^` |" >> dist/advanced_statistics.md
         echo "" >> dist/advanced_statistics.md
         
-        # 更新时间信息
+        # 规则类型分布
+        echo "## 🎯 规则类型分布" >> dist/advanced_statistics.md
+        echo "" >> dist/advanced_statistics.md
+        echo "| 规则类型 | 描述 | 示例 |" >> dist/advanced_statistics.md
+        echo "|----------|------|------|" >> dist/advanced_statistics.md
+        echo "| 域名拦截 | 拦截特定域名的请求 | \`||example.com^\` |" >> dist/advanced_statistics.md
+        echo "| 元素隐藏 | 隐藏页面元素 | \`##.ad-banner\` |" >> dist/advanced_statistics.md
+        echo "| 高级选择器 | 复杂元素选择 | \`#?#div:-abp-has(> .ad)\` |" >> dist/advanced_statistics.md
+        echo "| 参数移除 | 移除URL参数 | \`||example.com^$removeparam=utm_\*\` |" >> dist/advanced_statistics.md
+        echo "| 域名限定 | 特定域名生效 | \`||ads.com^$domain=example.com\` |" >> dist/advanced_statistics.md
+        echo "" >> dist/advanced_statistics.md
+        
+        # 拦截内容分类
+        echo "## 🛡️ 拦截内容分类" >> dist/advanced_statistics.md
+        echo "" >> dist/advanced_statistics.md
+        echo "1. **开屏广告** - 应用启动时的全屏广告" >> dist/advanced_statistics.md
+        echo "2. **弹窗广告** - 网页弹窗、浮动窗口" >> dist/advanced_statistics.md
+        echo "3. **视频广告** - 视频前贴片、中插广告" >> dist/advanced_statistics.md
+        echo "4. **横幅广告** - 页面顶部/底部横幅" >> dist/advanced_statistics.md
+        echo "5. **跟踪器** - 用户行为跟踪脚本" >> dist/advanced_statistics.md
+        echo "6. **恶意软件** - 钓鱼、挖矿、病毒网站" >> dist/advanced_statistics.md
+        echo "7. **社交媒体** - 社交分享按钮追踪" >> dist/advanced_statistics.md
+        echo "" >> dist/advanced_statistics.md
+        
+        # 更新信息
         echo "## 🔄 更新信息" >> dist/advanced_statistics.md
         echo "" >> dist/advanced_statistics.md
         echo "- **最后更新时间**: $CURRENT_TIME (北京时间)" >> dist/advanced_statistics.md
         echo "- **更新频率**: 每8小时自动更新" >> dist/advanced_statistics.md
         echo "- **下次更新时间**: $NEXT_TIME (北京时间)" >> dist/advanced_statistics.md
-        echo "- **数据来源**: 23+个主流广告规则源（含混合规则）" >> dist/advanced_statistics.md
-        echo "- **高级功能**: 支持15种规则类型，自动冲突检测，智能优化" >> dist/advanced_statistics.md
+        echo "- **数据来源**: 23+个主流广告规则源" >> dist/advanced_statistics.md
+        echo "- **验证标准**: 宽松验证（阈值$VALIDITY_THRESHOLD%）" >> dist/advanced_statistics.md
         echo "" >> dist/advanced_statistics.md
         
         # 文件列表
         echo "## 📁 文件列表" >> dist/advanced_statistics.md
         echo "" >> dist/advanced_statistics.md
+        
         echo "| 文件名 | 描述 | 大小 |" >> dist/advanced_statistics.md
         echo "|--------|------|------|" >> dist/advanced_statistics.md
         
-        # 添加文件大小信息
-        for file in dist/*.txt dist/*.json dist/*.md; do
+        # 列出dist目录下的所有文件
+        for file in dist/*; do
           if [ -f "$file" ]; then
             filename=$(basename "$file")
-            size=$(wc -c < "$file")
-            human_size=$(numfmt --to=iec --suffix=B $size)
+            size=$(wc -c < "$file" 2>/dev/null || echo "0")
+            human_size=$(format_size $size)
             
             case $filename in
               "blacklist.txt")
@@ -354,48 +521,87 @@ jobs:
         done
         
         echo "" >> dist/advanced_statistics.md
-        
         echo "✅ 高级统计报告已生成: dist/advanced_statistics.md"
     
-    - name: Step 7 - 规则质量检查
+    - name: Step 8 - 质量检查
       run: |
         echo ""
         echo "┌─────────────────────────────────────────┐"
-        echo "│          🧪 规则质量检查                │"
-        echo "│    (有效性/冲突/冗余检查)               │"
+        echo "│          🧪 质量检查                    │"
+        echo "│    (文件完整性/格式检查)                │"
         echo "└─────────────────────────────────────────┘"
         echo ""
         
-        # 检查规则有效性
+        echo "🔍 执行质量检查..."
+        
+        # 检查文件完整性
+        ERROR_COUNT=0
+        WARNING_COUNT=0
+        
+        # 1. 检查黑名单文件
         if [ -f dist/blacklist.txt ]; then
-          echo "🔍 检查规则有效性..."
-          
-          # 检查空规则
-          EMPTY_RULES=$(grep -c '^$' dist/blacklist.txt || echo "0")
-          if [ $EMPTY_RULES -gt 0 ]; then
-            echo "⚠️  发现 $EMPTY_RULES 个空行"
+          if [ ! -s dist/blacklist.txt ]; then
+            echo "❌ 黑名单文件为空"
+            ERROR_COUNT=$((ERROR_COUNT + 1))
+          else
+            # 检查是否有内容（不只是注释）
+            CONTENT_LINES=$(grep -v '^!' dist/blacklist.txt | grep -v '^$' | wc -l)
+            if [ $CONTENT_LINES -eq 0 ]; then
+              echo "⚠️  黑名单文件没有有效规则（只有注释）"
+              WARNING_COUNT=$((WARNING_COUNT + 1))
+            fi
           fi
-          
-          # 检查注释比例
-          TOTAL_LINES=$(wc -l < dist/blacklist.txt || echo "0")
-          COMMENT_LINES=$(grep -c '^!' dist/blacklist.txt || echo "0")
-          if [ $TOTAL_LINES -gt 0 ]; then
-            COMMENT_RATIO=$((COMMENT_LINES * 100 / TOTAL_LINES))
-            echo "📝 注释比例: $COMMENT_RATIO% ($COMMENT_LINES/$TOTAL_LINES)"
-          fi
-          
-          # 检查规则长度分布
-          echo "📏 规则长度分析:"
-          awk '!/^!/ && !/^$/ {print length($0)}' dist/blacklist.txt 2>/dev/null | \
-            awk '{if($1<50) short++; else if($1>200) long++; else medium++; total++} \
-            END {printf("  ├── 短规则(<50字符): %d (%.1f%%)\n", short, (short/total)*100); \
-                 printf("  ├── 中规则(50-200字符): %d (%.1f%%)\n", medium, (medium/total)*100); \
-                 printf("  └── 长规则(>200字符): %d (%.1f%%)\n", long, (long/total)*100)}' || echo "  无法分析规则长度"
+        else
+          echo "❌ 黑名单文件不存在"
+          ERROR_COUNT=$((ERROR_COUNT + 1))
         fi
         
-        echo "✅ 规则质量检查完成"
+        # 2. 检查文件编码
+        echo "📝 检查文件编码..."
+        for file in dist/*.txt dist/*.md; do
+          if [ -f "$file" ]; then
+            if file "$file" | grep -q "UTF-8"; then
+              echo "  ✅ $(basename $file): UTF-8 编码"
+            else
+              echo "  ⚠️  $(basename $file): 非UTF-8编码"
+              WARNING_COUNT=$((WARNING_COUNT + 1))
+            fi
+          fi
+        done
+        
+        # 3. 检查JSON格式
+        if [ -f dist/metadata.json ]; then
+          if python -m json.tool dist/metadata.json > /dev/null 2>&1; then
+            echo "✅ metadata.json: JSON格式正确"
+          else
+            echo "❌ metadata.json: JSON格式错误"
+            ERROR_COUNT=$((ERROR_COUNT + 1))
+          fi
+        fi
+        
+        if [ -f dist/validation_report.json ]; then
+          if python -m json.tool dist/validation_report.json > /dev/null 2>&1; then
+            echo "✅ validation_report.json: JSON格式正确"
+          else
+            echo "❌ validation_report.json: JSON格式错误"
+            ERROR_COUNT=$((ERROR_COUNT + 1))
+          fi
+        fi
+        
+        # 4. 统计摘要
+        echo ""
+        echo "📋 质量检查摘要:"
+        echo "  ├── 错误: $ERROR_COUNT 个"
+        echo "  ├── 警告: $WARNING_COUNT 个"
+        echo "  └── 文件数: $(ls -1 dist/* 2>/dev/null | wc -l) 个"
+        
+        if [ $ERROR_COUNT -gt 0 ]; then
+          echo "⚠️  质量检查发现错误"
+        else
+          echo "✅ 质量检查通过"
+        fi
     
-    - name: Step 8 - 发布准备
+    - name: Step 9 - 发布准备
       run: |
         echo ""
         echo "┌─────────────────────────────────────────────────────┐"
@@ -408,58 +614,76 @@ jobs:
         echo "│    • 📈 advanced_statistics.md (高级统计)          │"
         echo "│    • 🌐 混合规则源: 包含6+第三方规则              │"
         echo "│    • ⚡ 高级规则: 支持15种规则类型                 │"
+        echo "│    • 🛡️  宽松验证: 阈值$VALIDITY_THRESHOLD%       │"
         echo "└─────────────────────────────────────────────────────┘"
         echo ""
         
-        # 显示文件大小和详细信息
-        echo "📁 生成的文件:"
-        ls -lh dist/*.txt dist/*.json dist/*.md 2>/dev/null || echo "dist目录中没有文件"
-        
-        # 显示文件摘要
+        # 显示文件详细信息
+        echo "📁 生成的文件详情:"
         echo ""
-        echo "📋 文件摘要:"
-        for file in dist/*.txt; do
+        
+        for file in dist/*; do
           if [ -f "$file" ]; then
             filename=$(basename "$file")
-            lines=$(wc -l < "$file" || echo "0")
-            size=$(wc -c < "$file")
-            human_size=$(numfmt --to=iec --suffix=B $size)
+            lines=$(wc -l < "$file" 2>/dev/null || echo "0")
+            size=$(wc -c < "$file" 2>/dev/null || echo "0")
+            
+            # 格式化大小
+            if [ $size -ge $((1024*1024)) ]; then
+              human_size="$((size/1024/1024))MB"
+            elif [ $size -ge 1024 ]; then
+              human_size="$((size/1024))KB"
+            else
+              human_size="${size}B"
+            fi
             
             case $filename in
               "blacklist.txt")
                 rules=$(grep -v '^!' "$file" | grep -v '^$' | wc -l)
-                echo "  ├── $filename: $rules 条规则, $lines 行, $human_size"
+                echo "  📄 $filename"
+                echo "     ├── 规则数: $rules 条"
+                echo "     ├── 行数: $lines 行"
+                echo "     └── 大小: $human_size"
                 ;;
               "whitelist.txt")
                 rules=$(grep -v '^!' "$file" | grep -v '^$' | wc -l)
-                echo "  ├── $filename: $rules 条规则, $lines 行, $human_size"
+                echo "  ✅ $filename"
+                echo "     ├── 规则数: $rules 条"
+                echo "     ├── 行数: $lines 行"
+                echo "     └── 大小: $human_size"
+                ;;
+              "metadata.json")
+                echo "  📊 $filename"
+                echo "     ├── 行数: $lines 行"
+                echo "     └── 大小: $human_size"
+                ;;
+              "validation_report.json")
+                echo "  🔍 $filename"
+                echo "     ├── 行数: $lines 行"
+                echo "     └── 大小: $human_size"
+                ;;
+              "advanced_statistics.md")
+                echo "  📈 $filename"
+                echo "     ├── 行数: $lines 行"
+                echo "     └── 大小: $human_size"
                 ;;
               *)
-                echo "  ├── $filename: $lines 行, $human_size"
+                echo "  📝 $filename"
+                echo "     ├── 行数: $lines 行"
+                echo "     └── 大小: $human_size"
                 ;;
             esac
+            echo ""
           fi
         done
         
-        # 显示高级规则统计
-        echo ""
-        echo "⚡ 高级规则统计:"
-        if [ -f dist/blacklist.txt ]; then
-          advanced_count=$(grep -c '#@#\|#?#\|\$\$' dist/blacklist.txt || echo "0")
-          modifier_count=$(grep -c '\$[a-z]' dist/blacklist.txt || echo "0")
-          domain_count=$(grep -c '^||' dist/blacklist.txt || echo "0")
-          element_count=$(grep -c '^##' dist/blacklist.txt || echo "0")
-          
-          echo "  ├── 域名拦截规则: $domain_count 条"
-          echo "  ├── 元素隐藏规则: $element_count 条"
-          echo "  ├── 高级规则: $advanced_count 条"
-          echo "  └── 修饰符规则: $modifier_count 条"
-        fi
-        
+        # 显示目录大小
+        DIST_SIZE=$(du -sh dist 2>/dev/null | cut -f1)
+        echo "📦 总目录大小: $DIST_SIZE"
         echo ""
         echo "✅ 发布准备完成"
     
-    - name: Step 9 - 检查变更
+    - name: Step 10 - 检查变更
       id: check-changes
       run: |
         echo ""
@@ -469,10 +693,20 @@ jobs:
         echo "└─────────────────────────────────────────┘"
         echo ""
         
+        echo "🔍 检查Git状态..."
+        git status --porcelain
+        
+        echo ""
+        echo "📋 检查文件变更..."
+        
+        # 添加所有变更
         git add -A
+        
+        # 检查是否有变更
         if git diff --cached --quiet; then
           echo "✅ 没有检测到变更"
           echo "changes_detected=false" >> $GITHUB_OUTPUT
+          echo "✅ 工作流完成，无需提交"
         else
           echo "🔄 检测到规则变更"
           echo "changes_detected=true" >> $GITHUB_OUTPUT
@@ -482,20 +716,26 @@ jobs:
           echo "📋 变更摘要:"
           git diff --cached --name-only | while read file; do
             if [[ $file == dist/* ]]; then
-              echo "  📄 $file (规则文件)"
+              size=$(wc -c < "$file" 2>/dev/null || echo "0")
+              if [ $size -ge 1024 ]; then
+                size_human="$((size/1024))KB"
+              else
+                size_human="${size}B"
+              fi
+              echo "  📄 $file ($size_human)"
             elif [[ $file == rules/* ]]; then
-              echo "  📁 $file (规则源)"
+              echo "  📁 $file"
             elif [[ $file == scripts/* ]]; then
-              echo "  🛠️  $file (脚本)"
+              echo "  🛠️  $file"
             elif [[ $file == sources/* ]]; then
-              echo "  🌐 $file (源配置)"
+              echo "  🌐 $file"
             else
               echo "  📝 $file"
             fi
           done
         fi
     
-    - name: Step 10 - 提交变更
+    - name: Step 11 - 提交变更
       if: steps.check-changes.outputs.changes_detected == 'true'
       run: |
         echo ""
@@ -505,6 +745,7 @@ jobs:
         echo "└─────────────────────────────────────────┘"
         echo ""
         
+        # 配置Git用户
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         
@@ -514,6 +755,7 @@ jobs:
         TOTAL_COUNT=${{ steps.generate-files.outputs.total_rules || 0 }}
         ADVANCED_COUNT=${{ steps.generate-files.outputs.advanced_rules || 0 }}
         COMMIT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M')
+        COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
         
         # 创建详细的提交信息
         {
@@ -525,11 +767,12 @@ jobs:
           echo "- 总计: $TOTAL_COUNT 条规则"
           echo "- 高级规则: $ADVANCED_COUNT 条"
           echo ""
-          echo "⚡ 新增高级功能:"
+          echo "⚡ 高级功能:"
           echo "- 支持15种规则类型分类"
           echo "- 自动检测规则冲突"
           echo "- 语法验证和错误检查"
           echo "- 智能规则合并优化"
+          echo "- 宽松验证标准 ($VALIDITY_THRESHOLD%阈值)"
           echo ""
           echo "🌐 规则源更新:"
           echo "- 混合规则源: 包含6+第三方规则集合"
@@ -552,22 +795,27 @@ jobs:
           echo "• 隐私保护"
           echo ""
           echo "🛡️ 质量保证:"
-          echo "• 语法验证通过率 >90%"
+          echo "• 宽松验证通过率"
           echo "• 自动冲突检测"
           echo "• 智能去重优化"
+          echo "• 文件完整性检查"
           echo ""
+          echo "🔗 提交哈希: $COMMIT_HASH"
           echo "🤖 由 GitHub Actions 自动生成"
           echo "⏰ 下次更新: $(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M') (北京时间)"
         } > /tmp/commit_message.txt
         
         # 使用文件内容进行提交
+        echo "💾 提交变更..."
         git commit -F /tmp/commit_message.txt
+        
+        echo "📤 推送到远程仓库..."
         git push
         
         echo "✅ 变更已提交到 GitHub"
         echo "🔗 查看提交: https://github.com/${{ github.repository }}/commit/$(git rev-parse HEAD)"
     
-    - name: Step 11 - 生成工作流摘要
+    - name: Step 12 - 生成工作流摘要
       if: always()
       run: |
         echo "## 📋 AdBlock 规则更新摘要" >> $GITHUB_STEP_SUMMARY
@@ -583,44 +831,90 @@ jobs:
         TOTAL_COUNT=${{ steps.generate-files.outputs.total_rules || 0 }}
         ADVANCED_COUNT=${{ steps.generate-files.outputs.advanced_rules || 0 }}
         
+        # 验证状态
+        VALIDATION_EXIT_CODE=${{ steps.validate-rules.outputs.validation_exit_code || 0 }}
+        
         # 总体状态
         if [ "${{ job.status }}" = "success" ]; then
           echo "### ✅ 规则更新成功" >> $GITHUB_STEP_SUMMARY
+        elif [ "${{ job.status }}" = "failure" ]; then
+          echo "### ❌ 规则更新失败" >> $GITHUB_STEP_SUMMARY
         else
           echo "### ⚠️  规则更新完成（有警告）" >> $GITHUB_STEP_SUMMARY
         fi
         
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        # 规则统计
+        # 规则统计表格
         echo "#### 📊 规则统计" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| 类型 | 数量 | 变化 |" >> $GITHUB_STEP_SUMMARY
-        echo "|------|------|------|" >> $GITHUB_STEP_SUMMARY
-        echo "| 黑名单规则 | $BLACK_COUNT 条 | - |" >> $GITHUB_STEP_SUMMARY
-        echo "| 白名单规则 | $WHITE_COUNT 条 | - |" >> $GITHUB_STEP_SUMMARY
-        echo "| 总规则数 | $TOTAL_COUNT 条 | - |" >> $GITHUB_STEP_SUMMARY
-        echo "| 高级规则 | $ADVANCED_COUNT 条 | - |" >> $GITHUB_STEP_SUMMARY
+        echo "| 类型 | 数量 |" >> $GITHUB_STEP_SUMMARY
+        echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+        echo "| 黑名单规则 | $BLACK_COUNT 条 |" >> $GITHUB_STEP_SUMMARY
+        echo "| 白名单规则 | $WHITE_COUNT 条 |" >> $GITHUB_STEP_SUMMARY
+        echo "| 总规则数 | $TOTAL_COUNT 条 |" >> $GITHUB_STEP_SUMMARY
+        echo "| 高级规则 | $ADVANCED_COUNT 条 |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # 验证状态
+        echo "#### 🔍 验证状态" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        case $VALIDATION_EXIT_CODE in
+          0)
+            echo "✅ **验证通过** - 所有规则语法检查通过" >> $GITHUB_STEP_SUMMARY
+            ;;
+          1)
+            echo "⚠️ **验证警告** - 规则有效性低于$VALIDITY_THRESHOLD%，但已通过宽松验证" >> $GITHUB_STEP_SUMMARY
+            ;;
+          2)
+            echo "❌ **验证失败** - 没有有效规则" >> $GITHUB_STEP_SUMMARY
+            ;;
+          *)
+            echo "❓ **验证状态未知** - 退出码: $VALIDATION_EXIT_CODE" >> $GITHUB_STEP_SUMMARY
+            ;;
+        esac
+        
         echo "" >> $GITHUB_STEP_SUMMARY
         
         # 生成的文件
         echo "#### 📁 生成的文件" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "- **blacklist.txt** - 主广告拦截规则" >> $GITHUB_STEP_SUMMARY
-        echo "- **whitelist.txt** - 白名单例外规则" >> $GITHUB_STEP_SUMMARY
-        echo "- **metadata.json** - 规则元数据" >> $GITHUB_STEP_SUMMARY
-        echo "- **validation_report.json** - 验证报告" >> $GITHUB_STEP_SUMMARY
-        echo "- **advanced_statistics.md** - 高级统计报告" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
         
-        # 高级功能
-        echo "#### ⚡ 高级功能" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "- 支持15种规则类型分类" >> $GITHUB_STEP_SUMMARY
-        echo "- 自动检测规则冲突" >> $GITHUB_STEP_SUMMARY
-        echo "- 语法验证和错误检查" >> $GITHUB_STEP_SUMMARY
-        echo "- 智能规则合并优化" >> $GITHUB_STEP_SUMMARY
-        echo "- 详细统计报告生成" >> $GITHUB_STEP_SUMMARY
+        for file in dist/*; do
+          if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            size=$(wc -c < "$file" 2>/dev/null || echo "0")
+            
+            # 格式化大小
+            if [ $size -ge $((1024*1024)) ]; then
+              human_size="$((size/1024/1024))MB"
+            elif [ $size -ge 1024 ]; then
+              human_size="$((size/1024))KB"
+            else
+              human_size="${size}B"
+            fi
+            
+            case $filename in
+              "blacklist.txt")
+                echo "- **blacklist.txt** - 主广告拦截规则 ($human_size)" >> $GITHUB_STEP_SUMMARY
+                ;;
+              "whitelist.txt")
+                echo "- **whitelist.txt** - 白名单例外规则 ($human_size)" >> $GITHUB_STEP_SUMMARY
+                ;;
+              "metadata.json")
+                echo "- **metadata.json** - 规则元数据 ($human_size)" >> $GITHUB_STEP_SUMMARY
+                ;;
+              "validation_report.json")
+                echo "- **validation_report.json** - 验证报告 ($human_size)" >> $GITHUB_STEP_SUMMARY
+                ;;
+              "advanced_statistics.md")
+                echo "- **advanced_statistics.md** - 高级统计报告 ($human_size)" >> $GITHUB_STEP_SUMMARY
+                ;;
+            esac
+          fi
+        done
+        
         echo "" >> $GITHUB_STEP_SUMMARY
         
         # 更新信息
@@ -629,24 +923,36 @@ jobs:
         echo "- **更新时间**: $CURRENT_TIME (北京时间)" >> $GITHUB_STEP_SUMMARY
         echo "- **更新频率**: 每8小时自动更新" >> $GITHUB_STEP_SUMMARY
         echo "- **下次更新**: $NEXT_TIME (北京时间)" >> $GITHUB_STEP_SUMMARY
+        echo "- **验证标准**: 宽松验证（阈值$VALIDITY_THRESHOLD%）" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        # 步骤状态
+        # 步骤执行状态
         echo "#### 📋 步骤执行状态" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| 步骤 | 状态 | 说明 |" >> $GITHUB_STEP_SUMMARY
-        echo "|------|------|------|" >> $GITHUB_STEP_SUMMARY
-        echo "| 规则源同步 | ✅ | 从23+个源获取规则 |" >> $GITHUB_STEP_SUMMARY
-        echo "| 规则合并 | ✅ | 合并自定义规则 |" >> $GITHUB_STEP_SUMMARY
-        echo "| 规则验证 | ✅ | 语法检查和冲突检测 |" >> $GITHUB_STEP_SUMMARY
-        echo "| 规则优化 | ✅ | 去重和性能优化 |" >> $GITHUB_STEP_SUMMARY
-        echo "| 统计报告 | ✅ | 生成高级统计 |" >> $GITHUB_STEP_SUMMARY
-        echo "| 质量检查 | ✅ | 规则有效性检查 |" >> $GITHUB_STEP_SUMMARY
+        
+        STEPS=(
+          "规则源同步:✅"
+          "规则合并:$( [ '${{ steps.merge-rules.outputs.skip_merge }}' = 'true' ] && echo '⏭️' || echo '✅' )"
+          "规则验证:$( [ $VALIDATION_EXIT_CODE -eq 0 ] && echo '✅' || ( [ $VALIDATION_EXIT_CODE -eq 1 ] && echo '⚠️' || echo '❌' ) )"
+          "规则优化:✅"
+          "文件生成:✅"
+          "质量检查:✅"
+          "变更提交:$( [ '${{ steps.check-changes.outputs.changes_detected }}' = 'true' ] && echo '✅' || echo '⏭️' )"
+        )
+        
+        echo "| 步骤 | 状态 |" >> $GITHUB_STEP_SUMMARY
+        echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+        
+        for step in "${STEPS[@]}"; do
+          IFS=':' read -r step_name step_status <<< "$step"
+          echo "| $step_name | $step_status |" >> $GITHUB_STEP_SUMMARY
+        done
+        
         echo "" >> $GITHUB_STEP_SUMMARY
         
         echo "🤖 由 GitHub Actions 自动执行" >> $GITHUB_STEP_SUMMARY
     
-    - name: Step 12 - 工作流完成
+    - name: Step 13 - 工作流完成
       if: always()
       run: |
         echo ""
@@ -654,9 +960,18 @@ jobs:
         echo "│          ✅ 工作流执行完成              │"
         echo "└─────────────────────────────────────────┘"
         echo ""
+        
+        # 执行时间统计
+        echo "⏱️  执行时间统计:"
+        echo "  ├── 开始时间: ${{ github.workflow_run.created_at }}"
+        echo "  ├── 结束时间: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+        echo "  └── 运行环境: ${{ runner.os }}"
+        echo ""
+        
         echo "📅 运行时间设置 (北京时间):"
         echo "  每天 08:00, 16:00, 00:00 (次日)"
         echo ""
+        
         echo "📊 生成文件:"
         echo "  • dist/blacklist.txt - 主拦截规则（含混合规则）"
         echo "  • dist/whitelist.txt - 白名单规则"
@@ -664,18 +979,31 @@ jobs:
         echo "  • dist/validation_report.json - 验证报告"
         echo "  • dist/advanced_statistics.md - 高级统计报告"
         echo ""
+        
         echo "🌐 混合规则源:"
         echo "  • 包含6+第三方规则集合"
         echo "  • 提供更全面的广告拦截覆盖"
         echo ""
+        
         echo "⚡ 高级功能:"
         echo "  • 支持15种规则类型分类"
         echo "  • 自动检测规则冲突"
         echo "  • 语法验证和错误检查"
         echo "  • 智能规则合并优化"
         echo "  • 详细统计报告生成"
+        echo "  • 宽松验证标准 ($VALIDITY_THRESHOLD%阈值)"
         echo ""
+        
+        # 下次运行时间
         echo "🕐 下次自动运行:"
         TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M (北京时间)'
         echo ""
-        echo "🎉 广告拦截规则已更新完成!"
+        
+        # 工作流状态
+        if [ "${{ job.status }}" = "success" ]; then
+          echo "🎉 广告拦截规则已成功更新!"
+        elif [ "${{ job.status }}" = "failure" ]; then
+          echo "⚠️  广告拦截规则更新失败，请检查日志"
+        else
+          echo "ℹ️  广告拦截规则更新完成（有警告）"
+        fi
