@@ -571,7 +571,8 @@ jobs:
         
         # 2. 检查文件编码
         echo "📝 检查文件编码..."
-        for file in dist/*.txt dist/*.md 2>/dev/null; do
+        # 使用 find 命令来查找文件，避免 glob 扩展问题
+        find dist -maxdepth 1 -name "*.txt" -o -name "*.md" 2>/dev/null | while read -r file; do
           if [ -f "$file" ]; then
             if file "$file" | grep -q "UTF-8"; then
               echo "  ✅ $(basename "$file"): UTF-8 编码"
