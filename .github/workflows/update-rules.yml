@@ -793,7 +793,7 @@ jobs:
           echo ""
           echo "🔗 提交哈希: $COMMIT_HASH"
           echo "🤖 由 GitHub Actions 自动生成"
-          echo "⏰ 下次更新: $(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M') (北京时间)"
+          echo "⏰ 下次更新: $(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-d %H:%M') (北京时间)"
         } > /tmp/commit_message.txt
         
         # 使用文件内容进行提交
