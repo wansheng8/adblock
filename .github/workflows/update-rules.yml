@@ -793,7 +793,7 @@ jobs:
           echo ""
           echo "🔗 提交哈希: $COMMIT_HASH"
           echo "🤖 由 GitHub Actions 自动生成"
-          echo "⏰ 下次更新: $(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-d %H:%M') (北京时间)"
+          echo "⏰ 下次更新: $(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M') (北京时间)"
         } > /tmp/commit_message.txt
         
         # 使用文件内容进行提交
@@ -927,13 +927,17 @@ jobs:
         echo "|------|------|" >> $GITHUB_STEP_SUMMARY
         
         # 判断各步骤状态
-        if [ -n "${{ steps.update-rules.outputs.update_success }}" ]; then
+        UPDATE_SUCCESS="${{ steps.update-rules.outputs.update_success }}"
+        SKIP_MERGE="${{ steps.merge-rules.outputs.skip_merge }}"
+        CHANGES_DETECTED="${{ steps.check-changes.outputs.changes_detected }}"
+        
+        if [ -n "$UPDATE_SUCCESS" ]; then
           echo "| 规则源同步 | ✅ |" >> $GITHUB_STEP_SUMMARY
         else
           echo "| 规则源同步 | ❌ |" >> $GITHUB_STEP_SUMMARY
         fi
         
-        if [ -n "${{ steps.merge-rules.outputs.skip_merge }}" ] && [ "${{ steps.merge-rules.outputs.skip_merge }}" = "true" ]; then
+        if [ -n "$SKIP_MERGE" ] && [ "$SKIP_MERGE" = "true" ]; then
           echo "| 规则合并 | ⏭️ |" >> $GITHUB_STEP_SUMMARY
         else
           echo "| 规则合并 | ✅ |" >> $GITHUB_STEP_SUMMARY
@@ -955,7 +959,7 @@ jobs:
         echo "| 文件生成 | ✅ |" >> $GITHUB_STEP_SUMMARY
         echo "| 质量检查 | ✅ |" >> $GITHUB_STEP_SUMMARY
         
-        if [ -n "${{ steps.check-changes.outputs.changes_detected }}" ] && [ "${{ steps.check-changes.outputs.changes_detected }}" = "true" ]; then
+        if [ -n "$CHANGES_DETECTED" ] && [ "$CHANGES_DETECTED" = "true" ]; then
           echo "| 变更提交 | ✅ |" >> $GITHUB_STEP_SUMMARY
         else
           echo "| 变更提交 | ⏭️ |" >> $GITHUB_STEP_SUMMARY
