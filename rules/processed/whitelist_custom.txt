@@ -1,396 +1,271 @@
-! 自定义白名单规则
-! 创建时间: 2024年
-! 项目地址: https://github.com/wansheng8/adblock
-! 说明: 在此添加自定义白名单规则，避免误拦截正常网站
+! =============== 2026年新增：AI与新兴技术服务 ===============
+! AI平台和工具
+@@||openai.com^
+@@||www.openai.com^
+@@||api.openai.com^
+@@||chat.openai.com^
+@@||platform.openai.com^
+@@||claude.ai^
+@@||www.claude.ai^
+@@||api.anthropic.com^
+@@||www.midjourney.com^
+@@||midjourney.com^
+@@||api.midjourney.com^
+@@||stability.ai^
+@@||api.stability.ai^
+@@||www.deepseek.com^
+@@||api.deepseek.com^
+@@||chat.deepseek.com^
+@@||www.coze.com^
+@@||coze.com^
+@@||api.coze.com^
+@@||kimi.moonshot.cn^
+@@||api.moonshot.cn^
+@@||www.baichuan.ai^
+@@||baichuan.ai^
+@@||qianfan.cloud.baidu.com^
+@@||dashscope.aliyun.com^
+@@||modelscope.cn^
+@@||www.modelscope.cn^
 
-! =============== 中国主流网站白名单 ===============
-! 避免误拦截正常网站
+! 区块链与Web3服务（基础功能）
+@@||coinmarketcap.com^
+@@||www.coinmarketcap.com^
+@@||binance.com^
+@@||www.binance.com^
+@@||api.binance.com^
+@@||metamask.io^
+@@||walletconnect.org^
+@@||etherscan.io^
+@@||polygonscan.com^
+@@||bscscan.com^
 
-! 搜索引擎
-@@||www.baidu.com^
-@@||baidu.com^
-@@||www.google.com^
-@@||google.com^
-@@||www.bing.com^
-@@||bing.com^
-@@||www.sogou.com^
-@@||sogou.com^
-@@||www.so.com^
-@@||so.com^
-@@||cn.bing.com^
-@@||image.baidu.com^
-@@||zhidao.baidu.com^
-@@||tieba.baidu.com^
-@@||map.baidu.com^
-@@||pan.baidu.com^
-@@||yun.baidu.com^
-@@||music.163.com^
-@@||y.qq.com^
-@@||music.baidu.com^
+! =============== 新增主流网站（2024-2026趋势） ===============
 
-! 社交媒体
-@@||weibo.com^
-@@||www.weibo.com^
-@@||s.weibo.com^
-@@||m.weibo.com^
-@@||api.weibo.com^
-@@||www.zhihu.com^
-@@||zhihu.com^
-@@||api.zhihu.com^
-@@||www.douban.com^
-@@||douban.com^
-@@||movie.douban.com^
-@@||book.douban.com^
-@@||music.douban.com^
-@@||www.jianshu.com^
-@@||jianshu.com^
-@@||www.xiaohongshu.com^
-@@||xiaohongshu.com^
-@@||www.douyin.com^
-@@||douyin.com^
-@@||www.tiktok.com^
-@@||tiktok.com^
+! 远程办公与协作
+@@||feishu.cn^
+@@||www.feishu.cn^
+@@||applink.feishu.cn^
+@@||meeting.tencent.com^
+@@||voovmeeting.com^
+@@||www.voovmeeting.com^
+@@||zoom.us^
+@@||www.zoom.us^
+@@||zoom.com.cn^
+@@||www.zoom.com.cn^
+@@||slack.com^
+@@||app.slack.com^
+@@||notion.so^
+@@||www.notion.so^
+@@||api.notion.com^
+@@||figma.com^
+@@||www.figma.com^
 
-! 电商网站
-@@||www.taobao.com^
-@@||taobao.com^
-@@||item.taobao.com^
-@@||detail.tmall.com^
-@@||www.tmall.com^
-@@||tmall.com^
-@@||www.jd.com^
-@@||jd.com^
-@@||item.jd.com^
-@@||www.pinduoduo.com^
-@@||pinduoduo.com^
-@@||yangkeduo.com^
-@@||www.suning.com^
-@@||suning.com^
-@@||www.vip.com^
-@@||vip.com^
-@@||www.dangdang.com^
-@@||dangdang.com^
-@@||www.amazon.cn^
-@@||amazon.cn^
-@@||pay.weixin.qq.com^
-@@||payapp.weixin.qq.com^
-@@||mclient.alipay.com^
+! 新能源汽车与科技
+@@||tesla.com^
+@@||www.tesla.com^
+@@||shop.tesla.com^
+@@||nio.com^
+@@||www.nio.com^
+@@||xiaomi.com^
+@@||www.xiaomi.com^
+@@||car.xiaomi.com^
+@@||xiaopeng.com^
+@@||www.xiaopeng.com^
+@@||liauto.com^
+@@||www.liauto.com^
 
-! 视频网站
-@@||www.bilibili.com^
-@@||bilibili.com^
-@@||api.bilibili.com^
-@@||interface.bilibili.com^
-@@||www.iqiyi.com^
-@@||iqiyi.com^
-@@||cache.video.iqiyi.com^
-@@||v.qq.com^
-@@||vv.video.qq.com^
-@@||btrace.video.qq.com^
-@@||www.youku.com^
-@@||youku.com^
-@@||acs.youku.com^
-@@||www.mgtv.com^
-@@||mgtv.com^
-@@||www.acfun.cn^
-@@||acfun.cn^
-@@||www.youtube.com^
-@@||youtube.com^
-@@||www.twitch.tv^
-@@||twitch.tv^
-@@||www.netflix.com^
-@@||netflix.com^
-@@||www.hulu.com^
-@@||hulu.com^
+! 本地生活与O2O
+@@||meituan.com^
+@@||www.meituan.com^
+@@||i.meituan.com^
+@@||ele.me^
+@@||www.ele.me^
+@@||maicai.cn^
+@@||www.maicai.cn^
+@@||didiglobal.com^
+@@||www.didiglobal.com^
+@@||didichuxing.com^
+@@||caocao.fr^
+@@||www.caocao.fr^
 
-! 新闻资讯
-@@||www.people.com.cn^
-@@||people.com.cn^
-@@||www.xinhuanet.com^
-@@||xinhuanet.com^
-@@||www.sina.com.cn^
-@@||sina.com.cn^
-@@||news.sina.com.cn^
-@@||finance.sina.com.cn^
-@@||sports.sina.com.cn^
-@@||www.163.com^
-@@||163.com^
-@@||news.163.com^
-@@||www.sohu.com^
-@@||sohu.com^
-@@||news.sohu.com^
-@@||www.ifeng.com^
-@@||ifeng.com^
-@@||news.ifeng.com^
-@@||www.caixin.com^
-@@||caixin.com^
-@@||www.thepaper.cn^
-@@||thepaper.cn^
-@@||www.zaobao.com^
-@@||zaobao.com^
-@@||www.cctv.com^
-@@||cctv.com^
-@@||tv.cctv.com^
-@@||news.cctv.com^
+! 健康医疗
+@@||jdhealth.com^
+@@||www.jdhealth.com^
+@@||alijk.com^
+@@||www.alijk.com^
+@@||dxy.cn^
+@@||www.dxy.cn^
+@@||haodf.com^
+@@||www.haodf.com^
+@@||weipu.com^
+@@||www.weipu.com^
 
-! 银行金融
-@@||www.icbc.com.cn^
-@@||icbc.com.cn^
-@@||mybank.icbc.com.cn^
-@@||www.ccb.com^
-@@||ccb.com^
-@@||ibsbjstar.ccb.com.cn^
-@@||www.boc.cn^
-@@||boc.cn^
-@@||ebsnew.boc.cn^
-@@||www.abcchina.com^
-@@||abcchina.com^
-@@||www.abchina.com^
-@@||abchina.com^
-@@||www.cmbchina.com^
-@@||cmbchina.com^
-@@||mobile.cmbchina.com^
-@@||www.psbc.com^
-@@||psbc.com^
-@@||www.cib.com.cn^
-@@||cib.com.cn^
-@@||www.cmbc.com.cn^
-@@||cmbc.com.cn^
-@@||www.alipay.com^
-@@||alipay.com^
-@@||www.wechat.com^
-@@||wechat.com^
-@@||pay.wechat.com^
+! =============== 政府与公共服务更新 ===============
 
-! 政府网站
-@@||www.gov.cn^
-@@||gov.cn^
-@@||www.beijing.gov.cn^
-@@||beijing.gov.cn^
-@@||www.shanghai.gov.cn^
-@@||shanghai.gov.cn^
-@@||www.guangzhou.gov.cn^
-@@||guangzhou.gov.cn^
-@@||www.shenzhen.gov.cn^
-@@||shenzhen.gov.cn^
-@@||www.moe.gov.cn^
-@@||moe.gov.cn^
-@@||www.miit.gov.cn^
-@@||miit.gov.cn^
-@@||www.nhc.gov.cn^
-@@||nhc.gov.cn^
-@@||www.customs.gov.cn^
-@@||customs.gov.cn^
-@@||www.tax.gov.cn^
-@@||tax.gov.cn^
+! 新增政府服务平台
+@@||www.12306.cn^
+@@||12306.cn^
+@@||www.12315.cn^
+@@||12315.cn^
+@@||www.12345.gov.cn^
+@@||12345.gov.cn^
+@@||gjzwfw.gov.cn^
+@@||www.gjzwfw.gov.cn^
+@@||zwfw.fujian.gov.cn^
+@@||zwfw.beijing.gov.cn^
+@@||zwfw.shanghai.gov.cn^
+@@||sz.gov.cn^
+@@||www.sz.gov.cn^
 
-! 教育网站
-@@||www.moe.edu.cn^
-@@||moe.edu.cn^
-@@||www.xuexi.cn^
-@@||xuexi.cn^
-@@||www.coursera.org^
-@@||coursera.org^
-@@||www.edx.org^
-@@||edx.org^
-@@||www.udemy.com^
-@@||udemy.com^
-@@||www.khanacademy.org^
-@@||khanacademy.org^
-@@||www.icourse163.org^
-@@||icourse163.org^
-@@||www.zhihuishu.com^
-@@||zhihuishu.com^
+! 国家部委新增
+@@||www.nmpa.gov.cn^
+@@||nmpa.gov.cn^
+@@||www.samr.gov.cn^
+@@||samr.gov.cn^
+@@||www.mps.gov.cn^
+@@||mps.gov.cn^
+@@||www.chinatax.gov.cn^
+@@||chinatax.gov.cn^
+@@||www.pbc.gov.cn^
+@@||pbc.gov.cn^
+@@||www.safe.gov.cn^
+@@||safe.gov.cn^
 
-! 工具网站
-@@||www.github.com^
-@@||github.com^
-@@||api.github.com^
-@@||raw.githubusercontent.com^
-@@||gitlab.com^
-@@||www.gitlab.com^
-@@||stackoverflow.com^
-@@||www.stackoverflow.com^
-@@||developer.mozilla.org^
-@@||www.npmjs.com^
-@@||npmjs.com^
-@@||www.docker.com^
-@@||docker.com^
-@@||www.python.org^
-@@||python.org^
-@@||www.java.com^
-@@||java.com^
-@@||www.nodejs.org^
-@@||nodejs.org^
-@@||www.rust-lang.org^
-@@||rust-lang.org^
-@@||www.golang.org^
-@@||golang.org^
-@@||www.microsoft.com^
-@@||microsoft.com^
-@@||www.apple.com^
-@@||apple.com^
-@@||www.linux.org^
-@@||linux.org^
+! =============== 金融科技更新 ===============
 
-! 云服务
-@@||www.aliyun.com^
-@@||aliyun.com^
-@@||cloud.tencent.com^
-@@||www.huaweicloud.com^
-@@||huaweicloud.com^
-@@||www.amazonaws.com^
-@@||amazonaws.com^
-@@||console.cloud.google.com^
-@@||cloud.google.com^
-@@||www.azure.com^
-@@||azure.com^
-@@||portal.azure.com^
-@@||www.cloudflare.com^
-@@||cloudflare.com^
-@@||www.digitalocean.com^
-@@||digitalocean.com^
-@@||www.vultr.com^
-@@||vultr.com^
-@@||www.linode.com^
-@@||linode.com^
+! 数字人民币
+@@||e-cny.cn^
+@@||www.e-cny.cn^
+@@||pbc-dcep.cn^
+@@||www.pbc-dcep.cn^
 
-! =============== 常见误拦截例外 ===============
-! 网站功能所需
+! 互联网金融平台
+@@||antgroup.com^
+@@||www.antgroup.com^
+@@||mybank.cn^
+@@||www.mybank.cn^
+@@||webank.com^
+@@||www.webank.com^
+@@||licaidai.com^
+@@||www.licaidai.com^
+@@||lu.com^
+@@||www.lu.com^
+@@||xiaoying.com^
+@@||www.xiaoying.com^
 
-! 验证码服务
-@@||captcha.*.com^
-@@||verify.*.com^
-@@||geetest.com^
-@@||www.geetest.com^
-@@||static.geetest.com^
-@@||gcaptcha4.geetest.com^
-@@||verify.qq.com^
-@@||captcha.qq.com^
-@@||verify.baidu.com^
-@@||captcha.baidu.com^
+! 证券与理财
+@@||eastmoney.com^
+@@||www.eastmoney.com^
+@@||hexun.com^
+@@||www.hexun.com^
+@@||jrj.com.cn^
+@@||www.jrj.com.cn^
+@@||chinawealth.com.cn^
+@@||www.chinawealth.com.cn^
+@@||zszq.com^
+@@||www.zszq.com^
 
-! 支付接口
-@@||pay.*.com^
-@@||alipay.com^
-@@||*.alipay.com^
-@@||wx.qq.com^
-@@||*.wx.qq.com^
-@@||pay.weixin.qq.com^
-@@||mclient.alipay.com^
-@@||mapi.alipay.com^
-@@||cashier.alipay.com^
-@@||*.alipayobjects.com^
-@@||*.alipaylog.com^
-@@||*.alibaba.com^
-@@||unionpay.com^
-@@||*.unionpay.com^
-@@||paypal.com^
-@@||*.paypal.com^
-@@||stripe.com^
-@@||*.stripe.com^
+! =============== 工具与开发者服务更新 ===============
 
-! 登录认证
-@@||login.*.com^
-@@||oauth.*.com^
-@@||auth.*.com^
-@@||account.*.com^
-@@||passport.*.com^
-@@||sso.*.com^
-@@||*.auth0.com^
-@@||*.okta.com^
-@@||*.onelogin.com^
+! 新增开发者平台
+@@||vercel.com^
+@@||www.vercel.com^
+@@||api.vercel.com^
+@@||netlify.com^
+@@||www.netlify.com^
+@@||api.netlify.com^
+@@||supabase.com^
+@@||www.supabase.com^
+@@||api.supabase.com^
+@@||replit.com^
+@@||www.replit.com^
+@@||codesandbox.io^
+@@||www.codesandbox.io^
+@@||glitch.com^
+@@||www.glitch.com^
 
-! 统计代码（部分必要情况）
-@@||tongji.*.com^$document
-@@||hm.baidu.com^$document
-@@||s19.cnzz.com^$document
-@@||pv.sohu.com^$document
-@@||s4.cnzz.com^$document
-@@||c.cnzz.com^$document
-@@||v1.cnzz.com^$document
-@@||datax.baidu.com^$document
+! 数据库与后端服务
+@@||mongodb.com^
+@@||www.mongodb.com^
+@@||api.mongodb.com^
+@@||redis.io^
+@@||www.redis.io^
+@@||elastic.co^
+@@||www.elastic.co^
+@@||api.elastic.co^
+@@||postgresql.org^
+@@||www.postgresql.org^
+@@||mysql.com^
+@@||www.mysql.com^
 
-! 内容分发网络
-@@||cdn.*.com^$domain=~cdn-ads.com
-@@||static.*.com^
-@@||assets.*.com^
-@@||img.*.com^
-@@||image.*.com^
-@@||pic.*.com^
-@@||media.*.com^
+! =============== 更精确的规则优化 ===============
 
-! =============== 特殊规则格式 ===============
-! 更精确的白名单规则
+! 精确匹配支付接口（避免广告滥用）
+@@||pay.taobao.com^
+@@||cashier.alipay.com/cashier/pay^
+@@||pay.weixin.qq.com/cgi-bin/mmpay^
+@@||api.mch.weixin.qq.com/pay^
+@@||openapi.alipay.com/gateway.do^$xmlhttprequest
 
-! 允许特定路径
-@@||example.com/important/path^
-@@||api.example.com/data^
-@@||download.example.com/software^
+! 精确匹配登录接口
+@@||passport.bilibili.com/login^
+@@||passport.jd.com/login^
+@@||login.taobao.com/member/login^
+@@||sso.zhihu.com/login^
+@@||oauth.douban.com/auth^
+@@||graph.qq.com/oauth2.0/authorize^
 
-! 允许特定类型的内容
-@@||example.com^$script
-@@||example.com^$image
-@@||example.com^$font
-@@||example.com^$stylesheet
-@@||example.com^$xmlhttprequest
-@@||example.com^$object
-@@||example.com^$media
+! 精确的CDN白名单（排除广告CDN）
+@@||cdn.jsdelivr.net^
+@@||unpkg.com^
+@@||cdn.bootcdn.net^
+@@||lf-cdn.com^
+@@||g.alicdn.com^$domain=~adsystem
+@@||tbcdn.cn^$domain=~adtracking
+@@||qpic.cn^$domain=~adservice
 
-! 仅允许主域名，排除子域名
-@@||example.com^$domain=example.com
-@@||main-site.com^$domain=main-site.com
+! =============== 物联网/智能设备服务 ===============
 
-! =============== 系统服务 ===============
-! 操作系统和应用商店
+! 智能家居平台
+@@||mi.com^$domain=mi.com
+@@||app.mi.com^
+@@||home.mi.com^
+@@||aiot.xiaomi.com^
+@@||huaweihilink.com^
+@@||www.huaweihilink.com^
+@@||haier.com^
+@@||www.haier.com^
+@@||hisense.com^
+@@||www.hisense.com^
 
-! Windows更新
-@@||*.windowsupdate.com^
-@@||*.update.microsoft.com^
-@@||*.delivery.mp.microsoft.com^
-@@||*.dl.delivery.mp.microsoft.com^
+! 车联网服务
+@@||autohome.com.cn^
+@@||www.autohome.com.cn^
+@@||api.autohome.com.cn^
+@@||dcdapp.com^
+@@||www.dcdapp.com^
 
-! Apple服务
-@@||*.apple.com^
-@@||*.mzstatic.com^
-@@||*.appstore.com^
-@@||*.icloud.com^
-@@||*.itunes.apple.com^
+! =============== 临时白名单（按需启用） ===============
 
-! Android/Google服务
-@@||*.googleapis.com^
-@@||*.gstatic.com^
-@@||*.googleusercontent.com^
-@@||*.play.google.com^
-@@||*.android.com^
+! 测试环境（取消注释启用）
+! @@||test.example.com^
+! @@||preview.example.com^
+! @@||uat.example.com^
+! @@||sandbox.example.com^
+! @@||demo.example.com^
 
-! Linux发行版
-@@||*.ubuntu.com^
-@@||*.debian.org^
-@@||*.archlinux.org^
-@@||*.centos.org^
-@@||*.fedoraproject.org^
-@@||*.opensuse.org^
+! 开发工具
+! @@||localhost:3000^
+! @@||localhost:8080^
+! @@||127.0.0.1:8000^
+! @@||devtools://devtools^
+! @@||chrome://inspect^
 
-! 软件更新
-@@||update.*.com^
-@@||download.*.com^
-@@||cdn.*.com/updates^
-
-! =============== 临时白名单 ===============
-! 调试时使用，可随时移除
-
-! @@||test-site.com^
-! @@||debug.example.com^
-! @@||staging.example.com^
-! @@||dev.example.com^
-! @@||localhost^
-! @@||127.0.0.1^
-
-! =============== 说明 ===============
-! 1. @@ 表示白名单规则
-! 2. || 表示匹配域名及其所有子域名
-! 3. ^ 表示URL结束符
-! 4. $ 后面是规则选项，如 $document 表示只对文档生效
-! 5. 删除行首的 ! 可以启用该规则
-! 6. 添加新规则时，请确保格式正确
+! =============== 使用建议 ===============
+! 1. 定期审查白名单，移除不再需要的规则
+! 2. 优先使用精确匹配（带路径）而非通配符
+! 3. 对于用户生成内容的平台，保持广告拦截
+! 4. 使用$document限定符保护隐私
+! 5. 建议每季度更新一次规则
+! 6. 关注GitHub项目更新：https://github.com/wansheng8/adblock
