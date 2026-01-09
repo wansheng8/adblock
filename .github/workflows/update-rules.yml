@@ -385,69 +385,90 @@ jobs:
         touch dist/dns.txt dist/hosts.txt dist/filter.txt
         touch dist/metadata.json dist/validation_report.json 2>/dev/null || true
         
+        # 初始化变量（避免空值）
+        DNS_RULES=0
+        DNS_LINES=0
+        DNS_SIZE=0
+        HOSTS_RULES=0
+        HOSTS_LINES=0
+        HOSTS_SIZE=0
+        FILTER_RULES=0
+        FILTER_LINES=0
+        FILTER_SIZE=0
+        TOTAL_RULES=0
+        TOTAL_SIZE=0
+        DOMAIN_RULES=0
+        ELEMENT_RULES=0
+        EXCEPTION_RULES=0
+        ADVANCED_RULES=0
+        
         # 统计规则数量
         echo "📊 统计三层规则数量..."
         
-        if [ -f dist/dns.txt ]; then
-          DNS_RULES=$(grep -v '^#' dist/dns.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        if [ -f dist/dns.txt ] && [ -s dist/dns.txt ]; then
+          DNS_RULES=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' 2>/dev/null | wc -l 2>/dev/null || echo "0")
           DNS_LINES=$(wc -l < dist/dns.txt 2>/dev/null || echo "0")
           DNS_SIZE=$(wc -c < dist/dns.txt 2>/dev/null || echo "0")
+          # 清理变量：去除空格和换行符
+          DNS_RULES=${DNS_RULES//[^0-9]/}
+          DNS_LINES=${DNS_LINES//[^0-9]/}
+          DNS_SIZE=${DNS_SIZE//[^0-9]/}
           echo "📄 DNS规则统计:"
           echo "  ├── 有效规则: $DNS_RULES 条"
           echo "  ├── 总行数: $DNS_LINES 行"
           echo "  └── 文件大小: $((DNS_SIZE/1024))KB"
         else
-          DNS_RULES=0
-          DNS_LINES=0
-          DNS_SIZE=0
-          echo "❌ DNS规则文件不存在"
+          echo "❌ DNS规则文件不存在或为空"
         fi
         
-        if [ -f dist/hosts.txt ]; then
-          HOSTS_RULES=$(grep -v '^#' dist/hosts.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        if [ -f dist/hosts.txt ] && [ -s dist/hosts.txt ]; then
+          HOSTS_RULES=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' 2>/dev/null | wc -l 2>/dev/null || echo "0")
           HOSTS_LINES=$(wc -l < dist/hosts.txt 2>/dev/null || echo "0")
           HOSTS_SIZE=$(wc -c < dist/hosts.txt 2>/dev/null || echo "0")
+          # 清理变量
+          HOSTS_RULES=${HOSTS_RULES//[^0-9]/}
+          HOSTS_LINES=${HOSTS_LINES//[^0-9]/}
+          HOSTS_SIZE=${HOSTS_SIZE//[^0-9]/}
           echo "📄 Hosts规则统计:"
           echo "  ├── 有效规则: $HOSTS_RULES 条"
           echo "  ├── 总行数: $HOSTS_LINES 行"
           echo "  └── 文件大小: $((HOSTS_SIZE/1024))KB"
         else
-          HOSTS_RULES=0
-          HOSTS_LINES=0
-          HOSTS_SIZE=0
-          echo "❌ Hosts规则文件不存在"
+          echo "❌ Hosts规则文件不存在或为空"
         fi
         
-        if [ -f dist/filter.txt ]; then
-          FILTER_RULES=$(grep -v '^!' dist/filter.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        if [ -f dist/filter.txt ] && [ -s dist/filter.txt ]; then
+          FILTER_RULES=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' 2>/dev/null | wc -l 2>/dev/null || echo "0")
           FILTER_LINES=$(wc -l < dist/filter.txt 2>/dev/null || echo "0")
           FILTER_SIZE=$(wc -c < dist/filter.txt 2>/dev/null || echo "0")
+          # 清理变量
+          FILTER_RULES=${FILTER_RULES//[^0-9]/}
+          FILTER_LINES=${FILTER_LINES//[^0-9]/}
+          FILTER_SIZE=${FILTER_SIZE//[^0-9]/}
           echo "📄 浏览器规则统计:"
           echo "  ├── 有效规则: $FILTER_RULES 条"
           echo "  ├── 总行数: $FILTER_LINES 行"
           echo "  └── 文件大小: $((FILTER_SIZE/1024))KB"
         else
-          FILTER_RULES=0
-          FILTER_LINES=0
-          FILTER_SIZE=0
-          echo "❌ 浏览器规则文件不存在"
+          echo "❌ 浏览器规则文件不存在或为空"
         fi
         
         TOTAL_RULES=$((DNS_RULES + HOSTS_RULES + FILTER_RULES))
         TOTAL_SIZE=$((DNS_SIZE + HOSTS_SIZE + FILTER_SIZE))
         
         # 浏览器规则分类统计
-        DOMAIN_RULES=0
-        ELEMENT_RULES=0
-        EXCEPTION_RULES=0
-        ADVANCED_RULES=0
-        
-        if [ -f dist/filter.txt ]; then
+        if [ -f dist/filter.txt ] && [ -s dist/filter.txt ]; then
           echo "⚡ 浏览器规则分类统计..."
           DOMAIN_RULES=$(grep -c '^||' dist/filter.txt 2>/dev/null || echo "0")
           ELEMENT_RULES=$(grep -c '^##' dist/filter.txt 2>/dev/null || echo "0")
           EXCEPTION_RULES=$(grep -c '^@@' dist/filter.txt 2>/dev/null || echo "0")
           ADVANCED_RULES=$(grep -c '\$' dist/filter.txt 2>/dev/null || echo "0")
+          
+          # 清理变量
+          DOMAIN_RULES=${DOMAIN_RULES//[^0-9]/}
+          ELEMENT_RULES=${ELEMENT_RULES//[^0-9]/}
+          EXCEPTION_RULES=${EXCEPTION_RULES//[^0-9]/}
+          ADVANCED_RULES=${ADVANCED_RULES//[^0-9]/}
           
           echo "  ├── 域名拦截规则: $DOMAIN_RULES 条"
           echo "  ├── 元素隐藏规则: $ELEMENT_RULES 条"
@@ -455,19 +476,51 @@ jobs:
           echo "  └── 高级规则: $ADVANCED_RULES 条"
         fi
         
+        # 确保变量都是数字（设置默认值）
+        DNS_RULES=${DNS_RULES:-0}
+        HOSTS_RULES=${HOSTS_RULES:-0}
+        FILTER_RULES=${FILTER_RULES:-0}
+        TOTAL_RULES=${TOTAL_RULES:-0}
+        DNS_SIZE=${DNS_SIZE:-0}
+        HOSTS_SIZE=${HOSTS_SIZE:-0}
+        FILTER_SIZE=${FILTER_SIZE:-0}
+        TOTAL_SIZE=${TOTAL_SIZE:-0}
+        DOMAIN_RULES=${DOMAIN_RULES:-0}
+        ELEMENT_RULES=${ELEMENT_RULES:-0}
+        EXCEPTION_RULES=${EXCEPTION_RULES:-0}
+        ADVANCED_RULES=${ADVANCED_RULES:-0}
+        
+        # 调试：显示所有变量的值
+        echo ""
+        echo "🔍 调试信息 - 变量值:"
+        echo "DNS_RULES=$DNS_RULES"
+        echo "HOSTS_RULES=$HOSTS_RULES"
+        echo "FILTER_RULES=$FILTER_RULES"
+        echo "TOTAL_RULES=$TOTAL_RULES"
+        echo "DOMAIN_RULES=$DOMAIN_RULES"
+        echo "ELEMENT_RULES=$ELEMENT_RULES"
+        echo "EXCEPTION_RULES=$EXCEPTION_RULES"
+        echo "ADVANCED_RULES=$ADVANCED_RULES"
+        echo "DNS_SIZE=$DNS_SIZE"
+        echo "HOSTS_SIZE=$HOSTS_SIZE"
+        echo "FILTER_SIZE=$FILTER_SIZE"
+        echo "TOTAL_SIZE=$TOTAL_SIZE"
+        
         # 输出到环境变量
-        echo "dns_rules=$DNS_RULES" >> "$GITHUB_OUTPUT"
-        echo "hosts_rules=$HOSTS_RULES" >> "$GITHUB_OUTPUT"
-        echo "filter_rules=$FILTER_RULES" >> "$GITHUB_OUTPUT"
-        echo "total_rules=$TOTAL_RULES" >> "$GITHUB_OUTPUT"
-        echo "domain_rules=$DOMAIN_RULES" >> "$GITHUB_OUTPUT"
-        echo "element_rules=$ELEMENT_RULES" >> "$GITHUB_OUTPUT"
-        echo "exception_rules=$EXCEPTION_RULES" >> "$GITHUB_OUTPUT"
-        echo "advanced_rules=$ADVANCED_RULES" >> "$GITHUB_OUTPUT"
-        echo "dns_size=$DNS_SIZE" >> "$GITHUB_OUTPUT"
-        echo "hosts_size=$HOSTS_SIZE" >> "$GITHUB_OUTPUT"
-        echo "filter_size=$FILTER_SIZE" >> "$GITHUB_OUTPUT"
-        echo "total_size=$TOTAL_SIZE" >> "$GITHUB_OUTPUT"
+        {
+          echo "dns_rules=${DNS_RULES}"
+          echo "hosts_rules=${HOSTS_RULES}"
+          echo "filter_rules=${FILTER_RULES}"
+          echo "total_rules=${TOTAL_RULES}"
+          echo "domain_rules=${DOMAIN_RULES}"
+          echo "element_rules=${ELEMENT_RULES}"
+          echo "exception_rules=${EXCEPTION_RULES}"
+          echo "advanced_rules=${ADVANCED_RULES}"
+          echo "dns_size=${DNS_SIZE}"
+          echo "hosts_size=${HOSTS_SIZE}"
+          echo "filter_size=${FILTER_SIZE}"
+          echo "total_size=${TOTAL_SIZE}"
+        } >> "$GITHUB_OUTPUT"
         
         echo "✅ 文件统计完成"
     
@@ -488,24 +541,14 @@ jobs:
         NEXT_TIME=$(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M:%S')
         
         # 从环境变量获取统计信息
-        DNS_RULES="${{ steps.generate-files.outputs.dns_rules }}"
-        HOSTS_RULES="${{ steps.generate-files.outputs.hosts_rules }}"
-        FILTER_RULES="${{ steps.generate-files.outputs.filter_rules }}"
-        TOTAL_RULES="${{ steps.generate-files.outputs.total_rules }}"
-        DOMAIN_RULES="${{ steps.generate-files.outputs.domain_rules }}"
-        ELEMENT_RULES="${{ steps.generate-files.outputs.element_rules }}"
-        EXCEPTION_RULES="${{ steps.generate-files.outputs.exception_rules }}"
-        ADVANCED_RULES="${{ steps.generate-files.outputs.advanced_rules }}"
-        
-        # 设置默认值
-        DNS_RULES=${DNS_RULES:-0}
-        HOSTS_RULES=${HOSTS_RULES:-0}
-        FILTER_RULES=${FILTER_RULES:-0}
-        TOTAL_RULES=${TOTAL_RULES:-0}
-        DOMAIN_RULES=${DOMAIN_RULES:-0}
-        ELEMENT_RULES=${ELEMENT_RULES:-0}
-        EXCEPTION_RULES=${EXCEPTION_RULES:-0}
-        ADVANCED_RULES=${ADVANCED_RULES:-0}
+        DNS_RULES="${DNS_RULES:-0}"
+        HOSTS_RULES="${HOSTS_RULES:-0}"
+        FILTER_RULES="${FILTER_RULES:-0}"
+        TOTAL_RULES="${TOTAL_RULES:-0}"
+        DOMAIN_RULES="${DOMAIN_RULES:-0}"
+        ELEMENT_RULES="${ELEMENT_RULES:-0}"
+        EXCEPTION_RULES="${EXCEPTION_RULES:-0}"
+        ADVANCED_RULES="${ADVANCED_RULES:-0}"
         
         # 文件大小格式化
         format_size() {
