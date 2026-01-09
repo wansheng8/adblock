@@ -1,8 +1,8 @@
 [Adblock Plus 2.0]
-! Checksum: 4eFOdL8diKFEy9zapD6ZQQ
-! Version: 202601090351
+! Checksum: 2JMDTKsfIN9ClHG/jQsAGg
+! Version: 202601090431
 ! Title: EasyList
-! Last modified: 09 Jan 2026 03:51 UTC
+! Last modified: 09 Jan 2026 04:31 UTC
 ! Expires: 1 days (update frequency)
 ! Homepage: https://easylist.to/
 ! Licence: https://easylist.to/pages/licence.html
@@ -20735,6 +20735,7 @@ browsershots.org#@#.advert_area
 ||blowyameen.qpon^
 ||blp153cwjepm568x.cfd^
 ||blpjxkhubqsmsy.xyz^
+||blqexmpshhuej.site^
 ||blqsrexczsqht.site^
 ||blrgqpbkpsglh.com^
 ||blroyvengw.com^
@@ -30344,6 +30345,7 @@ browsershots.org#@#.advert_area
 ||ghszhdgsydcmt.site^
 ||ghtanothingfrui.org^
 ||ghtry.amateurswild.com^
+||ghuaigotrnbxi.online^
 ||ghuet.xyz^
 ||ghurboizcruvn.online^
 ||ghurrytacoma.com^
@@ -37409,6 +37411,7 @@ browsershots.org#@#.advert_area
 ||lkrhxbrrztyfw.space^
 ||lkrjlsnpsmznd.website^
 ||lksbnrs.com^
+||lkscxlgn.com^
 ||lktopxlbtlb.net^
 ||lktrmbptupqcm.site^
 ||lkuqstofbfrsm.site^
@@ -46201,6 +46204,7 @@ browsershots.org#@#.advert_area
 ||quinoidaureus.rest^
 ||quintesmarek.help^
 ||quioneroudle.com^
+||quipupaginalnymphs.cfd^
 ||quirkystreet.pro^
 ||quitefullofeedshe.com^
 ||quitjav11.fun^
