@@ -6,6 +6,176 @@
   "version": "1.0.0",
   "sources": [
     {
+      "name": "AdGuard Base filter",
+      "url": "https://filters.adtidy.org/android/filters/2_optimized.txt",
+      "type": "filter",
+      "enabled": true,
+      "priority": 1,
+      "description": "AdGuard 官方基础广告过滤规则",
+      "license": "GPL-3.0",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "AdGuard Chinese filter",
+      "url": "https://filters.adtidy.org/android/filters/224_optimized.txt",
+      "type": "filter",
+      "enabled": true,
+      "priority": 1,
+      "description": "AdGuard 中文广告过滤规则",
+      "license": "GPL-3.0",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "AdGuard Mobile Ads filter",
+      "url": "https://filters.adtidy.org/android/filters/11_optimized.txt",
+      "type": "filter",
+      "enabled": true,
+      "priority": 1,
+      "description": "AdGuard 移动端广告过滤规则",
+      "license": "GPL-3.0",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "AdGuard DNS filter",
+      "url": "https://filters.adtidy.org/extension/filters/15.txt",
+      "type": "dns",
+      "enabled": true,
+      "priority": 2,
+      "description": "AdGuard 官方 DNS 过滤规则",
+      "license": "GPL-3.0",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "AdRules DNS List",
+      "url": "https://adrules.top/dns.txt",
+      "type": "dns",
+      "enabled": true,
+      "priority": 2,
+      "description": "AdRules 提供的 DNS 广告拦截规则",
+      "license": "Custom",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "CJX's Annoyance List",
+      "url": "https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt",
+      "type": "filter",
+      "enabled": true,
+      "priority": 3,
+      "description": "CJX 恼人元素移除规则",
+      "license": "MIT",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "EasyList",
+      "url": "https://easylist-downloads.adblockplus.org/easylist.txt",
+      "type": "filter",
+      "enabled": true,
+      "priority": 1,
+      "description": "全球最常用的广告过滤规则",
+      "license": "GPL-3.0",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "EasyList China",
+      "url": "https://easylist-downloads.adblockplus.org/easylistchina.txt",
+      "type": "filter",
+      "enabled": true,
+      "priority": 1,
+      "description": "EasyList 中文规则",
+      "license": "GPL-3.0",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "EasyPrivacy",
+      "url": "https://easylist-downloads.adblockplus.org/easyprivacy.txt",
+      "type": "filter",
+      "enabled": true,
+      "priority": 2,
+      "description": "隐私与跟踪防护规则",
+      "license": "GPL-3.0",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "xinggsf mv",
+      "url": "https://raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/mv.txt",
+      "type": "filter",
+      "enabled": true,
+      "priority": 3,
+      "description": "视频广告拦截规则",
+      "license": "Custom",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "jiekouAD",
+      "url": "https://code.gitlink.org.cn/damengzhu/banad/raw/branch/main/jiekouAD.txt",
+      "type": "filter",
+      "enabled": true,
+      "priority": 3,
+      "description": "接口广告拦截规则",
+      "license": "Custom",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "AWAvenue Ads Rule",
+      "url": "https://adrules.top/dns.txt",
+      "type": "dns",
+      "enabled": true,
+      "priority": 2,
+      "description": "AWAvenue DNS 广告拦截规则",
+      "license": "Custom",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "DNS-Blocklists Light",
+      "url": "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/light.txt",
+      "type": "dns",
+      "enabled": true,
+      "priority": 2,
+      "description": "HaGeZi 轻量级 DNS 黑名单",
+      "license": "MIT",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "Hblock",
+      "url": "https://raw.githubusercontent.com/damienvandesande/HBlock/master/hosts",
+      "type": "host",
+      "enabled": true,
+      "priority": 2,
+      "description": "Hblock hosts 广告与恶意域名拦截",
+      "license": "MIT",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "OISD Basic",
+      "url": "https://raw.githubusercontent.com/OISD/OISD-blocklist/master/hosts_basic.txt",
+      "type": "host",
+      "enabled": true,
+      "priority": 1,
+      "description": "OISD 基础版 hosts 规则",
+      "license": "MIT",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "StevenBlack hosts",
+      "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
+      "type": "host",
+      "enabled": true,
+      "priority": 1,
+      "description": "StevenBlack 综合 hosts 阻断列表",
+      "license": "MIT",
+      "update_frequency": "daily"
+    },
+    {
+      "name": "Pollock hosts",
+      "url": "https://winhelp2002.mvps.org/hosts.txt",
+      "type": "host",
+      "enabled": true,
+      "priority": 2,
+      "description": "Dan Pollock hosts 广告阻断列表",
+      "license": "Custom",
+      "update_frequency": "daily"
+    },
+    {
       "name": "混合规则集合",
       "url": "https://raw.githubusercontent.com/wansheng8/adblock/main/sources/gz.txt",
       "type": "mixed",
@@ -15,6 +185,7 @@
       "license": "Mixed",
       "update_frequency": "daily"
     }
+    
   ],
   "rule_categories": [
     "广告拦截",
