@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
+from typing import Tuple  # 添加这个导入
 
 
 class RuleValidator:
