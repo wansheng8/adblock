@@ -1,14 +1,2033 @@
 {
-  "last_updated": "2026-01-09T22:53:43.035816+08:00",
+  "last_updated": "2026-01-09T23:43:59.545723+08:00",
   "rule_counts": {
-    "dns_rules": 236397,
-    "hosts_rules": 236397,
-    "browser_rules": 268879,
-    "total_rules": 741673
+    "dns_rules": 1547788,
+    "hosts_rules": 1554325,
+    "browser_rules": 1827307,
+    "total_rules": 4929420
   },
-  "sources_used": 15,
-  "sources_total": 18,
-  "next_update": "2026-01-10T06:53:43.035816+08:00",
-  "syntax_version": "1.0",
-  "notes": "新语法规则：DNS/Hosts只放域名，浏览器才用复杂语法"
+  "sources_used": 398,
+  "sources_total": 403,
+  "sources_failed": 5,
+  "sources_list": [
+    {
+      "name": "AdGuard Base filter",
+      "type": "filter",
+      "priority": 1
+    },
+    {
+      "name": "AdGuard Chinese filter",
+      "type": "filter",
+      "priority": 1
+    },
+    {
+      "name": "AdGuard Mobile Ads filter",
+      "type": "filter",
+      "priority": 1
+    },
+    {
+      "name": "EasyList",
+      "type": "filter",
+      "priority": 1
+    },
+    {
+      "name": "EasyList China",
+      "type": "filter",
+      "priority": 1
+    },
+    {
+      "name": "OISD Basic",
+      "type": "host",
+      "priority": 1
+    },
+    {
+      "name": "StevenBlack hosts",
+      "type": "host",
+      "priority": 1
+    },
+    {
+      "name": "混合规则集合",
+      "type": "mixed",
+      "priority": 1
+    },
+    {
+      "name": "AdGuard DNS filter",
+      "type": "dns",
+      "priority": 2
+    },
+    {
+      "name": "AdRules DNS List",
+      "type": "dns",
+      "priority": 2
+    },
+    {
+      "name": "EasyPrivacy",
+      "type": "filter",
+      "priority": 2
+    },
+    {
+      "name": "AWAvenue Ads Rule",
+      "type": "dns",
+      "priority": 2
+    },
+    {
+      "name": "DNS-Blocklists Light",
+      "type": "dns",
+      "priority": 2
+    },
+    {
+      "name": "Hblock",
+      "type": "host",
+      "priority": 2
+    },
+    {
+      "name": "Pollock hosts",
+      "type": "host",
+      "priority": 2
+    },
+    {
+      "name": "CJX's Annoyance List",
+      "type": "filter",
+      "priority": 3
+    },
+    {
+      "name": "xinggsf mv",
+      "type": "filter",
+      "priority": 3
+    },
+    {
+      "name": "jiekouAD",
+      "type": "filter",
+      "priority": 3
+    },
+    {
+      "name": "gz_rule_001",
+      "type": "gz_txt",
+      "priority": 999
+    },
+    {
+      "name": "gz_rule_002",
+      "type": "gz_txt",
+      "priority": 1000
+    },
+    {
+      "name": "gz_rule_003",
+      "type": "gz_txt",
+      "priority": 1001
+    },
+    {
+      "name": "gz_rule_004",
+      "type": "gz_txt",
+      "priority": 1002
+    },
+    {
+      "name": "gz_rule_005",
+      "type": "gz_txt",
+      "priority": 1003
+    },
+    {
+      "name": "gz_rule_006",
+      "type": "gz_txt",
+      "priority": 1004
+    },
+    {
+      "name": "gz_rule_007",
+      "type": "gz_txt",
+      "priority": 1005
+    },
+    {
+      "name": "gz_rule_008",
+      "type": "gz_txt",
+      "priority": 1006
+    },
+    {
+      "name": "gz_rule_009",
+      "type": "gz_txt",
+      "priority": 1007
+    },
+    {
+      "name": "gz_rule_010",
+      "type": "gz_txt",
+      "priority": 1008
+    },
+    {
+      "name": "gz_rule_011",
+      "type": "gz_txt",
+      "priority": 1009
+    },
+    {
+      "name": "gz_rule_012",
+      "type": "gz_txt",
+      "priority": 1010
+    },
+    {
+      "name": "gz_rule_013",
+      "type": "gz_txt",
+      "priority": 1011
+    },
+    {
+      "name": "gz_rule_014",
+      "type": "gz_txt",
+      "priority": 1012
+    },
+    {
+      "name": "gz_rule_015",
+      "type": "gz_txt",
+      "priority": 1013
+    },
+    {
+      "name": "gz_rule_016",
+      "type": "gz_txt",
+      "priority": 1014
+    },
+    {
+      "name": "gz_rule_017",
+      "type": "gz_txt",
+      "priority": 1015
+    },
+    {
+      "name": "gz_rule_018",
+      "type": "gz_txt",
+      "priority": 1016
+    },
+    {
+      "name": "gz_rule_019",
+      "type": "gz_txt",
+      "priority": 1017
+    },
+    {
+      "name": "gz_rule_020",
+      "type": "gz_txt",
+      "priority": 1018
+    },
+    {
+      "name": "gz_rule_021",
+      "type": "gz_txt",
+      "priority": 1019
+    },
+    {
+      "name": "gz_rule_022",
+      "type": "gz_txt",
+      "priority": 1020
+    },
+    {
+      "name": "gz_rule_023",
+      "type": "gz_txt",
+      "priority": 1021
+    },
+    {
+      "name": "gz_rule_024",
+      "type": "gz_txt",
+      "priority": 1022
+    },
+    {
+      "name": "gz_rule_025",
+      "type": "gz_txt",
+      "priority": 1023
+    },
+    {
+      "name": "gz_rule_026",
+      "type": "gz_txt",
+      "priority": 1024
+    },
+    {
+      "name": "gz_rule_027",
+      "type": "gz_txt",
+      "priority": 1025
+    },
+    {
+      "name": "gz_rule_028",
+      "type": "gz_txt",
+      "priority": 1026
+    },
+    {
+      "name": "gz_rule_029",
+      "type": "gz_txt",
+      "priority": 1027
+    },
+    {
+      "name": "gz_rule_030",
+      "type": "gz_txt",
+      "priority": 1028
+    },
+    {
+      "name": "gz_rule_031",
+      "type": "gz_txt",
+      "priority": 1029
+    },
+    {
+      "name": "gz_rule_032",
+      "type": "gz_txt",
+      "priority": 1030
+    },
+    {
+      "name": "gz_rule_033",
+      "type": "gz_txt",
+      "priority": 1031
+    },
+    {
+      "name": "gz_rule_034",
+      "type": "gz_txt",
+      "priority": 1032
+    },
+    {
+      "name": "gz_rule_035",
+      "type": "gz_txt",
+      "priority": 1033
+    },
+    {
+      "name": "gz_rule_036",
+      "type": "gz_txt",
+      "priority": 1034
+    },
+    {
+      "name": "gz_rule_037",
+      "type": "gz_txt",
+      "priority": 1035
+    },
+    {
+      "name": "gz_rule_038",
+      "type": "gz_txt",
+      "priority": 1036
+    },
+    {
+      "name": "gz_rule_039",
+      "type": "gz_txt",
+      "priority": 1037
+    },
+    {
+      "name": "gz_rule_040",
+      "type": "gz_txt",
+      "priority": 1038
+    },
+    {
+      "name": "gz_rule_041",
+      "type": "gz_txt",
+      "priority": 1039
+    },
+    {
+      "name": "gz_rule_042",
+      "type": "gz_txt",
+      "priority": 1040
+    },
+    {
+      "name": "gz_rule_043",
+      "type": "gz_txt",
+      "priority": 1041
+    },
+    {
+      "name": "gz_rule_044",
+      "type": "gz_txt",
+      "priority": 1042
+    },
+    {
+      "name": "gz_rule_045",
+      "type": "gz_txt",
+      "priority": 1043
+    },
+    {
+      "name": "gz_rule_046",
+      "type": "gz_txt",
+      "priority": 1044
+    },
+    {
+      "name": "gz_rule_047",
+      "type": "gz_txt",
+      "priority": 1045
+    },
+    {
+      "name": "gz_rule_048",
+      "type": "gz_txt",
+      "priority": 1046
+    },
+    {
+      "name": "gz_rule_049",
+      "type": "gz_txt",
+      "priority": 1047
+    },
+    {
+      "name": "gz_rule_050",
+      "type": "gz_txt",
+      "priority": 1048
+    },
+    {
+      "name": "gz_rule_051",
+      "type": "gz_txt",
+      "priority": 1049
+    },
+    {
+      "name": "gz_rule_052",
+      "type": "gz_txt",
+      "priority": 1050
+    },
+    {
+      "name": "gz_rule_053",
+      "type": "gz_txt",
+      "priority": 1051
+    },
+    {
+      "name": "gz_rule_054",
+      "type": "gz_txt",
+      "priority": 1052
+    },
+    {
+      "name": "gz_rule_055",
+      "type": "gz_txt",
+      "priority": 1053
+    },
+    {
+      "name": "gz_rule_056",
+      "type": "gz_txt",
+      "priority": 1054
+    },
+    {
+      "name": "gz_rule_057",
+      "type": "gz_txt",
+      "priority": 1055
+    },
+    {
+      "name": "gz_rule_058",
+      "type": "gz_txt",
+      "priority": 1056
+    },
+    {
+      "name": "gz_rule_059",
+      "type": "gz_txt",
+      "priority": 1057
+    },
+    {
+      "name": "gz_rule_060",
+      "type": "gz_txt",
+      "priority": 1058
+    },
+    {
+      "name": "gz_rule_061",
+      "type": "gz_txt",
+      "priority": 1059
+    },
+    {
+      "name": "gz_rule_062",
+      "type": "gz_txt",
+      "priority": 1060
+    },
+    {
+      "name": "gz_rule_063",
+      "type": "gz_txt",
+      "priority": 1061
+    },
+    {
+      "name": "gz_rule_064",
+      "type": "gz_txt",
+      "priority": 1062
+    },
+    {
+      "name": "gz_rule_065",
+      "type": "gz_txt",
+      "priority": 1063
+    },
+    {
+      "name": "gz_rule_066",
+      "type": "gz_txt",
+      "priority": 1064
+    },
+    {
+      "name": "gz_rule_067",
+      "type": "gz_txt",
+      "priority": 1065
+    },
+    {
+      "name": "gz_rule_068",
+      "type": "gz_txt",
+      "priority": 1066
+    },
+    {
+      "name": "gz_rule_069",
+      "type": "gz_txt",
+      "priority": 1067
+    },
+    {
+      "name": "gz_rule_070",
+      "type": "gz_txt",
+      "priority": 1068
+    },
+    {
+      "name": "gz_rule_071",
+      "type": "gz_txt",
+      "priority": 1069
+    },
+    {
+      "name": "gz_rule_072",
+      "type": "gz_txt",
+      "priority": 1070
+    },
+    {
+      "name": "gz_rule_073",
+      "type": "gz_txt",
+      "priority": 1071
+    },
+    {
+      "name": "gz_rule_074",
+      "type": "gz_txt",
+      "priority": 1072
+    },
+    {
+      "name": "gz_rule_075",
+      "type": "gz_txt",
+      "priority": 1073
+    },
+    {
+      "name": "gz_rule_076",
+      "type": "gz_txt",
+      "priority": 1074
+    },
+    {
+      "name": "gz_rule_077",
+      "type": "gz_txt",
+      "priority": 1075
+    },
+    {
+      "name": "gz_rule_078",
+      "type": "gz_txt",
+      "priority": 1076
+    },
+    {
+      "name": "gz_rule_079",
+      "type": "gz_txt",
+      "priority": 1077
+    },
+    {
+      "name": "gz_rule_080",
+      "type": "gz_txt",
+      "priority": 1078
+    },
+    {
+      "name": "gz_rule_081",
+      "type": "gz_txt",
+      "priority": 1079
+    },
+    {
+      "name": "gz_rule_082",
+      "type": "gz_txt",
+      "priority": 1080
+    },
+    {
+      "name": "gz_rule_083",
+      "type": "gz_txt",
+      "priority": 1081
+    },
+    {
+      "name": "gz_rule_084",
+      "type": "gz_txt",
+      "priority": 1082
+    },
+    {
+      "name": "gz_rule_085",
+      "type": "gz_txt",
+      "priority": 1083
+    },
+    {
+      "name": "gz_rule_086",
+      "type": "gz_txt",
+      "priority": 1084
+    },
+    {
+      "name": "gz_rule_087",
+      "type": "gz_txt",
+      "priority": 1085
+    },
+    {
+      "name": "gz_rule_088",
+      "type": "gz_txt",
+      "priority": 1086
+    },
+    {
+      "name": "gz_rule_089",
+      "type": "gz_txt",
+      "priority": 1087
+    },
+    {
+      "name": "gz_rule_090",
+      "type": "gz_txt",
+      "priority": 1088
+    },
+    {
+      "name": "gz_rule_091",
+      "type": "gz_txt",
+      "priority": 1089
+    },
+    {
+      "name": "gz_rule_092",
+      "type": "gz_txt",
+      "priority": 1090
+    },
+    {
+      "name": "gz_rule_093",
+      "type": "gz_txt",
+      "priority": 1091
+    },
+    {
+      "name": "gz_rule_094",
+      "type": "gz_txt",
+      "priority": 1092
+    },
+    {
+      "name": "gz_rule_095",
+      "type": "gz_txt",
+      "priority": 1093
+    },
+    {
+      "name": "gz_rule_096",
+      "type": "gz_txt",
+      "priority": 1094
+    },
+    {
+      "name": "gz_rule_097",
+      "type": "gz_txt",
+      "priority": 1095
+    },
+    {
+      "name": "gz_rule_098",
+      "type": "gz_txt",
+      "priority": 1096
+    },
+    {
+      "name": "gz_rule_099",
+      "type": "gz_txt",
+      "priority": 1097
+    },
+    {
+      "name": "gz_rule_100",
+      "type": "gz_txt",
+      "priority": 1098
+    },
+    {
+      "name": "gz_rule_101",
+      "type": "gz_txt",
+      "priority": 1099
+    },
+    {
+      "name": "gz_rule_102",
+      "type": "gz_txt",
+      "priority": 1100
+    },
+    {
+      "name": "gz_rule_103",
+      "type": "gz_txt",
+      "priority": 1101
+    },
+    {
+      "name": "gz_rule_104",
+      "type": "gz_txt",
+      "priority": 1102
+    },
+    {
+      "name": "gz_rule_105",
+      "type": "gz_txt",
+      "priority": 1103
+    },
+    {
+      "name": "gz_rule_106",
+      "type": "gz_txt",
+      "priority": 1104
+    },
+    {
+      "name": "gz_rule_107",
+      "type": "gz_txt",
+      "priority": 1105
+    },
+    {
+      "name": "gz_rule_108",
+      "type": "gz_txt",
+      "priority": 1106
+    },
+    {
+      "name": "gz_rule_109",
+      "type": "gz_txt",
+      "priority": 1107
+    },
+    {
+      "name": "gz_rule_110",
+      "type": "gz_txt",
+      "priority": 1108
+    },
+    {
+      "name": "gz_rule_111",
+      "type": "gz_txt",
+      "priority": 1109
+    },
+    {
+      "name": "gz_rule_112",
+      "type": "gz_txt",
+      "priority": 1110
+    },
+    {
+      "name": "gz_rule_113",
+      "type": "gz_txt",
+      "priority": 1111
+    },
+    {
+      "name": "gz_rule_114",
+      "type": "gz_txt",
+      "priority": 1112
+    },
+    {
+      "name": "gz_rule_115",
+      "type": "gz_txt",
+      "priority": 1113
+    },
+    {
+      "name": "gz_rule_116",
+      "type": "gz_txt",
+      "priority": 1114
+    },
+    {
+      "name": "gz_rule_117",
+      "type": "gz_txt",
+      "priority": 1115
+    },
+    {
+      "name": "gz_rule_118",
+      "type": "gz_txt",
+      "priority": 1116
+    },
+    {
+      "name": "gz_rule_119",
+      "type": "gz_txt",
+      "priority": 1117
+    },
+    {
+      "name": "gz_rule_120",
+      "type": "gz_txt",
+      "priority": 1118
+    },
+    {
+      "name": "gz_rule_121",
+      "type": "gz_txt",
+      "priority": 1119
+    },
+    {
+      "name": "gz_rule_122",
+      "type": "gz_txt",
+      "priority": 1120
+    },
+    {
+      "name": "gz_rule_123",
+      "type": "gz_txt",
+      "priority": 1121
+    },
+    {
+      "name": "gz_rule_124",
+      "type": "gz_txt",
+      "priority": 1122
+    },
+    {
+      "name": "gz_rule_125",
+      "type": "gz_txt",
+      "priority": 1123
+    },
+    {
+      "name": "gz_rule_126",
+      "type": "gz_txt",
+      "priority": 1124
+    },
+    {
+      "name": "gz_rule_127",
+      "type": "gz_txt",
+      "priority": 1125
+    },
+    {
+      "name": "gz_rule_128",
+      "type": "gz_txt",
+      "priority": 1126
+    },
+    {
+      "name": "gz_rule_129",
+      "type": "gz_txt",
+      "priority": 1127
+    },
+    {
+      "name": "gz_rule_130",
+      "type": "gz_txt",
+      "priority": 1128
+    },
+    {
+      "name": "gz_rule_131",
+      "type": "gz_txt",
+      "priority": 1129
+    },
+    {
+      "name": "gz_rule_132",
+      "type": "gz_txt",
+      "priority": 1130
+    },
+    {
+      "name": "gz_rule_133",
+      "type": "gz_txt",
+      "priority": 1131
+    },
+    {
+      "name": "gz_rule_134",
+      "type": "gz_txt",
+      "priority": 1132
+    },
+    {
+      "name": "gz_rule_135",
+      "type": "gz_txt",
+      "priority": 1133
+    },
+    {
+      "name": "gz_rule_136",
+      "type": "gz_txt",
+      "priority": 1134
+    },
+    {
+      "name": "gz_rule_137",
+      "type": "gz_txt",
+      "priority": 1135
+    },
+    {
+      "name": "gz_rule_138",
+      "type": "gz_txt",
+      "priority": 1136
+    },
+    {
+      "name": "gz_rule_139",
+      "type": "gz_txt",
+      "priority": 1137
+    },
+    {
+      "name": "gz_rule_140",
+      "type": "gz_txt",
+      "priority": 1138
+    },
+    {
+      "name": "gz_rule_141",
+      "type": "gz_txt",
+      "priority": 1139
+    },
+    {
+      "name": "gz_rule_142",
+      "type": "gz_txt",
+      "priority": 1140
+    },
+    {
+      "name": "gz_rule_143",
+      "type": "gz_txt",
+      "priority": 1141
+    },
+    {
+      "name": "gz_rule_144",
+      "type": "gz_txt",
+      "priority": 1142
+    },
+    {
+      "name": "gz_rule_145",
+      "type": "gz_txt",
+      "priority": 1143
+    },
+    {
+      "name": "gz_rule_146",
+      "type": "gz_txt",
+      "priority": 1144
+    },
+    {
+      "name": "gz_rule_147",
+      "type": "gz_txt",
+      "priority": 1145
+    },
+    {
+      "name": "gz_rule_148",
+      "type": "gz_txt",
+      "priority": 1146
+    },
+    {
+      "name": "gz_rule_149",
+      "type": "gz_txt",
+      "priority": 1147
+    },
+    {
+      "name": "gz_rule_150",
+      "type": "gz_txt",
+      "priority": 1148
+    },
+    {
+      "name": "gz_rule_151",
+      "type": "gz_txt",
+      "priority": 1149
+    },
+    {
+      "name": "gz_rule_152",
+      "type": "gz_txt",
+      "priority": 1150
+    },
+    {
+      "name": "gz_rule_153",
+      "type": "gz_txt",
+      "priority": 1151
+    },
+    {
+      "name": "gz_rule_154",
+      "type": "gz_txt",
+      "priority": 1152
+    },
+    {
+      "name": "gz_rule_155",
+      "type": "gz_txt",
+      "priority": 1153
+    },
+    {
+      "name": "gz_rule_156",
+      "type": "gz_txt",
+      "priority": 1154
+    },
+    {
+      "name": "gz_rule_157",
+      "type": "gz_txt",
+      "priority": 1155
+    },
+    {
+      "name": "gz_rule_158",
+      "type": "gz_txt",
+      "priority": 1156
+    },
+    {
+      "name": "gz_rule_159",
+      "type": "gz_txt",
+      "priority": 1157
+    },
+    {
+      "name": "gz_rule_160",
+      "type": "gz_txt",
+      "priority": 1158
+    },
+    {
+      "name": "gz_rule_161",
+      "type": "gz_txt",
+      "priority": 1159
+    },
+    {
+      "name": "gz_rule_162",
+      "type": "gz_txt",
+      "priority": 1160
+    },
+    {
+      "name": "gz_rule_163",
+      "type": "gz_txt",
+      "priority": 1161
+    },
+    {
+      "name": "gz_rule_164",
+      "type": "gz_txt",
+      "priority": 1162
+    },
+    {
+      "name": "gz_rule_165",
+      "type": "gz_txt",
+      "priority": 1163
+    },
+    {
+      "name": "gz_rule_166",
+      "type": "gz_txt",
+      "priority": 1164
+    },
+    {
+      "name": "gz_rule_167",
+      "type": "gz_txt",
+      "priority": 1165
+    },
+    {
+      "name": "gz_rule_168",
+      "type": "gz_txt",
+      "priority": 1166
+    },
+    {
+      "name": "gz_rule_169",
+      "type": "gz_txt",
+      "priority": 1167
+    },
+    {
+      "name": "gz_rule_170",
+      "type": "gz_txt",
+      "priority": 1168
+    },
+    {
+      "name": "gz_rule_171",
+      "type": "gz_txt",
+      "priority": 1169
+    },
+    {
+      "name": "gz_rule_172",
+      "type": "gz_txt",
+      "priority": 1170
+    },
+    {
+      "name": "gz_rule_173",
+      "type": "gz_txt",
+      "priority": 1171
+    },
+    {
+      "name": "gz_rule_174",
+      "type": "gz_txt",
+      "priority": 1172
+    },
+    {
+      "name": "gz_rule_175",
+      "type": "gz_txt",
+      "priority": 1173
+    },
+    {
+      "name": "gz_rule_176",
+      "type": "gz_txt",
+      "priority": 1174
+    },
+    {
+      "name": "gz_rule_177",
+      "type": "gz_txt",
+      "priority": 1175
+    },
+    {
+      "name": "gz_rule_178",
+      "type": "gz_txt",
+      "priority": 1176
+    },
+    {
+      "name": "gz_rule_179",
+      "type": "gz_txt",
+      "priority": 1177
+    },
+    {
+      "name": "gz_rule_180",
+      "type": "gz_txt",
+      "priority": 1178
+    },
+    {
+      "name": "gz_rule_181",
+      "type": "gz_txt",
+      "priority": 1179
+    },
+    {
+      "name": "gz_rule_182",
+      "type": "gz_txt",
+      "priority": 1180
+    },
+    {
+      "name": "gz_rule_183",
+      "type": "gz_txt",
+      "priority": 1181
+    },
+    {
+      "name": "gz_rule_184",
+      "type": "gz_txt",
+      "priority": 1182
+    },
+    {
+      "name": "gz_rule_185",
+      "type": "gz_txt",
+      "priority": 1183
+    },
+    {
+      "name": "gz_rule_186",
+      "type": "gz_txt",
+      "priority": 1184
+    },
+    {
+      "name": "gz_rule_187",
+      "type": "gz_txt",
+      "priority": 1185
+    },
+    {
+      "name": "gz_rule_188",
+      "type": "gz_txt",
+      "priority": 1186
+    },
+    {
+      "name": "gz_rule_189",
+      "type": "gz_txt",
+      "priority": 1187
+    },
+    {
+      "name": "gz_rule_190",
+      "type": "gz_txt",
+      "priority": 1188
+    },
+    {
+      "name": "gz_rule_191",
+      "type": "gz_txt",
+      "priority": 1189
+    },
+    {
+      "name": "gz_rule_192",
+      "type": "gz_txt",
+      "priority": 1190
+    },
+    {
+      "name": "gz_rule_193",
+      "type": "gz_txt",
+      "priority": 1191
+    },
+    {
+      "name": "gz_rule_194",
+      "type": "gz_txt",
+      "priority": 1192
+    },
+    {
+      "name": "gz_rule_195",
+      "type": "gz_txt",
+      "priority": 1193
+    },
+    {
+      "name": "gz_rule_196",
+      "type": "gz_txt",
+      "priority": 1194
+    },
+    {
+      "name": "gz_rule_197",
+      "type": "gz_txt",
+      "priority": 1195
+    },
+    {
+      "name": "gz_rule_198",
+      "type": "gz_txt",
+      "priority": 1196
+    },
+    {
+      "name": "gz_rule_199",
+      "type": "gz_txt",
+      "priority": 1197
+    },
+    {
+      "name": "gz_rule_200",
+      "type": "gz_txt",
+      "priority": 1198
+    },
+    {
+      "name": "gz_rule_201",
+      "type": "gz_txt",
+      "priority": 1199
+    },
+    {
+      "name": "gz_rule_202",
+      "type": "gz_txt",
+      "priority": 1200
+    },
+    {
+      "name": "gz_rule_203",
+      "type": "gz_txt",
+      "priority": 1201
+    },
+    {
+      "name": "gz_rule_204",
+      "type": "gz_txt",
+      "priority": 1202
+    },
+    {
+      "name": "gz_rule_205",
+      "type": "gz_txt",
+      "priority": 1203
+    },
+    {
+      "name": "gz_rule_206",
+      "type": "gz_txt",
+      "priority": 1204
+    },
+    {
+      "name": "gz_rule_207",
+      "type": "gz_txt",
+      "priority": 1205
+    },
+    {
+      "name": "gz_rule_208",
+      "type": "gz_txt",
+      "priority": 1206
+    },
+    {
+      "name": "gz_rule_209",
+      "type": "gz_txt",
+      "priority": 1207
+    },
+    {
+      "name": "gz_rule_210",
+      "type": "gz_txt",
+      "priority": 1208
+    },
+    {
+      "name": "gz_rule_211",
+      "type": "gz_txt",
+      "priority": 1209
+    },
+    {
+      "name": "gz_rule_212",
+      "type": "gz_txt",
+      "priority": 1210
+    },
+    {
+      "name": "gz_rule_213",
+      "type": "gz_txt",
+      "priority": 1211
+    },
+    {
+      "name": "gz_rule_214",
+      "type": "gz_txt",
+      "priority": 1212
+    },
+    {
+      "name": "gz_rule_215",
+      "type": "gz_txt",
+      "priority": 1213
+    },
+    {
+      "name": "gz_rule_216",
+      "type": "gz_txt",
+      "priority": 1214
+    },
+    {
+      "name": "gz_rule_217",
+      "type": "gz_txt",
+      "priority": 1215
+    },
+    {
+      "name": "gz_rule_218",
+      "type": "gz_txt",
+      "priority": 1216
+    },
+    {
+      "name": "gz_rule_219",
+      "type": "gz_txt",
+      "priority": 1217
+    },
+    {
+      "name": "gz_rule_220",
+      "type": "gz_txt",
+      "priority": 1218
+    },
+    {
+      "name": "gz_rule_221",
+      "type": "gz_txt",
+      "priority": 1219
+    },
+    {
+      "name": "gz_rule_222",
+      "type": "gz_txt",
+      "priority": 1220
+    },
+    {
+      "name": "gz_rule_223",
+      "type": "gz_txt",
+      "priority": 1221
+    },
+    {
+      "name": "gz_rule_224",
+      "type": "gz_txt",
+      "priority": 1222
+    },
+    {
+      "name": "gz_rule_225",
+      "type": "gz_txt",
+      "priority": 1223
+    },
+    {
+      "name": "gz_rule_226",
+      "type": "gz_txt",
+      "priority": 1224
+    },
+    {
+      "name": "gz_rule_227",
+      "type": "gz_txt",
+      "priority": 1225
+    },
+    {
+      "name": "gz_rule_228",
+      "type": "gz_txt",
+      "priority": 1226
+    },
+    {
+      "name": "gz_rule_229",
+      "type": "gz_txt",
+      "priority": 1227
+    },
+    {
+      "name": "gz_rule_230",
+      "type": "gz_txt",
+      "priority": 1228
+    },
+    {
+      "name": "gz_rule_231",
+      "type": "gz_txt",
+      "priority": 1229
+    },
+    {
+      "name": "gz_rule_232",
+      "type": "gz_txt",
+      "priority": 1230
+    },
+    {
+      "name": "gz_rule_233",
+      "type": "gz_txt",
+      "priority": 1231
+    },
+    {
+      "name": "gz_rule_234",
+      "type": "gz_txt",
+      "priority": 1232
+    },
+    {
+      "name": "gz_rule_235",
+      "type": "gz_txt",
+      "priority": 1233
+    },
+    {
+      "name": "gz_rule_236",
+      "type": "gz_txt",
+      "priority": 1234
+    },
+    {
+      "name": "gz_rule_237",
+      "type": "gz_txt",
+      "priority": 1235
+    },
+    {
+      "name": "gz_rule_238",
+      "type": "gz_txt",
+      "priority": 1236
+    },
+    {
+      "name": "gz_rule_239",
+      "type": "gz_txt",
+      "priority": 1237
+    },
+    {
+      "name": "gz_rule_240",
+      "type": "gz_txt",
+      "priority": 1238
+    },
+    {
+      "name": "gz_rule_241",
+      "type": "gz_txt",
+      "priority": 1239
+    },
+    {
+      "name": "gz_rule_242",
+      "type": "gz_txt",
+      "priority": 1240
+    },
+    {
+      "name": "gz_rule_243",
+      "type": "gz_txt",
+      "priority": 1241
+    },
+    {
+      "name": "gz_rule_244",
+      "type": "gz_txt",
+      "priority": 1242
+    },
+    {
+      "name": "gz_rule_245",
+      "type": "gz_txt",
+      "priority": 1243
+    },
+    {
+      "name": "gz_rule_246",
+      "type": "gz_txt",
+      "priority": 1244
+    },
+    {
+      "name": "gz_rule_247",
+      "type": "gz_txt",
+      "priority": 1245
+    },
+    {
+      "name": "gz_rule_248",
+      "type": "gz_txt",
+      "priority": 1246
+    },
+    {
+      "name": "gz_rule_249",
+      "type": "gz_txt",
+      "priority": 1247
+    },
+    {
+      "name": "gz_rule_250",
+      "type": "gz_txt",
+      "priority": 1248
+    },
+    {
+      "name": "gz_rule_251",
+      "type": "gz_txt",
+      "priority": 1249
+    },
+    {
+      "name": "gz_rule_252",
+      "type": "gz_txt",
+      "priority": 1250
+    },
+    {
+      "name": "gz_rule_253",
+      "type": "gz_txt",
+      "priority": 1251
+    },
+    {
+      "name": "gz_rule_254",
+      "type": "gz_txt",
+      "priority": 1252
+    },
+    {
+      "name": "gz_rule_255",
+      "type": "gz_txt",
+      "priority": 1253
+    },
+    {
+      "name": "gz_rule_256",
+      "type": "gz_txt",
+      "priority": 1254
+    },
+    {
+      "name": "gz_rule_257",
+      "type": "gz_txt",
+      "priority": 1255
+    },
+    {
+      "name": "gz_rule_258",
+      "type": "gz_txt",
+      "priority": 1256
+    },
+    {
+      "name": "gz_rule_259",
+      "type": "gz_txt",
+      "priority": 1257
+    },
+    {
+      "name": "gz_rule_260",
+      "type": "gz_txt",
+      "priority": 1258
+    },
+    {
+      "name": "gz_rule_261",
+      "type": "gz_txt",
+      "priority": 1259
+    },
+    {
+      "name": "gz_rule_262",
+      "type": "gz_txt",
+      "priority": 1260
+    },
+    {
+      "name": "gz_rule_263",
+      "type": "gz_txt",
+      "priority": 1261
+    },
+    {
+      "name": "gz_rule_264",
+      "type": "gz_txt",
+      "priority": 1262
+    },
+    {
+      "name": "gz_rule_265",
+      "type": "gz_txt",
+      "priority": 1263
+    },
+    {
+      "name": "gz_rule_266",
+      "type": "gz_txt",
+      "priority": 1264
+    },
+    {
+      "name": "gz_rule_267",
+      "type": "gz_txt",
+      "priority": 1265
+    },
+    {
+      "name": "gz_rule_268",
+      "type": "gz_txt",
+      "priority": 1266
+    },
+    {
+      "name": "gz_rule_269",
+      "type": "gz_txt",
+      "priority": 1267
+    },
+    {
+      "name": "gz_rule_270",
+      "type": "gz_txt",
+      "priority": 1268
+    },
+    {
+      "name": "gz_rule_271",
+      "type": "gz_txt",
+      "priority": 1269
+    },
+    {
+      "name": "gz_rule_272",
+      "type": "gz_txt",
+      "priority": 1270
+    },
+    {
+      "name": "gz_rule_273",
+      "type": "gz_txt",
+      "priority": 1271
+    },
+    {
+      "name": "gz_rule_274",
+      "type": "gz_txt",
+      "priority": 1272
+    },
+    {
+      "name": "gz_rule_275",
+      "type": "gz_txt",
+      "priority": 1273
+    },
+    {
+      "name": "gz_rule_276",
+      "type": "gz_txt",
+      "priority": 1274
+    },
+    {
+      "name": "gz_rule_277",
+      "type": "gz_txt",
+      "priority": 1275
+    },
+    {
+      "name": "gz_rule_278",
+      "type": "gz_txt",
+      "priority": 1276
+    },
+    {
+      "name": "gz_rule_279",
+      "type": "gz_txt",
+      "priority": 1277
+    },
+    {
+      "name": "gz_rule_280",
+      "type": "gz_txt",
+      "priority": 1278
+    },
+    {
+      "name": "gz_rule_281",
+      "type": "gz_txt",
+      "priority": 1279
+    },
+    {
+      "name": "gz_rule_282",
+      "type": "gz_txt",
+      "priority": 1280
+    },
+    {
+      "name": "gz_rule_283",
+      "type": "gz_txt",
+      "priority": 1281
+    },
+    {
+      "name": "gz_rule_284",
+      "type": "gz_txt",
+      "priority": 1282
+    },
+    {
+      "name": "gz_rule_285",
+      "type": "gz_txt",
+      "priority": 1283
+    },
+    {
+      "name": "gz_rule_286",
+      "type": "gz_txt",
+      "priority": 1284
+    },
+    {
+      "name": "gz_rule_287",
+      "type": "gz_txt",
+      "priority": 1285
+    },
+    {
+      "name": "gz_rule_288",
+      "type": "gz_txt",
+      "priority": 1286
+    },
+    {
+      "name": "gz_rule_289",
+      "type": "gz_txt",
+      "priority": 1287
+    },
+    {
+      "name": "gz_rule_290",
+      "type": "gz_txt",
+      "priority": 1288
+    },
+    {
+      "name": "gz_rule_291",
+      "type": "gz_txt",
+      "priority": 1289
+    },
+    {
+      "name": "gz_rule_292",
+      "type": "gz_txt",
+      "priority": 1290
+    },
+    {
+      "name": "gz_rule_293",
+      "type": "gz_txt",
+      "priority": 1291
+    },
+    {
+      "name": "gz_rule_294",
+      "type": "gz_txt",
+      "priority": 1292
+    },
+    {
+      "name": "gz_rule_295",
+      "type": "gz_txt",
+      "priority": 1293
+    },
+    {
+      "name": "gz_rule_296",
+      "type": "gz_txt",
+      "priority": 1294
+    },
+    {
+      "name": "gz_rule_297",
+      "type": "gz_txt",
+      "priority": 1295
+    },
+    {
+      "name": "gz_rule_298",
+      "type": "gz_txt",
+      "priority": 1296
+    },
+    {
+      "name": "gz_rule_299",
+      "type": "gz_txt",
+      "priority": 1297
+    },
+    {
+      "name": "gz_rule_300",
+      "type": "gz_txt",
+      "priority": 1298
+    },
+    {
+      "name": "gz_rule_301",
+      "type": "gz_txt",
+      "priority": 1299
+    },
+    {
+      "name": "gz_rule_302",
+      "type": "gz_txt",
+      "priority": 1300
+    },
+    {
+      "name": "gz_rule_303",
+      "type": "gz_txt",
+      "priority": 1301
+    },
+    {
+      "name": "gz_rule_304",
+      "type": "gz_txt",
+      "priority": 1302
+    },
+    {
+      "name": "gz_rule_305",
+      "type": "gz_txt",
+      "priority": 1303
+    },
+    {
+      "name": "gz_rule_306",
+      "type": "gz_txt",
+      "priority": 1304
+    },
+    {
+      "name": "gz_rule_307",
+      "type": "gz_txt",
+      "priority": 1305
+    },
+    {
+      "name": "gz_rule_308",
+      "type": "gz_txt",
+      "priority": 1306
+    },
+    {
+      "name": "gz_rule_309",
+      "type": "gz_txt",
+      "priority": 1307
+    },
+    {
+      "name": "gz_rule_310",
+      "type": "gz_txt",
+      "priority": 1308
+    },
+    {
+      "name": "gz_rule_311",
+      "type": "gz_txt",
+      "priority": 1309
+    },
+    {
+      "name": "gz_rule_312",
+      "type": "gz_txt",
+      "priority": 1310
+    },
+    {
+      "name": "gz_rule_313",
+      "type": "gz_txt",
+      "priority": 1311
+    },
+    {
+      "name": "gz_rule_314",
+      "type": "gz_txt",
+      "priority": 1312
+    },
+    {
+      "name": "gz_rule_315",
+      "type": "gz_txt",
+      "priority": 1313
+    },
+    {
+      "name": "gz_rule_316",
+      "type": "gz_txt",
+      "priority": 1314
+    },
+    {
+      "name": "gz_rule_317",
+      "type": "gz_txt",
+      "priority": 1315
+    },
+    {
+      "name": "gz_rule_318",
+      "type": "gz_txt",
+      "priority": 1316
+    },
+    {
+      "name": "gz_rule_319",
+      "type": "gz_txt",
+      "priority": 1317
+    },
+    {
+      "name": "gz_rule_320",
+      "type": "gz_txt",
+      "priority": 1318
+    },
+    {
+      "name": "gz_rule_321",
+      "type": "gz_txt",
+      "priority": 1319
+    },
+    {
+      "name": "gz_rule_322",
+      "type": "gz_txt",
+      "priority": 1320
+    },
+    {
+      "name": "gz_rule_323",
+      "type": "gz_txt",
+      "priority": 1321
+    },
+    {
+      "name": "gz_rule_324",
+      "type": "gz_txt",
+      "priority": 1322
+    },
+    {
+      "name": "gz_rule_325",
+      "type": "gz_txt",
+      "priority": 1323
+    },
+    {
+      "name": "gz_rule_326",
+      "type": "gz_txt",
+      "priority": 1324
+    },
+    {
+      "name": "gz_rule_327",
+      "type": "gz_txt",
+      "priority": 1325
+    },
+    {
+      "name": "gz_rule_328",
+      "type": "gz_txt",
+      "priority": 1326
+    },
+    {
+      "name": "gz_rule_329",
+      "type": "gz_txt",
+      "priority": 1327
+    },
+    {
+      "name": "gz_rule_330",
+      "type": "gz_txt",
+      "priority": 1328
+    },
+    {
+      "name": "gz_rule_331",
+      "type": "gz_txt",
+      "priority": 1329
+    },
+    {
+      "name": "gz_rule_332",
+      "type": "gz_txt",
+      "priority": 1330
+    },
+    {
+      "name": "gz_rule_333",
+      "type": "gz_txt",
+      "priority": 1331
+    },
+    {
+      "name": "gz_rule_334",
+      "type": "gz_txt",
+      "priority": 1332
+    },
+    {
+      "name": "gz_rule_335",
+      "type": "gz_txt",
+      "priority": 1333
+    },
+    {
+      "name": "gz_rule_336",
+      "type": "gz_txt",
+      "priority": 1334
+    },
+    {
+      "name": "gz_rule_337",
+      "type": "gz_txt",
+      "priority": 1335
+    },
+    {
+      "name": "gz_rule_338",
+      "type": "gz_txt",
+      "priority": 1336
+    },
+    {
+      "name": "gz_rule_339",
+      "type": "gz_txt",
+      "priority": 1337
+    },
+    {
+      "name": "gz_rule_340",
+      "type": "gz_txt",
+      "priority": 1338
+    },
+    {
+      "name": "gz_rule_341",
+      "type": "gz_txt",
+      "priority": 1339
+    },
+    {
+      "name": "gz_rule_342",
+      "type": "gz_txt",
+      "priority": 1340
+    },
+    {
+      "name": "gz_rule_343",
+      "type": "gz_txt",
+      "priority": 1341
+    },
+    {
+      "name": "gz_rule_344",
+      "type": "gz_txt",
+      "priority": 1342
+    },
+    {
+      "name": "gz_rule_345",
+      "type": "gz_txt",
+      "priority": 1343
+    },
+    {
+      "name": "gz_rule_346",
+      "type": "gz_txt",
+      "priority": 1344
+    },
+    {
+      "name": "gz_rule_347",
+      "type": "gz_txt",
+      "priority": 1345
+    },
+    {
+      "name": "gz_rule_348",
+      "type": "gz_txt",
+      "priority": 1346
+    },
+    {
+      "name": "gz_rule_349",
+      "type": "gz_txt",
+      "priority": 1347
+    },
+    {
+      "name": "gz_rule_350",
+      "type": "gz_txt",
+      "priority": 1348
+    },
+    {
+      "name": "gz_rule_351",
+      "type": "gz_txt",
+      "priority": 1349
+    },
+    {
+      "name": "gz_rule_352",
+      "type": "gz_txt",
+      "priority": 1350
+    },
+    {
+      "name": "gz_rule_353",
+      "type": "gz_txt",
+      "priority": 1351
+    },
+    {
+      "name": "gz_rule_354",
+      "type": "gz_txt",
+      "priority": 1352
+    },
+    {
+      "name": "gz_rule_355",
+      "type": "gz_txt",
+      "priority": 1353
+    },
+    {
+      "name": "gz_rule_356",
+      "type": "gz_txt",
+      "priority": 1354
+    },
+    {
+      "name": "gz_rule_357",
+      "type": "gz_txt",
+      "priority": 1355
+    },
+    {
+      "name": "gz_rule_358",
+      "type": "gz_txt",
+      "priority": 1356
+    },
+    {
+      "name": "gz_rule_359",
+      "type": "gz_txt",
+      "priority": 1357
+    },
+    {
+      "name": "gz_rule_360",
+      "type": "gz_txt",
+      "priority": 1358
+    },
+    {
+      "name": "gz_rule_361",
+      "type": "gz_txt",
+      "priority": 1359
+    },
+    {
+      "name": "gz_rule_362",
+      "type": "gz_txt",
+      "priority": 1360
+    },
+    {
+      "name": "gz_rule_363",
+      "type": "gz_txt",
+      "priority": 1361
+    },
+    {
+      "name": "gz_rule_364",
+      "type": "gz_txt",
+      "priority": 1362
+    },
+    {
+      "name": "gz_rule_365",
+      "type": "gz_txt",
+      "priority": 1363
+    },
+    {
+      "name": "gz_rule_366",
+      "type": "gz_txt",
+      "priority": 1364
+    },
+    {
+      "name": "gz_rule_367",
+      "type": "gz_txt",
+      "priority": 1365
+    },
+    {
+      "name": "gz_rule_368",
+      "type": "gz_txt",
+      "priority": 1366
+    },
+    {
+      "name": "gz_rule_369",
+      "type": "gz_txt",
+      "priority": 1367
+    },
+    {
+      "name": "gz_rule_370",
+      "type": "gz_txt",
+      "priority": 1368
+    },
+    {
+      "name": "gz_rule_371",
+      "type": "gz_txt",
+      "priority": 1369
+    },
+    {
+      "name": "gz_rule_372",
+      "type": "gz_txt",
+      "priority": 1370
+    },
+    {
+      "name": "gz_rule_373",
+      "type": "gz_txt",
+      "priority": 1371
+    },
+    {
+      "name": "gz_rule_374",
+      "type": "gz_txt",
+      "priority": 1372
+    },
+    {
+      "name": "gz_rule_375",
+      "type": "gz_txt",
+      "priority": 1373
+    },
+    {
+      "name": "gz_rule_376",
+      "type": "gz_txt",
+      "priority": 1374
+    },
+    {
+      "name": "gz_rule_377",
+      "type": "gz_txt",
+      "priority": 1375
+    },
+    {
+      "name": "gz_rule_378",
+      "type": "gz_txt",
+      "priority": 1376
+    },
+    {
+      "name": "gz_rule_379",
+      "type": "gz_txt",
+      "priority": 1377
+    },
+    {
+      "name": "gz_rule_380",
+      "type": "gz_txt",
+      "priority": 1378
+    },
+    {
+      "name": "gz_rule_381",
+      "type": "gz_txt",
+      "priority": 1379
+    },
+    {
+      "name": "gz_rule_382",
+      "type": "gz_txt",
+      "priority": 1380
+    },
+    {
+      "name": "gz_rule_383",
+      "type": "gz_txt",
+      "priority": 1381
+    },
+    {
+      "name": "gz_rule_384",
+      "type": "gz_txt",
+      "priority": 1382
+    },
+    {
+      "name": "gz_rule_385",
+      "type": "gz_txt",
+      "priority": 1383
+    }
+  ],
+  "next_update": "2026-01-10T07:43:59.545723+08:00",
+  "syntax_version": "1.1",
+  "notes": "新语法规则：DNS/Hosts只放域名，浏览器才用复杂语法",
+  "includes_gz_txt": true
 }
