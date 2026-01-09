@@ -16,8 +16,8 @@ on:
 
 env:
   PYTHON_VERSION: '3.11'
-  VALIDITY_THRESHOLD: '70'
-  WORKFLOW_NAME: 'AdBlock Rules Auto-Updater'
+  VALIDITY_THRESHOLD: '90'
+  WORKFLOW_NAME: 'AdBlock Rules Auto-Updater - 新语法版'
 
 jobs:
   update:
@@ -52,9 +52,8 @@ jobs:
       run: |
         echo "📦 安装依赖..."
         python -m pip install --upgrade pip
-        pip install requests beautifulsoup4 lxml pyyaml tqdm
+        pip install requests beautifulsoup4 lxml
         echo "✅ 依赖安装完成"
-        pip list
     
     - name: Step 1 - 环境准备
       id: setup
@@ -69,7 +68,7 @@ jobs:
         # 清理并重新创建目录结构
         echo "🧹 清理旧规则文件..."
         
-        # 清空临时和中间目录，保留自定义规则
+        # 清空临时和中间目录
         if [ -d dist ]; then
           echo "  📁 清空 dist 目录..."
           rm -rf dist/*
@@ -85,14 +84,9 @@ jobs:
           rm -rf rules/processed/*
         fi
         
-        if [ -d docs/reports ]; then
-          echo "  📁 清空 docs/reports 目录..."
-          rm -rf docs/reports/*
-        fi
-        
         # 创建必要目录（如果不存在）
         echo "📁 创建目录结构..."
-        mkdir -p dist rules/raw rules/processed rules/custom docs/reports
+        mkdir -p dist rules/raw rules/processed rules/custom
         
         # 检查重要文件
         echo "🔍 检查重要文件..."
@@ -111,19 +105,16 @@ jobs:
           echo "  ✅ scripts/update_rules.py"
         fi
         
-        # 检查白名单自定义文件
-        if [ -f "rules/whitelist_custom.txt" ]; then
-          echo "✅ 找到 rules/whitelist_custom.txt 文件"
-          # 显示文件信息
-          size=$(wc -c < "rules/whitelist_custom.txt" 2>/dev/null || echo "0")
-          lines=$(wc -l < "rules/whitelist_custom.txt" 2>/dev/null || echo "0")
-          rules=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          echo "  ├── 文件大小: $((size/1024))KB"
-          echo "  ├── 总行数: $lines 行"
-          echo "  └── 有效规则: $rules 条"
+        # 检查 gz.txt 文件
+        if [ -f "sources/gz.txt" ]; then
+          size=$(wc -c < "sources/gz.txt" 2>/dev/null || echo "0")
+          if [ "$size" -gt 0 ]; then
+            echo "  ✅ sources/gz.txt (额外规则源)"
+          else
+            echo "  ⚠️  sources/gz.txt 为空"
+          fi
         else
-          echo "⚠️  rules/whitelist_custom.txt 文件不存在，将创建空文件"
-          touch "rules/whitelist_custom.txt"
+          echo "  ⚠️  sources/gz.txt 文件不存在，跳过额外规则源"
         fi
         
         # 检查Python脚本权限
@@ -132,13 +123,13 @@ jobs:
         
         echo "✅ 环境准备完成"
     
-    - name: Step 2 - 规则源同步
+    - name: Step 2 - 规则源同步（三层规则）
       id: update-rules
       run: |
         echo ""
         echo "┌─────────────────────────────────────────┐"
         echo "│          🚀 规则源同步                  │"
-        echo "│    (23+个广告拦截源，包含混合规则)      │"
+        echo "│    (三层规则：DNS/Hosts/浏览器)         │"
         echo "└─────────────────────────────────────────┘"
         echo ""
         
@@ -182,40 +173,44 @@ jobs:
         if [ -d rules/raw ]; then
           RAW_FILES=$(find rules/raw -type f -name "*.txt" | wc -l)
           echo "  在 rules/raw 中找到 $RAW_FILES 个规则文件"
-          
-          # 显示前5个文件
-          find rules/raw -type f -name "*.txt" | head -5 | while read -r file; do
-            size=$(wc -c < "$file" 2>/dev/null || echo "0")
-            lines=$(wc -l < "$file" 2>/dev/null || echo "0")
-            echo "    📄 $(basename "$file") - ${lines}行, $((size/1024))KB"
-          done
-          
-          if [ $RAW_FILES -gt 5 ]; then
-            echo "    ... 还有 $((RAW_FILES - 5)) 个文件"
-          fi
         else
           echo "  ⚠️  rules/raw 目录不存在"
         fi
         
-        # 检查生成的文件
-        echo "📄 检查生成的文件..."
-        if [ -f dist/blacklist.txt ] && [ -s dist/blacklist.txt ]; then
-          BLACK_SIZE=$(wc -c < dist/blacklist.txt)
-          echo "  ✅ blacklist.txt ($((BLACK_SIZE/1024))KB)"
+        # 检查生成的三层规则文件
+        echo "📄 检查生成的三层规则文件..."
+        
+        if [ -f dist/dns.txt ] && [ -s dist/dns.txt ]; then
+          DNS_SIZE=$(wc -c < dist/dns.txt)
+          DNS_RULES=$(grep -v '^#' dist/dns.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          echo "  ✅ dns.txt: $DNS_RULES 条规则 ($((DNS_SIZE/1024))KB)"
         else
-          echo "  ❌ blacklist.txt 生成失败"
+          echo "  ❌ dns.txt 生成失败"
           echo "update_success=false" >> "$GITHUB_OUTPUT"
           exit 1
         fi
         
-        if [ -f dist/whitelist.txt ]; then
-          WHITE_SIZE=$(wc -c < dist/whitelist.txt 2>/dev/null || echo "0")
-          echo "  ✅ whitelist.txt ($((WHITE_SIZE/1024))KB)"
+        if [ -f dist/hosts.txt ] && [ -s dist/hosts.txt ]; then
+          HOSTS_SIZE=$(wc -c < dist/hosts.txt)
+          HOSTS_RULES=$(grep -v '^#' dist/hosts.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          echo "  ✅ hosts.txt: $HOSTS_RULES 条规则 ($((HOSTS_SIZE/1024))KB)"
         else
-          echo "  ⚠️  whitelist.txt 可能为空"
+          echo "  ❌ hosts.txt 生成失败"
+          echo "update_success=false" >> "$GITHUB_OUTPUT"
+          exit 1
+        fi
+        
+        if [ -f dist/filter.txt ] && [ -s dist/filter.txt ]; then
+          FILTER_SIZE=$(wc -c < dist/filter.txt)
+          FILTER_RULES=$(grep -v '^!' dist/filter.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          echo "  ✅ filter.txt: $FILTER_RULES 条规则 ($((FILTER_SIZE/1024))KB)"
+        else
+          echo "  ❌ filter.txt 生成失败"
+          echo "update_success=false" >> "$GITHUB_OUTPUT"
+          exit 1
         fi
     
-    - name: Step 3 - 规则合并（包含白名单自定义）
+    - name: Step 3 - 规则合并（包含自定义规则）
       id: merge-rules
       if: steps.update-rules.outputs.update_success == 'true'
       run: |
@@ -238,24 +233,6 @@ jobs:
           fi
         fi
         
-        # 检查白名单自定义文件
-        if [ -f "rules/whitelist_custom.txt" ] && [ -s "rules/whitelist_custom.txt" ]; then
-          WHITE_CUSTOM_SIZE=$(wc -c < "rules/whitelist_custom.txt")
-          WHITE_CUSTOM_LINES=$(wc -l < "rules/whitelist_custom.txt")
-          WHITE_CUSTOM_RULES=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          
-          echo "📄 找到 whitelist_custom.txt 文件:"
-          echo "  ├── 文件大小: $((WHITE_CUSTOM_SIZE/1024))KB"
-          echo "  ├── 总行数: $WHITE_CUSTOM_LINES 行"
-          echo "  └── 有效规则: $WHITE_CUSTOM_RULES 条"
-          CUSTOM_FOUND=true
-          
-          # 确保处理脚本能访问到这个文件
-          echo "🔧 将 whitelist_custom.txt 复制到处理目录..."
-          mkdir -p rules/processed
-          cp "rules/whitelist_custom.txt" "rules/processed/whitelist_custom.txt"
-        fi
-        
         if [ "$CUSTOM_FOUND" = false ]; then
           echo "ℹ️  未找到自定义规则文件，跳过合并步骤"
           echo "skip_merge=true" >> "$GITHUB_OUTPUT"
@@ -265,11 +242,10 @@ jobs:
         echo "📄 开始合并自定义规则..."
         START_TIME=$(date +%s)
         
-        # 清理 processed 目录（保留我们刚复制的文件）
+        # 清理 processed 目录
         if [ -d rules/processed ]; then
-          echo "🧹 清理处理过的规则目录（保留自定义文件）..."
-          # 保留 whitelist_custom.txt，删除其他
-          find rules/processed -type f ! -name "whitelist_custom.txt" -delete 2>/dev/null || true
+          echo "🧹 清理处理过的规则目录..."
+          find rules/processed -type f -delete 2>/dev/null || true
         fi
         
         # 运行规则合并脚本
@@ -293,7 +269,7 @@ jobs:
           echo "skip_merge=true" >> "$GITHUB_OUTPUT"
         fi
     
-    - name: Step 4 - 规则验证器
+    - name: Step 4 - 规则验证器（新语法版）
       id: validate-rules
       if: steps.update-rules.outputs.update_success == 'true'
       continue-on-error: true
@@ -301,7 +277,7 @@ jobs:
         echo ""
         echo "┌─────────────────────────────────────────┐"
         echo "│          🔍 规则验证器                  │"
-        echo "│    (宽松验证/区分错误警告)              │"
+        echo "│    (三层规则语法验证)                   │"
         echo "└─────────────────────────────────────────┘"
         echo ""
         
@@ -315,20 +291,26 @@ jobs:
           exit 0
         fi
         
-        if [ ! -f dist/blacklist.txt ] || [ ! -s dist/blacklist.txt ]; then
-          echo "❌ 黑名单文件不存在或为空"
+        # 检查三层规则文件是否存在
+        if [ ! -f dist/dns.txt ] || [ ! -s dist/dns.txt ]; then
+          echo "❌ DNS规则文件不存在或为空"
           echo "validation_passed=false" >> "$GITHUB_OUTPUT"
           echo "validation_exit_code=4" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         
-        # 检查白名单文件（如果有的话）
-        if [ -f dist/whitelist.txt ]; then
-          echo "📄 发现白名单文件，将进行验证..."
-          WHITE_SIZE=$(wc -c < dist/whitelist.txt 2>/dev/null || echo "0")
-          if [ "$WHITE_SIZE" -gt 0 ]; then
-            echo "  ✅ whitelist.txt 非空 ($((WHITE_SIZE/1024))KB)"
-          fi
+        if [ ! -f dist/hosts.txt ] || [ ! -s dist/hosts.txt ]; then
+          echo "❌ Hosts规则文件不存在或为空"
+          echo "validation_passed=false" >> "$GITHUB_OUTPUT"
+          echo "validation_exit_code=4" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        
+        if [ ! -f dist/filter.txt ] || [ ! -s dist/filter.txt ]; then
+          echo "❌ 浏览器规则文件不存在或为空"
+          echo "validation_passed=false" >> "$GITHUB_OUTPUT"
+          echo "validation_exit_code=4" >> "$GITHUB_OUTPUT"
+          exit 0
         fi
         
         # 运行验证脚本
@@ -345,7 +327,6 @@ jobs:
           echo "validation_exit_code=0" >> "$GITHUB_OUTPUT"
         elif [ $VALIDATION_STATUS -eq 1 ]; then
           echo "⚠️  规则验证警告，有效性低于$VALIDITY_THRESHOLD% (耗时 ${DURATION}秒)"
-          echo "ℹ️  注意：使用宽松验证标准，大多数规则被接受"
           echo "validation_passed=true" >> "$GITHUB_OUTPUT"
           echo "validation_exit_code=1" >> "$GITHUB_OUTPUT"
         elif [ $VALIDATION_STATUS -eq 2 ]; then
@@ -361,7 +342,7 @@ jobs:
         # 验证步骤不阻塞后续流程
         exit 0
     
-    - name: Step 5 - 规则优化器
+    - name: Step 5 - 规则优化器（新语法版）
       if: steps.validate-rules.outputs.validation_passed == 'true' || steps.validate-rules.outputs.validation_exit_code == '1'
       run: |
         echo ""
@@ -390,7 +371,7 @@ jobs:
           echo "ℹ️  规则优化脚本不存在，跳过此步骤"
         fi
     
-    - name: Step 6 - 生成最终文件（包含白名单统计）
+    - name: Step 6 - 生成最终文件（三层规则统计）
       id: generate-files
       run: |
         echo ""
@@ -401,87 +382,96 @@ jobs:
         echo ""
         
         # 确保文件存在
-        touch dist/blacklist.txt dist/whitelist.txt
+        touch dist/dns.txt dist/hosts.txt dist/filter.txt
         touch dist/metadata.json dist/validation_report.json 2>/dev/null || true
         
         # 统计规则数量
-        echo "📊 统计规则数量..."
+        echo "📊 统计三层规则数量..."
         
-        if [ -f dist/blacklist.txt ]; then
-          BLACK_RULES=$(grep -v '^!' dist/blacklist.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          BLACK_LINES=$(wc -l < dist/blacklist.txt 2>/dev/null || echo "0")
-          BLACK_SIZE=$(wc -c < dist/blacklist.txt 2>/dev/null || echo "0")
-          echo "📄 黑名单统计:"
-          echo "  ├── 有效规则: $BLACK_RULES 条"
-          echo "  ├── 总行数: $BLACK_LINES 行"
-          echo "  └── 文件大小: $((BLACK_SIZE/1024))KB"
+        if [ -f dist/dns.txt ]; then
+          DNS_RULES=$(grep -v '^#' dist/dns.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          DNS_LINES=$(wc -l < dist/dns.txt 2>/dev/null || echo "0")
+          DNS_SIZE=$(wc -c < dist/dns.txt 2>/dev/null || echo "0")
+          echo "📄 DNS规则统计:"
+          echo "  ├── 有效规则: $DNS_RULES 条"
+          echo "  ├── 总行数: $DNS_LINES 行"
+          echo "  └── 文件大小: $((DNS_SIZE/1024))KB"
         else
-          BLACK_RULES=0
-          BLACK_LINES=0
-          BLACK_SIZE=0
-          echo "❌ 黑名单文件不存在"
+          DNS_RULES=0
+          DNS_LINES=0
+          DNS_SIZE=0
+          echo "❌ DNS规则文件不存在"
         fi
         
-        if [ -f dist/whitelist.txt ]; then
-          WHITE_RULES=$(grep -v '^!' dist/whitelist.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          WHITE_LINES=$(wc -l < dist/whitelist.txt 2>/dev/null || echo "0")
-          WHITE_SIZE=$(wc -c < dist/whitelist.txt 2>/dev/null || echo "0")
-          echo "📄 白名单统计:"
-          echo "  ├── 有效规则: $WHITE_RULES 条"
-          echo "  ├── 总行数: $WHITE_LINES 行"
-          echo "  └── 文件大小: $((WHITE_SIZE/1024))KB"
+        if [ -f dist/hosts.txt ]; then
+          HOSTS_RULES=$(grep -v '^#' dist/hosts.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          HOSTS_LINES=$(wc -l < dist/hosts.txt 2>/dev/null || echo "0")
+          HOSTS_SIZE=$(wc -c < dist/hosts.txt 2>/dev/null || echo "0")
+          echo "📄 Hosts规则统计:"
+          echo "  ├── 有效规则: $HOSTS_RULES 条"
+          echo "  ├── 总行数: $HOSTS_LINES 行"
+          echo "  └── 文件大小: $((HOSTS_SIZE/1024))KB"
         else
-          WHITE_RULES=0
-          WHITE_LINES=0
-          WHITE_SIZE=0
-          echo "❌ 白名单文件不存在"
+          HOSTS_RULES=0
+          HOSTS_LINES=0
+          HOSTS_SIZE=0
+          echo "❌ Hosts规则文件不存在"
         fi
         
-        # 统计白名单自定义文件的贡献
-        CUSTOM_WHITE_RULES=0
-        if [ -f "rules/whitelist_custom.txt" ]; then
-          CUSTOM_WHITE_RULES=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          if [ "$CUSTOM_WHITE_RULES" -gt 0 ]; then
-            echo "📄 白名单自定义文件贡献:"
-            echo "  └── 自定义规则: $CUSTOM_WHITE_RULES 条"
-          fi
+        if [ -f dist/filter.txt ]; then
+          FILTER_RULES=$(grep -v '^!' dist/filter.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          FILTER_LINES=$(wc -l < dist/filter.txt 2>/dev/null || echo "0")
+          FILTER_SIZE=$(wc -c < dist/filter.txt 2>/dev/null || echo "0")
+          echo "📄 浏览器规则统计:"
+          echo "  ├── 有效规则: $FILTER_RULES 条"
+          echo "  ├── 总行数: $FILTER_LINES 行"
+          echo "  └── 文件大小: $((FILTER_SIZE/1024))KB"
+        else
+          FILTER_RULES=0
+          FILTER_LINES=0
+          FILTER_SIZE=0
+          echo "❌ 浏览器规则文件不存在"
         fi
         
-        TOTAL_RULES=$((BLACK_RULES + WHITE_RULES))
-        TOTAL_SIZE=$((BLACK_SIZE + WHITE_SIZE))
+        TOTAL_RULES=$((DNS_RULES + HOSTS_RULES + FILTER_RULES))
+        TOTAL_SIZE=$((DNS_SIZE + HOSTS_SIZE + FILTER_SIZE))
         
-        # 高级规则统计
-        ADVANCED_RULES=0
-        MODIFIER_RULES=0
+        # 浏览器规则分类统计
         DOMAIN_RULES=0
         ELEMENT_RULES=0
+        EXCEPTION_RULES=0
+        ADVANCED_RULES=0
         
-        if [ -f dist/blacklist.txt ]; then
-          echo "⚡ 高级规则统计..."
-          ADVANCED_RULES=$(grep -c -E '#@#|#?#|\$\$' dist/blacklist.txt 2>/dev/null || echo "0")
-          MODIFIER_RULES=$(grep -c '\$' dist/blacklist.txt 2>/dev/null || echo "0")
-          DOMAIN_RULES=$(grep -c '^||' dist/blacklist.txt 2>/dev/null || echo "0")
-          ELEMENT_RULES=$(grep -c '^##' dist/blacklist.txt 2>/dev/null || echo "0")
+        if [ -f dist/filter.txt ]; then
+          echo "⚡ 浏览器规则分类统计..."
+          DOMAIN_RULES=$(grep -c '^||' dist/filter.txt 2>/dev/null || echo "0")
+          ELEMENT_RULES=$(grep -c '^##' dist/filter.txt 2>/dev/null || echo "0")
+          EXCEPTION_RULES=$(grep -c '^@@' dist/filter.txt 2>/dev/null || echo "0")
+          ADVANCED_RULES=$(grep -c '\$' dist/filter.txt 2>/dev/null || echo "0")
           
           echo "  ├── 域名拦截规则: $DOMAIN_RULES 条"
           echo "  ├── 元素隐藏规则: $ELEMENT_RULES 条"
-          echo "  ├── 高级规则: $ADVANCED_RULES 条"
-          echo "  └── 修饰符规则: $MODIFIER_RULES 条"
+          echo "  ├── 例外规则: $EXCEPTION_RULES 条"
+          echo "  └── 高级规则: $ADVANCED_RULES 条"
         fi
         
         # 输出到环境变量
-        echo "black_rules=$BLACK_RULES" >> "$GITHUB_OUTPUT"
-        echo "white_rules=$WHITE_RULES" >> "$GITHUB_OUTPUT"
-        echo "custom_white_rules=$CUSTOM_WHITE_RULES" >> "$GITHUB_OUTPUT"
+        echo "dns_rules=$DNS_RULES" >> "$GITHUB_OUTPUT"
+        echo "hosts_rules=$HOSTS_RULES" >> "$GITHUB_OUTPUT"
+        echo "filter_rules=$FILTER_RULES" >> "$GITHUB_OUTPUT"
         echo "total_rules=$TOTAL_RULES" >> "$GITHUB_OUTPUT"
+        echo "domain_rules=$DOMAIN_RULES" >> "$GITHUB_OUTPUT"
+        echo "element_rules=$ELEMENT_RULES" >> "$GITHUB_OUTPUT"
+        echo "exception_rules=$EXCEPTION_RULES" >> "$GITHUB_OUTPUT"
         echo "advanced_rules=$ADVANCED_RULES" >> "$GITHUB_OUTPUT"
-        echo "black_size=$BLACK_SIZE" >> "$GITHUB_OUTPUT"
-        echo "white_size=$WHITE_SIZE" >> "$GITHUB_OUTPUT"
+        echo "dns_size=$DNS_SIZE" >> "$GITHUB_OUTPUT"
+        echo "hosts_size=$HOSTS_SIZE" >> "$GITHUB_OUTPUT"
+        echo "filter_size=$FILTER_SIZE" >> "$GITHUB_OUTPUT"
         echo "total_size=$TOTAL_SIZE" >> "$GITHUB_OUTPUT"
         
         echo "✅ 文件统计完成"
     
-    - name: Step 7 - 生成高级统计报告（包含白名单自定义）
+    - name: Step 7 - 生成高级统计报告
       run: |
         echo ""
         echo "┌─────────────────────────────────────────┐"
@@ -497,38 +487,25 @@ jobs:
         CURRENT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')
         NEXT_TIME=$(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M:%S')
         
-        # 直接从文件读取统计信息，避免复杂的变量传递
-        if [ -f dist/blacklist.txt ]; then
-          BLACK_RULES=$(grep -v '^!' dist/blacklist.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          BLACK_SIZE=$(wc -c < dist/blacklist.txt 2>/dev/null || echo "0")
-        else
-          BLACK_RULES=0
-          BLACK_SIZE=0
-        fi
+        # 从环境变量获取统计信息
+        DNS_RULES="${{ steps.generate-files.outputs.dns_rules }}"
+        HOSTS_RULES="${{ steps.generate-files.outputs.hosts_rules }}"
+        FILTER_RULES="${{ steps.generate-files.outputs.filter_rules }}"
+        TOTAL_RULES="${{ steps.generate-files.outputs.total_rules }}"
+        DOMAIN_RULES="${{ steps.generate-files.outputs.domain_rules }}"
+        ELEMENT_RULES="${{ steps.generate-files.outputs.element_rules }}"
+        EXCEPTION_RULES="${{ steps.generate-files.outputs.exception_rules }}"
+        ADVANCED_RULES="${{ steps.generate-files.outputs.advanced_rules }}"
         
-        if [ -f dist/whitelist.txt ]; then
-          WHITE_RULES=$(grep -v '^!' dist/whitelist.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          WHITE_SIZE=$(wc -c < dist/whitelist.txt 2>/dev/null || echo "0")
-        else
-          WHITE_RULES=0
-          WHITE_SIZE=0
-        fi
-        
-        # 获取白名单自定义规则数量
-        CUSTOM_WHITE_RULES=0
-        if [ -f "rules/whitelist_custom.txt" ]; then
-          CUSTOM_WHITE_RULES=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        fi
-        
-        TOTAL_RULES=$((BLACK_RULES + WHITE_RULES))
-        TOTAL_SIZE=$((BLACK_SIZE + WHITE_SIZE))
-        
-        # 高级规则统计
-        if [ -f dist/blacklist.txt ]; then
-          ADVANCED_RULES=$(grep -c -E '#@#|#?#|\$\$' dist/blacklist.txt 2>/dev/null || echo "0")
-        else
-          ADVANCED_RULES=0
-        fi
+        # 设置默认值
+        DNS_RULES=${DNS_RULES:-0}
+        HOSTS_RULES=${HOSTS_RULES:-0}
+        FILTER_RULES=${FILTER_RULES:-0}
+        TOTAL_RULES=${TOTAL_RULES:-0}
+        DOMAIN_RULES=${DOMAIN_RULES:-0}
+        ELEMENT_RULES=${ELEMENT_RULES:-0}
+        EXCEPTION_RULES=${EXCEPTION_RULES:-0}
+        ADVANCED_RULES=${ADVANCED_RULES:-0}
         
         # 文件大小格式化
         format_size() {
@@ -544,10 +521,6 @@ jobs:
           fi
         }
         
-        BLACK_SIZE_HUMAN=$(format_size "$BLACK_SIZE")
-        WHITE_SIZE_HUMAN=$(format_size "$WHITE_SIZE")
-        TOTAL_SIZE_HUMAN=$(format_size "$TOTAL_SIZE")
-        
         # 验证状态
         VALIDATION_EXIT_CODE="0"
         if [ -n "${{ steps.validate-rules.outputs.validation_exit_code }}" ]; then
@@ -561,19 +534,24 @@ jobs:
           echo "> 本报告由 GitHub Actions 自动生成，更新时间: $CURRENT_TIME"
           echo ""
           
-          echo "## 📈 总体统计"
+          echo "## 📈 三层规则统计"
           echo ""
-          echo "| 指标 | 数值 | 说明 |"
-          echo "|------|------|------|"
-          echo "| 黑名单规则 | $BLACK_RULES 条 | 拦截广告和恶意内容 |"
-          echo "| 白名单规则 | $WHITE_RULES 条 | 避免误拦截的例外 |"
-          echo "| 白名单自定义规则 | $CUSTOM_WHITE_RULES 条 | 用户自定义例外 |"
-          echo "| 总规则数 | $TOTAL_RULES 条 | 所有规则总和 |"
-          echo "| 高级规则 | $ADVANCED_RULES 条 | 包含高级语法 |"
-          echo "| 黑名单大小 | $BLACK_SIZE_HUMAN | 文件占用空间 |"
-          echo "| 白名单大小 | $WHITE_SIZE_HUMAN | 文件占用空间 |"
-          echo "| 总计大小 | $TOTAL_SIZE_HUMAN | 总文件大小 |"
-          echo "| 生成时间 | $CURRENT_TIME | 北京时间 |"
+          echo "| 规则类型 | 数量 | 文件 | 用途 |"
+          echo "|----------|------|------|------|"
+          echo "| DNS规则 | $DNS_RULES 条 | dns.txt | 用于AdGuard Home/DNS服务 |"
+          echo "| Hosts规则 | $HOSTS_RULES 条 | hosts.txt | 用于系统hosts文件 |"
+          echo "| 浏览器规则 | $FILTER_RULES 条 | filter.txt | 用于uBlock Origin/AdBlock |"
+          echo "| **总计** | **$TOTAL_RULES 条** | - | 所有规则总和 |"
+          echo ""
+          
+          echo "## 🎯 浏览器规则分类"
+          echo ""
+          echo "| 规则类型 | 数量 | 描述 |"
+          echo "|----------|------|------|"
+          echo "| 域名拦截规则 | $DOMAIN_RULES 条 | 拦截特定域名的请求 |"
+          echo "| 元素隐藏规则 | $ELEMENT_RULES 条 | 隐藏页面广告元素 |"
+          echo "| 例外规则 | $EXCEPTION_RULES 条 | 允许特定内容 |"
+          echo "| 高级规则 | $ADVANCED_RULES 条 | 带修饰符的复杂规则 |"
           echo ""
           
           echo "## 🔍 验证状态"
@@ -581,51 +559,34 @@ jobs:
           
           case "$VALIDATION_EXIT_CODE" in
             0)
-              echo "✅ **验证通过** - 所有规则语法检查通过"
+              echo "✅ **验证通过** - 所有规则语法检查通过" >> "$SUMMARY_FILE"
               ;;
             1)
-              echo "⚠️ **验证警告** - 规则有效性低于${VALIDITY_THRESHOLD}%，但已通过宽松验证"
+              echo "⚠️ **验证警告** - 规则有效性低于${VALIDITY_THRESHOLD}%，但已通过严格验证" >> "$SUMMARY_FILE"
               ;;
             2)
-              echo "❌ **验证失败** - 没有有效规则"
+              echo "❌ **验证失败** - 没有有效规则" >> "$SUMMARY_FILE"
               ;;
             *)
-              echo "❓ **验证状态未知** - 退出码: $VALIDATION_EXIT_CODE"
+              echo "❓ **验证状态未知** - 退出码: $VALIDATION_EXIT_CODE" >> "$SUMMARY_FILE"
               ;;
           esac
           
           echo ""
           
-          echo "## 🎯 规则来源"
+          echo "## 🌐 规则来源"
           echo ""
-          echo "### 白名单自定义规则"
-          if [ "$CUSTOM_WHITE_RULES" -gt 0 ]; then
-            echo "- **文件**: rules/whitelist_custom.txt"
-            echo "- **规则数**: $CUSTOM_WHITE_RULES 条"
-            echo "- **用途**: 用户自定义的白名单例外规则，避免误拦截"
-            echo ""
-            echo "### 自定义规则示例"
-            echo "您可以在 \`rules/whitelist_custom.txt\` 文件中添加以下类型的规则:"
-            echo "- \`@@||example.com^\` - 允许 example.com 域名的所有请求"
-            echo "- \`@@||ads.example.com^$script\` - 允许 ads.example.com 的脚本"
-            echo "- \`@@||example.com^$image\` - 允许 example.com 的图片"
-            echo "- \`@@/ad-banner.png\` - 允许特定广告图片"
-          else
-            echo "⚠️ 当前没有白名单自定义规则"
-            echo "您可以在 \`rules/whitelist_custom.txt\` 文件中添加自定义白名单规则"
-          fi
+          echo "### 主要规则源"
+          echo "- sources/sources.json (主规则源配置)"
+          echo "- sources/gz.txt (额外规则源)"
+          echo "- rules/custom/ (自定义规则目录)"
+          echo ""
           
-          echo ""
-          echo "## 🎯 规则类型分布"
-          echo ""
-          echo "| 规则类型 | 描述 | 示例 |"
-          echo "|----------|------|------|"
-          echo "| 域名拦截 | 拦截特定域名的请求 | \`||example.com^\` |"
-          echo "| 元素隐藏 | 隐藏页面元素 | \`##.ad-banner\` |"
-          echo "| 高级选择器 | 复杂元素选择 | \`#?#div:-abp-has(> .ad)\` |"
-          echo "| 参数移除 | 移除URL参数 | \`||example.com^\$removeparam=utm_\*\` |"
-          echo "| 域名限定 | 特定域名生效 | \`||ads.com^\$domain=example.com\` |"
-          echo "| 白名单规则 | 允许特定内容 | \`@@||example.com^\` |"
+          echo "### 新语法说明"
+          echo "本项目使用新的三层规则语法："
+          echo "- **DNS规则** (dns.txt): 纯域名格式，用于DNS层面拦截"
+          echo "- **Hosts规则** (hosts.txt): 0.0.0.0 + 域名格式，用于系统hosts文件"
+          echo "- **浏览器规则** (filter.txt): 完整AdBlock语法，用于浏览器扩展"
           echo ""
           
           echo "## 🔄 更新信息"
@@ -633,9 +594,7 @@ jobs:
           echo "- **最后更新时间**: $CURRENT_TIME (北京时间)"
           echo "- **更新频率**: 每8小时自动更新"
           echo "- **下次更新时间**: $NEXT_TIME (北京时间)"
-          echo "- **数据来源**: 23+个主流广告规则源"
-          echo "- **自定义白名单**: rules/whitelist_custom.txt"
-          echo "- **验证标准**: 宽松验证（阈值${VALIDITY_THRESHOLD}%）"
+          echo "- **验证标准**: 严格验证（阈值${VALIDITY_THRESHOLD}%）"
           echo ""
           
           echo "## 📁 文件列表"
@@ -651,11 +610,14 @@ jobs:
                 human_size=$(format_size "$size")
                 
                 case "$filename" in
-                  "blacklist.txt")
-                    desc="主广告拦截规则"
+                  "dns.txt")
+                    desc="DNS规则文件"
                     ;;
-                  "whitelist.txt")
-                    desc="白名单例外规则（包含自定义）"
+                  "hosts.txt")
+                    desc="Hosts规则文件"
+                    ;;
+                  "filter.txt")
+                    desc="浏览器规则文件"
                     ;;
                   "metadata.json")
                     desc="规则元数据"
@@ -674,13 +636,6 @@ jobs:
                 echo "| $filename | $desc | $human_size |"
               fi
             done
-          fi
-          
-          # 添加白名单自定义文件
-          if [ -f "rules/whitelist_custom.txt" ]; then
-            size=$(wc -c < "rules/whitelist_custom.txt" 2>/dev/null || echo "0")
-            human_size=$(format_size "$size")
-            echo "| whitelist_custom.txt | 用户自定义白名单规则 | $human_size |"
           fi
           
           echo ""
@@ -703,42 +658,43 @@ jobs:
         ERROR_COUNT=0
         WARNING_COUNT=0
         
-        # 1. 检查黑名单文件
-        if [ -f dist/blacklist.txt ]; then
-          if [ ! -s dist/blacklist.txt ]; then
-            echo "❌ 黑名单文件为空"
-            ERROR_COUNT=$((ERROR_COUNT + 1))
-          else
-            # 检查是否有内容（不只是注释）
-            CONTENT_LINES=$(grep -v '^!' dist/blacklist.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-            if [ "$CONTENT_LINES" -eq 0 ]; then
-              echo "⚠️  黑名单文件没有有效规则（只有注释）"
-              WARNING_COUNT=$((WARNING_COUNT + 1))
-            fi
-          fi
-        else
-          echo "❌ 黑名单文件不存在"
-          ERROR_COUNT=$((ERROR_COUNT + 1))
-        fi
-        
-        # 2. 检查白名单自定义文件
-        if [ -f "rules/whitelist_custom.txt" ]; then
-          echo "📝 检查白名单自定义文件..."
-          if python3 -c "import re" 2>/dev/null; then
-            # 检查是否有语法错误（简单检查）
-            BAD_LINES=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | grep -v '^@@' 2>/dev/null | wc -l || echo "0")
-            if [ "$BAD_LINES" -gt 0 ]; then
-              echo "  ⚠️  whitelist_custom.txt 中有 $BAD_LINES 行可能不是有效的白名单规则"
-              WARNING_COUNT=$((WARNING_COUNT + 1))
+        # 1. 检查三层规则文件
+        for file in "dns.txt" "hosts.txt" "filter.txt"; do
+          if [ -f "dist/$file" ]; then
+            if [ ! -s "dist/$file" ]; then
+              echo "❌ $file 文件为空"
+              ERROR_COUNT=$((ERROR_COUNT + 1))
             else
-              echo "  ✅ whitelist_custom.txt 格式检查通过"
+              # 检查是否有内容（不只是注释）
+              if [ "$file" = "filter.txt" ]; then
+                CONTENT_LINES=$(grep -v '^!' "dist/$file" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+              else
+                CONTENT_LINES=$(grep -v '^#' "dist/$file" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+              fi
+              if [ "$CONTENT_LINES" -eq 0 ]; then
+                echo "⚠️  $file 文件没有有效规则（只有注释）"
+                WARNING_COUNT=$((WARNING_COUNT + 1))
+              fi
             fi
+          else
+            echo "❌ $file 文件不存在"
+            ERROR_COUNT=$((ERROR_COUNT + 1))
+          fi
+        done
+        
+        # 2. 检查额外规则源文件
+        if [ -f "sources/gz.txt" ]; then
+          echo "📝 检查额外规则源文件..."
+          if [ ! -s "sources/gz.txt" ]; then
+            echo "  ⚠️  sources/gz.txt 为空"
+            WARNING_COUNT=$((WARNING_COUNT + 1))
+          else
+            echo "  ✅ sources/gz.txt 存在且非空"
           fi
         fi
         
         # 3. 检查文件编码
         echo "📝 检查文件编码..."
-        # 使用 find 命令来查找文件，避免 glob 扩展问题
         find dist -maxdepth 1 \( -name "*.txt" -o -name "*.md" \) 2>/dev/null | while read -r file; do
           if [ -f "$file" ]; then
             if file "$file" | grep -q "UTF-8"; then
@@ -751,23 +707,16 @@ jobs:
         done
         
         # 4. 检查JSON格式
-        if [ -f dist/metadata.json ]; then
-          if python3 -m json.tool dist/metadata.json > /dev/null 2>&1; then
-            echo "✅ metadata.json: JSON格式正确"
-          else
-            echo "❌ metadata.json: JSON格式错误"
-            ERROR_COUNT=$((ERROR_COUNT + 1))
+        for json_file in "dist/metadata.json" "dist/validation_report.json"; do
+          if [ -f "$json_file" ]; then
+            if python3 -m json.tool "$json_file" > /dev/null 2>&1; then
+              echo "✅ $(basename "$json_file"): JSON格式正确"
+            else
+              echo "❌ $(basename "$json_file"): JSON格式错误"
+              ERROR_COUNT=$((ERROR_COUNT + 1))
+            fi
           fi
-        fi
-        
-        if [ -f dist/validation_report.json ]; then
-          if python3 -m json.tool dist/validation_report.json > /dev/null 2>&1; then
-            echo "✅ validation_report.json: JSON格式正确"
-          else
-            echo "❌ validation_report.json: JSON格式错误"
-            ERROR_COUNT=$((ERROR_COUNT + 1))
-          fi
-        fi
+        done
         
         # 5. 统计摘要
         echo ""
@@ -788,15 +737,16 @@ jobs:
         echo "┌─────────────────────────────────────────────────────┐"
         echo "│            🚀 发布到 GitHub / CDN                   │"
         echo "├─────────────────────────────────────────────────────┤"
-        echo "│    • 📄 blacklist.txt (主拦截规则)                 │"
-        echo "│    • ✅ whitelist.txt (例外规则)                   │"
+        echo "│    • 📄 dns.txt (DNS规则)                          │"
+        echo "│    • 📄 hosts.txt (Hosts规则)                      │"
+        echo "│    • 📄 filter.txt (浏览器规则)                    │"
         echo "│    • 📊 metadata.json (规则元数据)                 │"
         echo "│    • 🔍 validation_report.json (验证报告)          │"
         echo "│    • 📈 advanced_statistics.md (高级统计)          │"
-        echo "│    • 🌐 混合规则源: 包含6+第三方规则              │"
-        echo "│    • ⚡ 高级规则: 支持15种规则类型                 │"
-        echo "│    • 🛡️  宽松验证: 阈值$VALIDITY_THRESHOLD%       │"
-        echo "│    • ✨ 白名单自定义: rules/whitelist_custom.txt   │"
+        echo "│    • 🌐 额外规则源: sources/gz.txt                 │"
+        echo "│    • ⚡ 三层规则: 支持DNS/Hosts/浏览器三种格式     │"
+        echo "│    • 🛡️  严格验证: 阈值${VALIDITY_THRESHOLD}%     │"
+        echo "│    • ✨ 新语法: 优化后的规则语法                   │"
         echo "└─────────────────────────────────────────────────────┘"
         echo ""
         
@@ -822,16 +772,23 @@ jobs:
               fi
               
               case "$filename" in
-                "blacklist.txt")
+                "dns.txt")
                   rules=$(grep -v '^!' "$file" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
                   echo "  📄 $filename"
                   echo "     ├── 规则数: $rules 条"
                   echo "     ├── 行数: $lines 行"
                   echo "     └── 大小: $human_size"
                   ;;
-                "whitelist.txt")
+                "hosts.txt")
                   rules=$(grep -v '^!' "$file" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-                  echo "  ✅ $filename"
+                  echo "  📄 $filename"
+                  echo "     ├── 规则数: $rules 条"
+                  echo "     ├── 行数: $lines 行"
+                  echo "     └── 大小: $human_size"
+                  ;;
+                "filter.txt")
+                  rules=$(grep -v '^!' "$file" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+                  echo "  📄 $filename"
                   echo "     ├── 规则数: $rules 条"
                   echo "     ├── 行数: $lines 行"
                   echo "     └── 大小: $human_size"
@@ -865,12 +822,11 @@ jobs:
           echo ""
         fi
         
-        # 显示白名单自定义文件
-        if [ -f "rules/whitelist_custom.txt" ]; then
-          echo "📄 白名单自定义文件:"
-          size=$(wc -c < "rules/whitelist_custom.txt" 2>/dev/null || echo "0")
-          lines=$(wc -l < "rules/whitelist_custom.txt" 2>/dev/null || echo "0")
-          rules=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        # 显示额外规则源文件
+        if [ -f "sources/gz.txt" ]; then
+          echo "📄 额外规则源文件:"
+          size=$(wc -c < "sources/gz.txt" 2>/dev/null || echo "0")
+          lines=$(wc -l < "sources/gz.txt" 2>/dev/null || echo "0")
           
           if [ "$size" -ge 1048576 ]; then
             human_size="$((size/1048576))MB"
@@ -880,8 +836,7 @@ jobs:
             human_size="${size}B"
           fi
           
-          echo "  📝 whitelist_custom.txt"
-          echo "     ├── 规则数: $rules 条"
+          echo "  📝 sources/gz.txt"
           echo "     ├── 行数: $lines 行"
           echo "     └── 大小: $human_size"
           echo ""
@@ -938,12 +893,10 @@ jobs:
                 size_human="${size}B"
               fi
               echo "  📄 $file ($size_human)"
+            elif echo "$file" | grep -q "^sources/gz.txt"; then
+              echo "  🌐 $file (额外规则源)"
             elif echo "$file" | grep -q "^rules/"; then
-              if echo "$file" | grep -q "whitelist_custom.txt"; then
-                echo "  ⭐ $file (白名单自定义规则)"
-              else
-                echo "  📁 $file"
-              fi
+              echo "  📁 $file"
             elif echo "$file" | grep -q "^scripts/"; then
               echo "  🛠️  $file"
             elif echo "$file" | grep -q "^sources/"; then
@@ -968,86 +921,72 @@ jobs:
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         
-        # 获取统计值（设置默认值）
-        BLACK_COUNT="${BLACK_COUNT:-0}"
-        WHITE_COUNT="${WHITE_COUNT:-0}"
-        CUSTOM_WHITE_COUNT="${CUSTOM_WHITE_COUNT:-0}"
-        TOTAL_COUNT="${TOTAL_COUNT:-0}"
-        ADVANCED_COUNT="${ADVANCED_COUNT:-0}"
+        # 从环境变量获取统计值
+        DNS_COUNT="${{ steps.generate-files.outputs.dns_rules }}"
+        HOSTS_COUNT="${{ steps.generate-files.outputs.hosts_rules }}"
+        FILTER_COUNT="${{ steps.generate-files.outputs.filter_rules }}"
+        TOTAL_COUNT="${{ steps.generate-files.outputs.total_rules }}"
+        DOMAIN_COUNT="${{ steps.generate-files.outputs.domain_rules }}"
+        ELEMENT_COUNT="${{ steps.generate-files.outputs.element_rules }}"
+        EXCEPTION_COUNT="${{ steps.generate-files.outputs.exception_rules }}"
+        ADVANCED_COUNT="${{ steps.generate-files.outputs.advanced_rules }}"
         
-        # 从环境变量获取（如果在之前的步骤中设置了）
-        if [ -n "${{ steps.generate-files.outputs.black_rules }}" ]; then
-          BLACK_COUNT="${{ steps.generate-files.outputs.black_rules }}"
-        fi
-        
-        if [ -n "${{ steps.generate-files.outputs.white_rules }}" ]; then
-          WHITE_COUNT="${{ steps.generate-files.outputs.white_rules }}"
-        fi
-        
-        if [ -n "${{ steps.generate-files.outputs.custom_white_rules }}" ]; then
-          CUSTOM_WHITE_COUNT="${{ steps.generate-files.outputs.custom_white_rules }}"
-        fi
-        
-        if [ -n "${{ steps.generate-files.outputs.total_rules }}" ]; then
-          TOTAL_COUNT="${{ steps.generate-files.outputs.total_rules }}"
-        fi
-        
-        if [ -n "${{ steps.generate-files.outputs.advanced_rules }}" ]; then
-          ADVANCED_COUNT="${{ steps.generate-files.outputs.advanced_rules }}"
-        fi
+        # 设置默认值
+        DNS_COUNT=${DNS_COUNT:-0}
+        HOSTS_COUNT=${HOSTS_COUNT:-0}
+        FILTER_COUNT=${FILTER_COUNT:-0}
+        TOTAL_COUNT=${TOTAL_COUNT:-0}
+        DOMAIN_COUNT=${DOMAIN_COUNT:-0}
+        ELEMENT_COUNT=${ELEMENT_COUNT:-0}
+        EXCEPTION_COUNT=${EXCEPTION_COUNT:-0}
+        ADVANCED_COUNT=${ADVANCED_COUNT:-0}
         
         COMMIT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M')
         COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
         
         # 创建详细的提交信息
         {
-          echo "🤖 自动更新广告拦截规则 [$COMMIT_TIME]"
+          echo "🤖 自动更新广告拦截规则 - 新语法版 [$COMMIT_TIME]"
           echo ""
-          echo "📊 规则统计:"
-          echo "- 黑名单: $BLACK_COUNT 条规则"
-          echo "- 白名单: $WHITE_COUNT 条规则"
-          if [ "$CUSTOM_WHITE_COUNT" -gt 0 ]; then
-            echo "- 白名单自定义规则: $CUSTOM_WHITE_COUNT 条"
-          fi
+          echo "📊 三层规则统计:"
+          echo "- DNS规则: $DNS_COUNT 条"
+          echo "- Hosts规则: $HOSTS_COUNT 条"
+          echo "- 浏览器规则: $FILTER_COUNT 条"
           echo "- 总计: $TOTAL_COUNT 条规则"
+          echo ""
+          echo "🎯 浏览器规则分类:"
+          echo "- 域名拦截: $DOMAIN_COUNT 条"
+          echo "- 元素隐藏: $ELEMENT_COUNT 条"
+          echo "- 例外规则: $EXCEPTION_COUNT 条"
           echo "- 高级规则: $ADVANCED_COUNT 条"
           echo ""
-          echo "⚡ 高级功能:"
-          echo "- 支持15种规则类型分类"
-          echo "- 自动检测规则冲突"
-          echo "- 语法验证和错误检查"
-          echo "- 智能规则合并优化"
-          echo "- 宽松验证标准 ($VALIDITY_THRESHOLD%阈值)"
-          echo "- 白名单自定义规则支持"
+          echo "⚡ 新语法特性:"
+          echo "- 三层规则: DNS/Hosts/浏览器格式分离"
+          echo "- 语法优化: 去重、分类、性能优化"
+          echo "- 严格验证: ${VALIDITY_THRESHOLD}%有效性阈值"
+          echo "- 额外规则源: sources/gz.txt"
           echo ""
           echo "🌐 规则源更新:"
-          echo "- 混合规则源: 包含6+第三方规则集合"
-          echo "- 提供更全面的广告拦截覆盖"
-          echo "- 高级规则语法支持"
-          echo "- 集成白名单自定义规则"
+          echo "- 主规则源: sources/sources.json"
+          echo "- 额外规则源: sources/gz.txt"
+          echo "- 自定义规则: rules/custom/"
           echo ""
           echo "📈 生成报告:"
           echo "- 详细规则分类分析"
           echo "- 高级统计报告"
           echo "- 验证报告和冲突检测"
-          echo "- 白名单自定义规则统计"
           echo ""
           echo "✨ 拦截类型:"
-          echo "• 开屏广告拦截"
-          echo "• 弹窗广告拦截"
-          echo "• 视频广告拦截"
-          echo "• 横幅广告拦截"
-          echo "• 内联广告拦截"
-          echo "• 跟踪器拦截"
-          echo "• 恶意软件防护"
-          echo "• 隐私保护"
+          echo "• DNS层面广告拦截"
+          echo "• 系统hosts广告拦截"
+          echo "• 浏览器元素隐藏"
+          echo "• 高级规则拦截"
           echo ""
           echo "🛡️ 质量保证:"
-          echo "• 宽松验证通过率"
+          echo "• 严格语法验证"
           echo "• 自动冲突检测"
           echo "• 智能去重优化"
           echo "• 文件完整性检查"
-          echo "• 白名单自定义规则验证"
           echo ""
           echo "🔗 提交哈希: $COMMIT_HASH"
           echo "🤖 由 GitHub Actions 自动生成"
@@ -1076,39 +1015,32 @@ jobs:
         # 创建摘要文件
         SUMMARY_FILE="$GITHUB_STEP_SUMMARY"
         
-        echo "## 📋 AdBlock 规则更新摘要" > "$SUMMARY_FILE"
+        echo "## 📋 AdBlock 规则更新摘要 - 新语法版" > "$SUMMARY_FILE"
         echo "" >> "$SUMMARY_FILE"
         
         # 获取时间
         CURRENT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')
         NEXT_TIME=$(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M:%S')
         
-        # 获取统计（直接从文件读取，避免复杂的变量传递）
-        if [ -d dist ] && [ -f dist/blacklist.txt ]; then
-          BLACK_COUNT=$(grep -v '^!' dist/blacklist.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        else
-          BLACK_COUNT=0
-        fi
+        # 从环境变量获取统计值
+        DNS_COUNT="${{ steps.generate-files.outputs.dns_rules }}"
+        HOSTS_COUNT="${{ steps.generate-files.outputs.hosts_rules }}"
+        FILTER_COUNT="${{ steps.generate-files.outputs.filter_rules }}"
+        TOTAL_COUNT="${{ steps.generate-files.outputs.total_rules }}"
+        DOMAIN_COUNT="${{ steps.generate-files.outputs.domain_rules }}"
+        ELEMENT_COUNT="${{ steps.generate-files.outputs.element_rules }}"
+        EXCEPTION_COUNT="${{ steps.generate-files.outputs.exception_rules }}"
+        ADVANCED_COUNT="${{ steps.generate-files.outputs.advanced_rules }}"
         
-        if [ -d dist ] && [ -f dist/whitelist.txt ]; then
-          WHITE_COUNT=$(grep -v '^!' dist/whitelist.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        else
-          WHITE_COUNT=0
-        fi
-        
-        # 获取白名单自定义规则数量
-        CUSTOM_WHITE_COUNT=0
-        if [ -f "rules/whitelist_custom.txt" ]; then
-          CUSTOM_WHITE_COUNT=$(grep -v '^!' "rules/whitelist_custom.txt" | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        fi
-        
-        TOTAL_COUNT=$((BLACK_COUNT + WHITE_COUNT))
-        
-        if [ -d dist ] && [ -f dist/blacklist.txt ]; then
-          ADVANCED_COUNT=$(grep -c -E '#@#|#?#|\$\$' dist/blacklist.txt 2>/dev/null || echo "0")
-        else
-          ADVANCED_COUNT=0
-        fi
+        # 设置默认值
+        DNS_COUNT=${DNS_COUNT:-0}
+        HOSTS_COUNT=${HOSTS_COUNT:-0}
+        FILTER_COUNT=${FILTER_COUNT:-0}
+        TOTAL_COUNT=${TOTAL_COUNT:-0}
+        DOMAIN_COUNT=${DOMAIN_COUNT:-0}
+        ELEMENT_COUNT=${ELEMENT_COUNT:-0}
+        EXCEPTION_COUNT=${EXCEPTION_COUNT:-0}
+        ADVANCED_COUNT=${ADVANCED_COUNT:-0}
         
         # 验证状态
         VALIDATION_EXIT_CODE="0"
@@ -1116,28 +1048,27 @@ jobs:
           VALIDATION_EXIT_CODE="${{ steps.validate-rules.outputs.validation_exit_code }}"
         fi
         
-        # 使用heredoc简化输出
         cat >> "$SUMMARY_FILE" << EOF
         
-        ### 📊 规则更新摘要
+        ### 📊 三层规则统计
         
-        #### 📊 规则统计
+        | 规则类型 | 数量 | 用途 |
+        |----------|------|------|
+        | DNS规则 | $DNS_COUNT 条 | 用于AdGuard Home/DNS服务 |
+        | Hosts规则 | $HOSTS_COUNT 条 | 用于系统hosts文件 |
+        | 浏览器规则 | $FILTER_COUNT 条 | 用于uBlock Origin/AdBlock |
+        | **总计** | **$TOTAL_COUNT 条** | 所有规则总和 |
         
-        | 类型 | 数量 |
-        |------|------|
-        | 黑名单规则 | $BLACK_COUNT 条 |
-        | 白名单规则 | $WHITE_COUNT 条 |
-        EOF
+        ### 🎯 浏览器规则分类
         
-        if [ "$CUSTOM_WHITE_COUNT" -gt 0 ]; then
-          echo "| 白名单自定义规则 | $CUSTOM_WHITE_COUNT 条 |" >> "$SUMMARY_FILE"
-        fi
-        
-        cat >> "$SUMMARY_FILE" << EOF
-        | 总规则数 | $TOTAL_COUNT 条 |
+        | 规则类型 | 数量 |
+        |----------|------|
+        | 域名拦截规则 | $DOMAIN_COUNT 条 |
+        | 元素隐藏规则 | $ELEMENT_COUNT 条 |
+        | 例外规则 | $EXCEPTION_COUNT 条 |
         | 高级规则 | $ADVANCED_COUNT 条 |
         
-        #### 🔍 验证状态
+        ### 🔍 验证状态
         
         EOF
         
@@ -1146,7 +1077,7 @@ jobs:
             echo "✅ **验证通过** - 所有规则语法检查通过" >> "$SUMMARY_FILE"
             ;;
           1)
-            echo "⚠️ **验证警告** - 规则有效性低于${VALIDITY_THRESHOLD}%，但已通过宽松验证" >> "$SUMMARY_FILE"
+            echo "⚠️ **验证警告** - 规则有效性低于${VALIDITY_THRESHOLD}%，但已通过严格验证" >> "$SUMMARY_FILE"
             ;;
           2)
             echo "❌ **验证失败** - 没有有效规则" >> "$SUMMARY_FILE"
@@ -1158,7 +1089,7 @@ jobs:
         
         cat >> "$SUMMARY_FILE" << EOF
         
-        #### 📁 生成的文件
+        ### 📁 生成的文件
         
         EOF
         
@@ -1178,11 +1109,14 @@ jobs:
               fi
               
               case "$filename" in
-                "blacklist.txt")
-                  echo "- **blacklist.txt** - 主广告拦截规则 ($human_size)" >> "$SUMMARY_FILE"
+                "dns.txt")
+                  echo "- **dns.txt** - DNS规则文件 ($human_size)" >> "$SUMMARY_FILE"
                   ;;
-                "whitelist.txt")
-                  echo "- **whitelist.txt** - 白名单例外规则 ($human_size)" >> "$SUMMARY_FILE"
+                "hosts.txt")
+                  echo "- **hosts.txt** - Hosts规则文件 ($human_size)" >> "$SUMMARY_FILE"
+                  ;;
+                "filter.txt")
+                  echo "- **filter.txt** - 浏览器规则文件 ($human_size)" >> "$SUMMARY_FILE"
                   ;;
                 "metadata.json")
                   echo "- **metadata.json** - 规则元数据 ($human_size)" >> "$SUMMARY_FILE"
@@ -1200,9 +1134,9 @@ jobs:
           echo "- 没有生成文件" >> "$SUMMARY_FILE"
         fi
         
-        # 添加白名单自定义文件
-        if [ -f "rules/whitelist_custom.txt" ]; then
-          size=$(wc -c < "rules/whitelist_custom.txt" 2>/dev/null || echo "0")
+        # 添加额外规则源文件
+        if [ -f "sources/gz.txt" ]; then
+          size=$(wc -c < "sources/gz.txt" 2>/dev/null || echo "0")
           if [ "$size" -ge 1048576 ]; then
             human_size="$((size/1048576))MB"
           elif [ "$size" -ge 1024 ]; then
@@ -1210,20 +1144,21 @@ jobs:
           else
             human_size="${size}B"
           fi
-          echo "- **whitelist_custom.txt** - 用户自定义白名单规则 ($human_size)" >> "$SUMMARY_FILE"
+          echo "- **sources/gz.txt** - 额外规则源文件 ($human_size)" >> "$SUMMARY_FILE"
         fi
         
         cat >> "$SUMMARY_FILE" << EOF
         
-        #### 🔄 更新信息
+        ### 🔄 更新信息
         
         - **更新时间**: $CURRENT_TIME (北京时间)
         - **更新频率**: 每8小时自动更新
         - **下次更新**: $NEXT_TIME (北京时间)
-        - **验证标准**: 宽松验证（阈值${VALIDITY_THRESHOLD}%）
-        - **自定义白名单**: rules/whitelist_custom.txt
+        - **验证标准**: 严格验证（阈值${VALIDITY_THRESHOLD}%）
+        - **额外规则源**: sources/gz.txt
+        - **新语法**: 三层规则系统
         
-        #### 📋 步骤执行状态
+        ### 📋 步骤执行状态
         
         | 步骤 | 状态 |
         |------|------|
@@ -1272,34 +1207,32 @@ jobs:
         echo "  每天 08:00, 16:00, 00:00 (次日)"
         echo ""
         
-        echo "📊 生成文件:"
-        echo "  • dist/blacklist.txt - 主拦截规则（含混合规则）"
-        echo "  • dist/whitelist.txt - 白名单规则（包含自定义）"
+        echo "📊 生成文件 (新语法版):"
+        echo "  • dist/dns.txt - DNS规则文件"
+        echo "  • dist/hosts.txt - Hosts规则文件"
+        echo "  • dist/filter.txt - 浏览器规则文件"
         echo "  • dist/metadata.json - 规则元数据"
         echo "  • dist/validation_report.json - 验证报告"
         echo "  • dist/advanced_statistics.md - 高级统计报告"
-        echo "  • rules/whitelist_custom.txt - 用户自定义白名单规则"
+        echo "  • sources/gz.txt - 额外规则源"
         echo ""
         
-        echo "🌐 混合规则源:"
-        echo "  • 包含6+第三方规则集合"
-        echo "  • 提供更全面的广告拦截覆盖"
-        echo "  • 集成白名单自定义规则"
+        echo "🌐 三层规则系统:"
+        echo "  • DNS规则: 纯域名格式，用于DNS服务"
+        echo "  • Hosts规则: 0.0.0.0 + 域名格式"
+        echo "  • 浏览器规则: 完整AdBlock语法"
         echo ""
         
-        echo "⚡ 高级功能:"
-        echo "  • 支持15种规则类型分类"
-        echo "  • 自动检测规则冲突"
-        echo "  • 语法验证和错误检查"
-        echo "  • 智能规则合并优化"
-        echo "  • 详细统计报告生成"
-        echo "  • 宽松验证标准 ($VALIDITY_THRESHOLD%阈值)"
-        echo "  • 白名单自定义规则支持"
+        echo "⚡ 新语法特性:"
+        echo "  • 语法分离: 不同用途使用不同语法"
+        echo "  • 性能优化: 减少重复规则"
+        echo "  • 严格验证: ${VALIDITY_THRESHOLD}%有效性要求"
+        echo "  • 额外规则源: sources/gz.txt"
         echo ""
         
         # 下次运行时间
         echo "🕐 下次自动运行:"
-        TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-d %H:%M (北京时间)'
+        TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M (北京时间)'
         echo ""
         
         echo "🎉 广告拦截规则更新流程已完成!"
