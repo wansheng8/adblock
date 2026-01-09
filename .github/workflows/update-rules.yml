@@ -528,6 +528,7 @@ jobs:
         fi
         
         # 创建报告
+        REPORT_FILE="dist/advanced_statistics.md"
         {
           echo "# 📊 AdBlock 规则高级统计报告"
           echo ""
@@ -559,16 +560,16 @@ jobs:
           
           case "$VALIDATION_EXIT_CODE" in
             0)
-              echo "✅ **验证通过** - 所有规则语法检查通过" >> "$SUMMARY_FILE"
+              echo "✅ **验证通过** - 所有规则语法检查通过"
               ;;
             1)
-              echo "⚠️ **验证警告** - 规则有效性低于${VALIDITY_THRESHOLD}%，但已通过严格验证" >> "$SUMMARY_FILE"
+              echo "⚠️ **验证警告** - 规则有效性低于${VALIDITY_THRESHOLD}%，但已通过严格验证"
               ;;
             2)
-              echo "❌ **验证失败** - 没有有效规则" >> "$SUMMARY_FILE"
+              echo "❌ **验证失败** - 没有有效规则"
               ;;
             *)
-              echo "❓ **验证状态未知** - 退出码: $VALIDATION_EXIT_CODE" >> "$SUMMARY_FILE"
+              echo "❓ **验证状态未知** - 退出码: $VALIDATION_EXIT_CODE"
               ;;
           esac
           
@@ -639,9 +640,9 @@ jobs:
           fi
           
           echo ""
-        } > dist/advanced_statistics.md
+        } > "$REPORT_FILE"
         
-        echo "✅ 高级统计报告已生成: dist/advanced_statistics.md"
+        echo "✅ 高级统计报告已生成: $REPORT_FILE"
     
     - name: Step 8 - 质量检查
       run: |
