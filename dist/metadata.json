@@ -1,22 +1,14 @@
 {
-  "last_updated": "2026-01-09T10:33:20.936067+08:00",
-  "blacklist_rules": 335628,
-  "whitelist_rules": 3470,
-  "total_rules": 339098,
-  "sources_used": 14,
-  "sources_total": 18,
-  "next_update": "2026-01-09T18:33:20.936067+08:00",
-  "categories": {
-    "popup_ads": "开屏/弹窗广告",
-    "video_ads": "视频广告",
-    "banner_ads": "横幅广告",
-    "inline_ads": "内联广告",
-    "trackers": "跟踪器",
-    "malware": "恶意软件",
-    "social_media": "社交媒体"
+  "last_updated": "2026-01-09T12:03:35.629733+08:00",
+  "rule_counts": {
+    "dns_rules": 236266,
+    "hosts_rules": 236266,
+    "browser_rules": 268747,
+    "total_rules": 741279
   },
-  "source_types": {
-    "mixed_sources": 1,
-    "advanced_rules": 6322
-  }
+  "sources_used": 15,
+  "sources_total": 18,
+  "next_update": "2026-01-09T20:03:35.629733+08:00",
+  "syntax_version": "1.0",
+  "notes": "新语法规则：DNS/Hosts只放域名，浏览器才用复杂语法"
 }
