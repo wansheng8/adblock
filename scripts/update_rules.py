@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 广告拦截规则更新脚本 - 新语法版
-生成 DNS、Hosts、浏览器三层规则
+生成三层规则文件：DNS、Hosts、浏览器规则
 """
 
 import json
@@ -63,77 +63,100 @@ class RuleUpdater:
             print(f"❌ 获取失败 {source['name']}: {str(e)}")
             return False, ""
     
-    def is_valid_dns_rule(self, rule: str) -> bool:
-        """检查是否为有效DNS规则"""
+    def extract_domain_from_rule(self, rule: str) -> str:
+        """从各种规则格式中提取域名"""
         rule = rule.strip()
         
-        # 空行或注释
-        if not rule or rule.startswith('!'):
-            return False
+        # 1. 纯域名
+        if re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', rule):
+            return rule
         
-        # 必须是纯域名
-        if not re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', rule):
-            return False
-        
-        # 禁止通配符
-        if '*' in rule:
-            return False
-        
-        # 禁止特殊符号
-        if any(c in rule for c in ['^', '|', '$', '@', '#', '/']):
-            return False
-        
-        return True
-    
-    def is_valid_hosts_rule(self, rule: str) -> bool:
-        """检查是否为有效Hosts规则"""
-        rule = rule.strip()
-        
-        # 必须是 0.0.0.0 + 域名格式
+        # 2. Hosts格式
         match = re.match(r'^0\.0\.0\.0\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$', rule)
-        if not match:
-            return False
+        if match:
+            return match.group(1)
         
-        # 验证域名部分
-        domain = match.group(1)
-        return self.is_valid_dns_rule(domain)
+        # 3. 域名阻断规则
+        match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
+        if match:
+            return match.group(1)
+        
+        # 4. 白名单规则
+        match = re.match(r'^@@\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
+        if match:
+            return match.group(1)
+        
+        # 5. 带修饰符的规则
+        if '$' in rule:
+            parts = rule.split('$')
+            base_rule = parts[0]
+            match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', base_rule)
+            if match:
+                return match.group(1)
+        
+        return ""
     
-    def is_valid_browser_rule(self, rule: str) -> bool:
-        """检查是否为有效浏览器规则"""
+    def process_rule(self, rule: str) -> Tuple[str, str, str]:
+        """处理单条规则，返回三层规则"""
         rule = rule.strip()
         
-        # 空行或注释
+        # 跳过注释和空行
         if not rule or rule.startswith('!'):
-            return False
+            return "", "", ""
         
-        # 1. 域名阻断规则
-        if rule.startswith('||') and rule.endswith('^'):
-            domain = rule[2:-1]
-            return self.is_valid_dns_rule(domain)
+        dns_rule = ""
+        hosts_rule = ""
+        browser_rule = ""
         
-        # 2. 元素隐藏规则
-        elif rule.startswith('##'):
-            selector = rule[2:]
-            # 简单的CSS选择器验证
-            if len(selector) > 200:
-                return False
-            if '*' in selector:  # 禁止通配符
-                return False
-            return True
+        # 1. 如果是纯域名（DNS规则）
+        if re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', rule):
+            if '*' not in rule:  # 禁止通配符
+                dns_rule = rule
+                hosts_rule = f"0.0.0.0 {rule}"
+                browser_rule = f"||{rule}^"
         
-        # 3. 白名单规则
-        elif rule.startswith('@@||') and rule.endswith('^'):
-            domain = rule[4:-1]
-            return self.is_valid_dns_rule(domain)
+        # 2. 如果是Hosts规则
+        elif re.match(r'^0\.0\.0\.0\s+[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', rule):
+            hosts_rule = rule
+            # 提取域名
+            match = re.match(r'^0\.0\.0\.0\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$', rule)
+            if match:
+                domain = match.group(1)
+                dns_rule = domain
+                browser_rule = f"||{domain}^"
         
-        # 4. 简单修饰符规则（谨慎使用）
-        elif '$' in rule and not any(c in rule for c in ['*', '/']):
-            return True
+        # 3. 如果是浏览器域名阻断规则
+        elif re.match(r'^\|\|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\^$', rule):
+            browser_rule = rule
+            # 提取域名
+            match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^$', rule)
+            if match:
+                domain = match.group(1)
+                dns_rule = domain
+                hosts_rule = f"0.0.0.0 {domain}"
         
-        return False
+        # 4. 如果是元素隐藏规则
+        elif re.match(r'^##', rule):
+            browser_rule = rule
+        
+        # 5. 如果是白名单规则
+        elif re.match(r'^@@', rule):
+            # 白名单规则只放在浏览器规则中
+            browser_rule = rule
+        
+        # 6. 如果是带修饰符的规则
+        elif '$' in rule:
+            browser_rule = rule
+            # 尝试提取域名
+            domain = self.extract_domain_from_rule(rule)
+            if domain:
+                dns_rule = domain
+                hosts_rule = f"0.0.0.0 {domain}"
+        
+        return dns_rule, hosts_rule, browser_rule
     
-    def extract_and_clean_rules(self, content: str) -> Tuple[List[str], List[str], List[str]]:
-        """从内容中提取并清理规则"""
+    def process_content(self, content: str) -> Tuple[List[str], List[str], List[str]]:
+        """处理整个内容，返回三层规则列表"""
         dns_rules = []
         hosts_rules = []
         browser_rules = []
@@ -141,162 +164,32 @@ class RuleUpdater:
         lines = content.split('\n')
         
         for line in lines:
-            line = line.strip()
+            dns_rule, hosts_rule, browser_rule = self.process_rule(line)
             
-            # 跳过空行和注释
-            if not line or line.startswith('!'):
-                continue
-            
-            # 检查并分类规则
-            if self.is_valid_dns_rule(line):
-                dns_rules.append(line)
-            elif self.is_valid_hosts_rule(line):
-                hosts_rules.append(line)
-            elif self.is_valid_browser_rule(line):
-                browser_rules.append(line)
-            else:
-                # 尝试转换浏览器规则为DNS/Hosts规则
-                domain = self.extract_domain_from_browser_rule(line)
-                if domain and self.is_valid_dns_rule(domain):
-                    dns_rules.append(domain)
-                    hosts_rules.append(f"0.0.0.0 {domain}")
+            if dns_rule:
+                dns_rules.append(dns_rule)
+            if hosts_rule:
+                hosts_rules.append(hosts_rule)
+            if browser_rule:
+                browser_rules.append(browser_rule)
         
         return dns_rules, hosts_rules, browser_rules
     
-    def extract_domain_from_browser_rule(self, rule: str) -> str:
-        """从浏览器规则中提取域名"""
-        # 域名阻断规则
-        match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
-        if match:
-            return match.group(1)
-        
-        # 白名单规则
-        match = re.match(r'^@@\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
-        if match:
-            return match.group(1)
-        
-        # 带修饰符的规则
-        if '$' in rule:
-            parts = rule.split('$')
-            base = parts[0]
-            match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', base)
-            if match:
-                return match.group(1)
-        
-        return ""
-    
-    def generate_dns_file(self, rules: List[str]) -> int:
-        """生成DNS规则文件"""
+    def write_file(self, filename: str, rules: List[str], header: str) -> int:
+        """写入规则文件"""
         if not rules:
             return 0
         
         # 去重排序
         unique_rules = sorted(set(rules))
         
-        # 生成文件头
-        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
-        header = f"""# DNS规则文件 - 用于AdGuard Home/DNS服务
-# 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-# 规则数量: {len(unique_rules)} 条
-# 说明: 每行一个域名，无特殊符号
-# 用法: 导入到DNS过滤服务中
-# ==================================================
-
-"""
-        
         # 写入文件
-        output_file = self.base_dir / 'dist/dns.txt'
+        output_file = self.base_dir / 'dist' / filename
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(header)
             f.write('\n'.join(unique_rules))
         
         return len(unique_rules)
-    
-    def generate_hosts_file(self, rules: List[str]) -> int:
-        """生成Hosts规则文件"""
-        if not rules:
-            return 0
-        
-        # 去重排序
-        unique_rules = sorted(set(rules))
-        
-        # 生成文件头
-        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
-        header = f"""# Hosts规则文件 - 用于系统hosts文件
-# 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-# 规则数量: {len(unique_rules)} 条
-# 说明: 使用 0.0.0.0 兼容所有操作系统
-# 用法: 复制到系统 hosts 文件中
-# ==================================================
-
-"""
-        
-        # 写入文件
-        output_file = self.base_dir / 'dist/hosts.txt'
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(header)
-            f.write('\n'.join(unique_rules))
-        
-        return len(unique_rules)
-    
-    def generate_browser_file(self, rules: List[str]) -> int:
-        """生成浏览器规则文件"""
-        if not rules:
-            return 0
-        
-        # 去重排序
-        unique_rules = sorted(set(rules))
-        
-        # 生成文件头
-        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
-        header = f"""! 浏览器规则文件 - 用于uBlock Origin/AdBlock
-! 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-! 规则数量: {len(unique_rules)} 条
-! 语法: ||domain.com^  ##selector  @@||domain.com^
-! 说明: 避免使用通配符(*)和正则表达式
-! ==================================================
-
-"""
-        
-        # 写入文件
-        output_file = self.base_dir / 'dist/filter.txt'
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(header)
-            f.write('\n'.join(unique_rules))
-        
-        return len(unique_rules)
-    
-    def generate_whitelist_file(self):
-        """生成白名单文件（单独处理）"""
-        whitelist_file = self.base_dir / 'dist/whitelist.txt'
-        if whitelist_file.exists():
-            with open(whitelist_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            lines = content.split('\n')
-            whitelist_rules = []
-            
-            for line in lines:
-                line = line.strip()
-                if line and not line.startswith('!') and self.is_valid_browser_rule(line):
-                    whitelist_rules.append(line)
-            
-            # 生成更新后的白名单
-            now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
-            header = f"""! 白名单规则文件 - 用于浏览器扩展
-! 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-! 规则数量: {len(whitelist_rules)} 条
-! 说明: 以下域名/元素不会被拦截
-! ==================================================
-
-"""
-            
-            with open(whitelist_file, 'w', encoding='utf-8') as f:
-                f.write(header)
-                f.write('\n'.join(whitelist_rules))
-            
-            return len(whitelist_rules)
-        return 0
     
     def run(self) -> bool:
         """执行更新流程"""
@@ -327,7 +220,7 @@ class RuleUpdater:
             success, content = self.fetch_source(source)
             
             if success and content:
-                dns_rules, hosts_rules, browser_rules = self.extract_and_clean_rules(content)
+                dns_rules, hosts_rules, browser_rules = self.process_content(content)
                 
                 all_dns_rules.extend(dns_rules)
                 all_hosts_rules.extend(hosts_rules)
@@ -341,34 +234,56 @@ class RuleUpdater:
         
         print(f"\n📊 规则获取完成: {successful_sources}/{len(sorted_sources)} 成功")
         
-        # 生成各层规则文件
-        print("\n📄 生成规则文件...")
+        # 生成时间
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
         
-        # DNS规则
-        dns_count = self.generate_dns_file(all_dns_rules)
-        print(f"  ├── DNS规则: {dns_count} 条")
+        # 生成DNS规则文件
+        print("\n📄 生成DNS规则文件...")
+        dns_header = f"""# DNS规则文件 - 用于AdGuard Home/DNS服务
+# 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
+# 规则数量: {len(all_dns_rules)} 条
+# 说明: 每行一个域名，无特殊符号
+# 语法: 纯域名 (example.com)
+# 禁止: 通配符(*)、正则表达式、特殊符号
+# 用法: 导入到DNS过滤服务中
+# ==================================================
+
+"""
+        dns_count = self.write_file("dns.txt", all_dns_rules, dns_header)
         
-        # Hosts规则
-        hosts_count = self.generate_hosts_file(all_hosts_rules)
-        print(f"  ├── Hosts规则: {hosts_count} 条")
+        # 生成Hosts规则文件
+        print("📄 生成Hosts规则文件...")
+        hosts_header = f"""# Hosts规则文件 - 用于系统hosts文件
+# 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
+# 规则数量: {len(all_hosts_rules)} 条
+# 说明: 使用 0.0.0.0 兼容所有操作系统
+# 语法: 0.0.0.0 example.com
+# 用法: 复制到系统 hosts 文件中
+# ==================================================
+
+"""
+        hosts_count = self.write_file("hosts.txt", all_hosts_rules, hosts_header)
         
-        # 浏览器规则
-        browser_count = self.generate_browser_file(all_browser_rules)
-        print(f"  ├── 浏览器规则: {browser_count} 条")
-        
-        # 白名单规则
-        whitelist_count = self.generate_whitelist_file()
-        print(f"  ├── 白名单规则: {whitelist_count} 条")
+        # 生成浏览器规则文件
+        print("📄 生成浏览器规则文件...")
+        browser_header = f"""! 浏览器规则文件 - 用于uBlock Origin/AdBlock
+! 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
+! 规则数量: {len(all_browser_rules)} 条
+! 语法: ||domain.com^  ##selector  @@||domain.com^
+! 说明: 避免使用通配符(*)和正则表达式
+! 用法: 导入到浏览器广告拦截扩展中
+! ==================================================
+
+"""
+        browser_count = self.write_file("filter.txt", all_browser_rules, browser_header)
         
         # 生成元数据
-        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
         metadata = {
             "last_updated": now.isoformat(),
             "rule_counts": {
                 "dns_rules": dns_count,
                 "hosts_rules": hosts_count,
                 "browser_rules": browser_count,
-                "whitelist_rules": whitelist_count,
                 "total_rules": dns_count + hosts_count + browser_count
             },
             "sources_used": successful_sources,
@@ -383,16 +298,15 @@ class RuleUpdater:
         
         print("\n" + "=" * 60)
         print("✅ 更新完成!")
-        print(f"📊 DNS规则: {dns_count} 条")
-        print(f"📊 Hosts规则: {hosts_count} 条")
-        print(f"📊 浏览器规则: {browser_count} 条")
-        print(f"📊 白名单规则: {whitelist_count} 条")
+        print(f"📊 DNS规则: {dns_count} 条 (dns.txt)")
+        print(f"📊 Hosts规则: {hosts_count} 条 (hosts.txt)")
+        print(f"📊 浏览器规则: {browser_count} 条 (filter.txt)")
         print(f"📊 总计: {dns_count + hosts_count + browser_count} 条")
         print(f"⏰ 下次更新: {(now + datetime.timedelta(hours=8)).strftime('%Y-%m-%d %H:%M')}")
         print("\n🎯 新语法规则:")
         print("  • DNS: 纯域名 (example.com)")
         print("  • Hosts: 0.0.0.0 example.com")
-        print("  • 浏览器: ||example.com^  ##.ad-banner")
+        print("  • 浏览器: ||example.com^  ##.ad-banner  @@||example.com^")
         print("  • 禁止: 通配符(*)、正则表达式")
         print("=" * 60)
         
