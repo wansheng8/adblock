@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-01-10T00:40:07.126090+08:00",
+  "last_updated": "2026-01-10T10:07:31.501350+08:00",
   "rule_counts": {
-    "dns_rules": 1547458,
-    "hosts_rules": 1553995,
-    "browser_rules": 1826348,
-    "total_rules": 4927801
+    "dns_rules": 1547419,
+    "hosts_rules": 1553956,
+    "browser_rules": 1825820,
+    "total_rules": 4927195
   },
-  "sources_used": 387,
+  "sources_used": 398,
   "sources_total": 403,
-  "sources_failed": 16,
+  "sources_failed": 5,
   "sources_list": [
     {
       "name": "AdGuard Base filter",
@@ -2026,7 +2026,7 @@
       "priority": 1383
     }
   ],
-  "next_update": "2026-01-10T08:40:07.126090+08:00",
+  "next_update": "2026-01-10T18:07:31.501350+08:00",
   "syntax_version": "1.1",
   "notes": "新语法规则：DNS/Hosts只放域名，浏览器才用复杂语法",
   "includes_gz_txt": true
