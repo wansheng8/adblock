@@ -1,8 +1,8 @@
 [Adblock Plus 1.1]
-! Checksum: cWaeS0rcmpXkq+R6SCqsFw
-! Version: 202601110151
+! Checksum: EinIqzQw7hWcsAEOEp8owA
+! Version: 202601110211
 ! Title: EasyPrivacy
-! Last modified: 11 Jan 2026 01:51 UTC
+! Last modified: 11 Jan 2026 02:11 UTC
 ! Expires: 1 days (update frequency)
 ! Homepage: https://easylist.to/
 ! Licence: https://easylist.to/pages/licence.html
@@ -11751,6 +11751,7 @@ $third-party,xmlhttprequest,domain=opensubtitles.org
 ||ave-caesar-mas.modivo.io^
 ||cafenews.pl/mpl/static/static.js?
 ||cmp.dreamlab.pl^
+||cpu-api.infor.pl^
 ||dsg.interia.pl^
 ||hit.interia.pl^
 ||hypemarketing.pl/cdn/fhmm-tracker.js

@@ -1,8 +1,8 @@
 [Adblock Plus 2.0]
-! Checksum: XvFUgUFmsRSRiD9GF//M3g
-! Version: 202601110141
+! Checksum: TQSfvSWcwvUpfC9Jd0f7Ow
+! Version: 202601110211
 ! Title: EasyList
-! Last modified: 11 Jan 2026 01:41 UTC
+! Last modified: 11 Jan 2026 02:11 UTC
 ! Expires: 1 days (update frequency)
 ! Homepage: https://easylist.to/
 ! Licence: https://easylist.to/pages/licence.html
@@ -19998,6 +19998,7 @@ browsershots.org#@#.advert_area
 ||bcprm.com^
 ||bcqnp7tgnxopee.cfd^
 ||bcrhbyfufuub.xyz^
+||bcsfpwmjulcxw.site^
 ||bcsxtjeqlakry.com^
 ||bctuafpdwarbm.site^
 ||bcusuopfexyrv.net^
@@ -21485,6 +21486,7 @@ browsershots.org#@#.advert_area
 ||bthcfz4jxwxyzrqnhf2ym6q.cfd^
 ||bthin.site^
 ||bthythvdrdbud.space^
+||btjcjbqpmjzhk.website^
 ||btjtygiymmfbk.space^
 ||btklkcjpzigin.space^
 ||btkpfrvcrfbvx.site^
@@ -30053,6 +30055,7 @@ browsershots.org#@#.advert_area
 ||galotop1.com^
 ||galrnswqwqlik.site^
 ||galvperfins.qpon^
+||galyacsiffy.shop^
 ||gam3ah.com^
 ||gamamvanbtc.com^
 ||gamasidtoxosis.help^
@@ -36326,6 +36329,7 @@ browsershots.org#@#.advert_area
 ||kmeomhssuzekc.online^
 ||kmfkiwghhe.xyz^
 ||kmfroutzdbryk.space^
+||kmhxnugiummta.com^
 ||kmigkfqaxckyv.site^
 ||kmjveezxebpqs.website^
 ||kmlastitytye.org^
@@ -37611,6 +37615,7 @@ browsershots.org#@#.advert_area
 ||littlevigorously.com^
 ||littlewonder.pro^
 ||litvp.com^
+||litzceboidscompone.cyou^
 ||livablyprevent.click^
 ||livedskateraisin.com^
 ||lively-spirit.pro^
@@ -71446,6 +71451,7 @@ imresizer.com##.ad-slot-2-fixed-ad
 imresizer.com##.ad-slot-3-fixed-ad
 cnn.com##.ad-slot-dynamic
 cnn.com##.ad-slot-header__wrapper
+goal.com##.ad-slot-live-score
 barandbench.com##.ad-slot-row-m__ad-Wrapper__cusCS
 oann.com##.ad-slot__ad-label
 cnn.com##.ad-slot__ad-wrapper

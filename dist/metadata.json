@@ -1,10 +1,10 @@
 {
-  "last_updated": "2026-01-11T10:00:20.823319+08:00",
+  "last_updated": "2026-01-11T10:27:35.778986+08:00",
   "rule_counts": {
-    "dns_rules": 1546335,
-    "hosts_rules": 1552872,
-    "browser_rules": 1824572,
-    "total_rules": 4923779
+    "dns_rules": 1546341,
+    "hosts_rules": 1552878,
+    "browser_rules": 1824578,
+    "total_rules": 4923797
   },
   "sources_used": 400,
   "sources_total": 405,
@@ -2036,7 +2036,7 @@
       "priority": 1385
     }
   ],
-  "next_update": "2026-01-11T18:00:20.823319+08:00",
+  "next_update": "2026-01-11T18:27:35.778986+08:00",
   "syntax_version": "1.1",
   "notes": "新语法规则：DNS/Hosts只放域名，浏览器才用复杂语法",
   "includes_gz_txt": true
