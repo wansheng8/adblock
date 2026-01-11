@@ -1,13 +1,13 @@
 {
-  "last_updated": "2026-01-11T00:33:50.284534+08:00",
+  "last_updated": "2026-01-11T10:00:20.823319+08:00",
   "rule_counts": {
-    "dns_rules": 1546903,
-    "hosts_rules": 1553440,
-    "browser_rules": 1823832,
-    "total_rules": 4924175
+    "dns_rules": 1546335,
+    "hosts_rules": 1552872,
+    "browser_rules": 1824572,
+    "total_rules": 4923779
   },
-  "sources_used": 398,
-  "sources_total": 403,
+  "sources_used": 400,
+  "sources_total": 405,
   "sources_failed": 5,
   "sources_list": [
     {
@@ -2024,9 +2024,19 @@
       "name": "gz_rule_385",
       "type": "gz_txt",
       "priority": 1383
+    },
+    {
+      "name": "gz_rule_386",
+      "type": "gz_txt",
+      "priority": 1384
+    },
+    {
+      "name": "gz_rule_387",
+      "type": "gz_txt",
+      "priority": 1385
     }
   ],
-  "next_update": "2026-01-11T08:33:50.284534+08:00",
+  "next_update": "2026-01-11T18:00:20.823319+08:00",
   "syntax_version": "1.1",
   "notes": "新语法规则：DNS/Hosts只放域名，浏览器才用复杂语法",
   "includes_gz_txt": true
