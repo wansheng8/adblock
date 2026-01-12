@@ -1,101 +1,101 @@
 {
-  "timestamp": "2026-01-11 16:34:54",
+  "timestamp": "2026-01-12 02:23:09",
   "validation_results": {
     "dns": {
-      "total": 1544585,
-      "valid": 1544585,
+      "total": 1543230,
+      "valid": 1543230,
       "invalid": 0,
       "errors": [],
       "warnings": []
     },
     "hosts": {
-      "total": 1551122,
-      "valid": 1544581,
+      "total": 1549767,
+      "valid": 1543226,
       "invalid": 6541,
       "errors": [
         {
-          "line": 1544591,
+          "line": 1543236,
           "rule": "127.0.0.1 0ce3c-1fd43.api.pushwoosh.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1544592,
+          "line": 1543237,
           "rule": "127.0.0.1 100016075.collect.igodigital.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1544593,
+          "line": 1543238,
           "rule": "127.0.0.1 10870841.collect.igodigital.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1544594,
+          "line": 1543239,
           "rule": "127.0.0.1 113vod-adaptive.akamaized.net",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1544595,
+          "line": 1543240,
           "rule": "127.0.0.1 1170.api.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1544596,
+          "line": 1543241,
           "rule": "127.0.0.1 1170.content.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1544597,
+          "line": 1543242,
           "rule": "127.0.0.1 1188.api.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1544598,
+          "line": 1543243,
           "rule": "127.0.0.1 1188.content.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1544599,
+          "line": 1543244,
           "rule": "127.0.0.1 1353.api.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1544600,
+          "line": 1543245,
           "rule": "127.0.0.1 1353.content.swrve.com",
           "message": "无效的Hosts规则格式"
         }
       ],
       "warnings": [
         {
-          "line": 1544591,
+          "line": 1543236,
           "rule": "127.0.0.1 0ce3c-1fd43.api.pushwoosh.com",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         },
         {
-          "line": 1544592,
+          "line": 1543237,
           "rule": "127.0.0.1 100016075.collect.igodigital.com",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         },
         {
-          "line": 1544593,
+          "line": 1543238,
           "rule": "127.0.0.1 10870841.collect.igodigital.com",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         },
         {
-          "line": 1544594,
+          "line": 1543239,
           "rule": "127.0.0.1 113vod-adaptive.akamaized.net",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         },
         {
-          "line": 1544595,
+          "line": 1543240,
           "rule": "127.0.0.1 1170.api.swrve.com",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         }
       ]
     },
     "browser": {
-      "total": 1821154,
-      "valid": 1713158,
-      "invalid": 107996,
+      "total": 1822932,
+      "valid": 1714691,
+      "invalid": 108241,
       "errors": [
         {
           "line": 10,
@@ -178,9 +178,9 @@
     }
   },
   "summary": {
-    "total_rules": 4916861,
-    "valid_rules": 4802324,
-    "invalid_rules": 114537,
-    "validity_rate": 97.67052597175312
+    "total_rules": 4915929,
+    "valid_rules": 4801147,
+    "invalid_rules": 114782,
+    "validity_rate": 97.66510053338851
   }
 }
