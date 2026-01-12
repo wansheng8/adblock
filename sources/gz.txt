@@ -383,5 +383,4 @@ https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/
 https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/update.txt
 https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/update_v6.txt
 https://raw.githubusercontent.com/REIJI007/Adblock-Rule-Collection/main/Whitelist.txt
-https://raw.githubusercontent.com/huantian233/HT-AD/refs/heads/main/AD.txt
 https://raw.githubusercontent.com/Kuroba-Sayuki/FuLing-AdRules/Master/OtherRules/TomatoNovelRules.txt
