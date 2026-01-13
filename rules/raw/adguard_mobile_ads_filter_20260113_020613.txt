@@ -1,9 +1,9 @@
-! Checksum: Un0SOh28nTlNl5t8eixy7A
-! Diff-Path: ../patches/11_optimized/11_optimized-s-1768212738-3600.patch
+! Checksum: HvKHi/HqOICUYlLej/1gZw
+! Diff-Path: ../patches/11_optimized/11_optimized-s-1768248675-3600.patch
 ! Title: AdGuard Mobile Ads filter (Optimized)
 ! Description: Filter for all known mobile ad networks. Useful for mobile devices.
-! Version: 2.0.66.90
-! TimeUpdated: 2026-01-12T10:09:44+00:00
+! Version: 2.0.66.94
+! TimeUpdated: 2026-01-12T20:08:28+00:00
 ! Expires: 5 days (update frequency)
 ||*.libaishuo.com^$third-party
 ||adx-open-service.youku.com^
@@ -1835,6 +1835,7 @@ qlife.jp,wiki.yjsnpi.nu,opinion.cw.com.tw,aidoly.net,celeby-media.net,kyun2-girl
 chip.de,gamesworld.de,fnn.jp##.Ad
 medipalette.lotte.co.jp,genxy-net.com,m.price.com.hk,otakuma.net,nikkan-gendai.com,m.hellporno.com,topics.smt.docomo.ne.jp,rank-king.jp,kun.uz,m.lenta.ru,m.aydin24haber.com,m.xcum.com,m.alphaporno.com,m.yourlust.com,m.3movs.com,m.sexu.com##body .banner
 sp.manga.nicovideo.jp##div[style^="--ads-width:"]
+zarina.ru##.fixed.bottom-16
 uranai.d-square.co.jp##.AdvMain
 uranai.d-square.co.jp##.AdvHeader
 aptoide.com##iframe[src^="https://ssp01.aptoide.com/www/delivery/"]
@@ -2121,7 +2122,6 @@ s.kabutan.jp##header + .bg-white.px-4.border-slate-100.border-solid
 timesnownews.com##div[id^="progressBarContainer"] > div[class] > div[class^="_"]:has(> div[id^="v-timesnownews-"]:only-child)
 timesnownews.com##div[id^="progressBarContainer"] > div[style^="margin-bottom:"]:has(> div[class]:only-child > div[id^="atf"]:only-child > .bggrayAd:only-child)
 elboletin.com,clickpetroleoegas.com.br##.code-block
-u.gg##.media-query_MOBILE_SMALL__MOBILE_LARGE
 thekitchn.com##.Post__inPostVideoAdMobile
 thekitchn.com##.MobileStickyBanner
 motorcycle.com##.ads-fluid-wrap
@@ -4956,7 +4956,7 @@ tripnote.jp##article > div[style="text-align:center; margin:10px 0px; aspect-rat
 tripnote.jp###button-booking
 hochi.news##.ad[style^="min-width: 360px; min-height: 100px"]
 hochi.news##.ad[style^="min-width: 336px"]
-hochi.news##div[style^="min-width: 320px; min-height: 100px"]
+hochi.news##div[style^="min-width: 320px; min-height: 1"]
 inporn.com##.video__wrapper > div.header__item
 number.bunshun.jp##div[class^="container-banner-"]
 comic.pixiv.net##.w-screen.bg-surface4-default[data-testid="container"]
@@ -7588,6 +7588,7 @@ adguard.info,adguard.com,adguard.app##.hello_from_adguard_apps
 ||googleads.g.doubleclick.net^$app=world.cup|com.ludo.king|com.dubox.drive
 ||tags.tiqcdn.com^$app=com.booking
 ||graph.facebook.com^$app=com.booking
+||graph.facebook.com^$app=com.winter.breaker
 ||graph.facebook.com^$app=com.apkpure.aegon
 ||graph.facebook.com^|$app=com.UCMobile.intl
 ||graph.facebook.com^$app=com.jmsgame.jackpotmastercasino|com.jackpotfriends.slots|com.topultragame.slotlasvega
