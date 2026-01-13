@@ -1,101 +1,101 @@
 {
-  "timestamp": "2026-01-13 02:09:11",
+  "timestamp": "2026-01-13 08:41:58",
   "validation_results": {
     "dns": {
-      "total": 1542145,
-      "valid": 1542145,
+      "total": 1542070,
+      "valid": 1542070,
       "invalid": 0,
       "errors": [],
       "warnings": []
     },
     "hosts": {
-      "total": 1548682,
-      "valid": 1542141,
+      "total": 1548607,
+      "valid": 1542066,
       "invalid": 6541,
       "errors": [
         {
-          "line": 1542151,
+          "line": 1542076,
           "rule": "127.0.0.1 0ce3c-1fd43.api.pushwoosh.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1542152,
+          "line": 1542077,
           "rule": "127.0.0.1 100016075.collect.igodigital.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1542153,
+          "line": 1542078,
           "rule": "127.0.0.1 10870841.collect.igodigital.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1542154,
+          "line": 1542079,
           "rule": "127.0.0.1 113vod-adaptive.akamaized.net",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1542155,
+          "line": 1542080,
           "rule": "127.0.0.1 1170.api.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1542156,
+          "line": 1542081,
           "rule": "127.0.0.1 1170.content.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1542157,
+          "line": 1542082,
           "rule": "127.0.0.1 1188.api.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1542158,
+          "line": 1542083,
           "rule": "127.0.0.1 1188.content.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1542159,
+          "line": 1542084,
           "rule": "127.0.0.1 1353.api.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1542160,
+          "line": 1542085,
           "rule": "127.0.0.1 1353.content.swrve.com",
           "message": "无效的Hosts规则格式"
         }
       ],
       "warnings": [
         {
-          "line": 1542151,
+          "line": 1542076,
           "rule": "127.0.0.1 0ce3c-1fd43.api.pushwoosh.com",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         },
         {
-          "line": 1542152,
+          "line": 1542077,
           "rule": "127.0.0.1 100016075.collect.igodigital.com",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         },
         {
-          "line": 1542153,
+          "line": 1542078,
           "rule": "127.0.0.1 10870841.collect.igodigital.com",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         },
         {
-          "line": 1542154,
+          "line": 1542079,
           "rule": "127.0.0.1 113vod-adaptive.akamaized.net",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         },
         {
-          "line": 1542155,
+          "line": 1542080,
           "rule": "127.0.0.1 1170.api.swrve.com",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         }
       ]
     },
     "browser": {
-      "total": 1821994,
-      "valid": 1713901,
-      "invalid": 108093,
+      "total": 1821916,
+      "valid": 1713822,
+      "invalid": 108094,
       "errors": [
         {
           "line": 10,
@@ -165,12 +165,12 @@
           "message": "规则包含通配符*"
         },
         {
-          "line": 510,
+          "line": 511,
           "rule": "$csp=child-src 'none'; frame-src 'self' *; worker-src 'none',domain=fileone.tv|t...",
           "message": "规则包含通配符*"
         },
         {
-          "line": 511,
+          "line": 512,
           "rule": "$csp=child-src 'none'; frame-src *; worker-src 'none',domain=ddmix.net|kickass.c...",
           "message": "规则包含通配符*"
         }
@@ -178,9 +178,9 @@
     }
   },
   "summary": {
-    "total_rules": 4912821,
-    "valid_rules": 4798187,
-    "invalid_rules": 114634,
-    "validity_rate": 97.66663593076157
+    "total_rules": 4912593,
+    "valid_rules": 4797958,
+    "invalid_rules": 114635,
+    "validity_rate": 97.66650728037108
   }
 }
