@@ -1,9 +1,9 @@
-! Checksum: HvKHi/HqOICUYlLej/1gZw
-! Diff-Path: ../patches/11_optimized/11_optimized-s-1768248675-3600.patch
+! Checksum: Efk31hymQl3ENBrolHWwsw
+! Diff-Path: ../patches/11_optimized/11_optimized-s-1768317158-3600.patch
 ! Title: AdGuard Mobile Ads filter (Optimized)
 ! Description: Filter for all known mobile ad networks. Useful for mobile devices.
-! Version: 2.0.66.94
-! TimeUpdated: 2026-01-12T20:08:28+00:00
+! Version: 2.0.66.97
+! TimeUpdated: 2026-01-13T15:09:53+00:00
 ! Expires: 5 days (update frequency)
 ||*.libaishuo.com^$third-party
 ||adx-open-service.youku.com^
@@ -92,6 +92,7 @@
 ||startup.mobile.yandex.net^
 ||startup.mobile.webvisor.com^
 ||startup-mobile.ap.yandex-net.ru^
+||axon.ai^
 ||up.ousabq.tech^
 ||ogads-pa.clients6.google.com^
 ||ad.mojisead.co.kr^
@@ -704,7 +705,7 @@
 ||appclick.net^
 ||applifier.com^
 ||applift.com^$redirect=nooptext
-||applovin.com^$third-party
+||applovin.com^
 ||appnext-a.akamaihd.net^
 ||appsdt.com^
 ||appserver-ap.com^
@@ -7346,6 +7347,7 @@ lifehack.org#?#.visible-xs[style^="background-color: rgb"]:has(>[id^="div-gpt-ad
 lifehack.org#?#.visible-xs[style^="background-color: rgb"]:has([id^="lifehack_m_"][id*="TF"])
 womenshealth.de#?#body > .list__header:contains(Sponsored Section)
 contexto.me#$#.top-ad-padding { padding-top: 15px !important; }
+pornhub.com,pornhub.org##div[class]:has(> ins.adsbytrafficjunky)
 pornhub.com,pornhub.org##.eudsaLink
 pornhub.com,pornhub.org##.ad-tabSplit
 pornhub.com,pornhub.org##.watchpageAd
@@ -7586,8 +7588,6 @@ adguard.info,adguard.com,adguard.app##.hello_from_adguard_apps
 ||https-filtering-check.adtidy.org^
 ||extmaps-api.yandex.net/promo/api/
 ||googleads.g.doubleclick.net^$app=world.cup|com.ludo.king|com.dubox.drive
-||tags.tiqcdn.com^$app=com.booking
-||graph.facebook.com^$app=com.booking
 ||graph.facebook.com^$app=com.winter.breaker
 ||graph.facebook.com^$app=com.apkpure.aegon
 ||graph.facebook.com^|$app=com.UCMobile.intl
