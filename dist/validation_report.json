@@ -1,101 +1,101 @@
 {
-  "timestamp": "2026-01-17 08:36:09",
+  "timestamp": "2026-01-17 16:32:47",
   "validation_results": {
     "dns": {
-      "total": 1543170,
-      "valid": 1543170,
+      "total": 1543152,
+      "valid": 1543152,
       "invalid": 0,
       "errors": [],
       "warnings": []
     },
     "hosts": {
-      "total": 1549707,
-      "valid": 1543166,
+      "total": 1549689,
+      "valid": 1543148,
       "invalid": 6541,
       "errors": [
         {
-          "line": 1543176,
+          "line": 1543158,
           "rule": "127.0.0.1 0ce3c-1fd43.api.pushwoosh.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1543177,
+          "line": 1543159,
           "rule": "127.0.0.1 100016075.collect.igodigital.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1543178,
+          "line": 1543160,
           "rule": "127.0.0.1 10870841.collect.igodigital.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1543179,
+          "line": 1543161,
           "rule": "127.0.0.1 113vod-adaptive.akamaized.net",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1543180,
+          "line": 1543162,
           "rule": "127.0.0.1 1170.api.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1543181,
+          "line": 1543163,
           "rule": "127.0.0.1 1170.content.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1543182,
+          "line": 1543164,
           "rule": "127.0.0.1 1188.api.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1543183,
+          "line": 1543165,
           "rule": "127.0.0.1 1188.content.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1543184,
+          "line": 1543166,
           "rule": "127.0.0.1 1353.api.swrve.com",
           "message": "无效的Hosts规则格式"
         },
         {
-          "line": 1543185,
+          "line": 1543167,
           "rule": "127.0.0.1 1353.content.swrve.com",
           "message": "无效的Hosts规则格式"
         }
       ],
       "warnings": [
         {
-          "line": 1543176,
+          "line": 1543158,
           "rule": "127.0.0.1 0ce3c-1fd43.api.pushwoosh.com",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         },
         {
-          "line": 1543177,
+          "line": 1543159,
           "rule": "127.0.0.1 100016075.collect.igodigital.com",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         },
         {
-          "line": 1543178,
+          "line": 1543160,
           "rule": "127.0.0.1 10870841.collect.igodigital.com",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         },
         {
-          "line": 1543179,
+          "line": 1543161,
           "rule": "127.0.0.1 113vod-adaptive.akamaized.net",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         },
         {
-          "line": 1543180,
+          "line": 1543162,
           "rule": "127.0.0.1 1170.api.swrve.com",
           "message": "建议使用0.0.0.0而非127.0.0.1"
         }
       ]
     },
     "browser": {
-      "total": 1813221,
-      "valid": 1705324,
-      "invalid": 107897,
+      "total": 1818287,
+      "valid": 1709753,
+      "invalid": 108534,
       "errors": [
         {
           "line": 10,
@@ -155,22 +155,22 @@
           "message": "规则包含通配符*"
         },
         {
-          "line": 40,
+          "line": 41,
           "rule": "$cookie=/^AMCVS?_.*AdobeOrg/",
           "message": "规则包含通配符*"
         },
         {
-          "line": 77,
+          "line": 78,
           "rule": "$cookie=/mp_.*_mixpanel/",
           "message": "规则包含通配符*"
         },
         {
-          "line": 511,
+          "line": 512,
           "rule": "$csp=child-src 'none'; frame-src 'self' *; worker-src 'none',domain=fileone.tv|t...",
           "message": "规则包含通配符*"
         },
         {
-          "line": 512,
+          "line": 513,
           "rule": "$csp=child-src 'none'; frame-src *; worker-src 'none',domain=ddmix.net|kickass.c...",
           "message": "规则包含通配符*"
         }
@@ -178,9 +178,9 @@
     }
   },
   "summary": {
-    "total_rules": 4906098,
-    "valid_rules": 4791660,
-    "invalid_rules": 114438,
-    "validity_rate": 97.6674334674929
+    "total_rules": 4911128,
+    "valid_rules": 4796053,
+    "invalid_rules": 115075,
+    "validity_rate": 97.65685194928741
   }
 }
