@@ -1,44 +1,23 @@
 {
-  "last_updated": "2026-01-26T17:27:32.434477+08:00",
-  "syntax_version": "2.0-enhanced",
+  "last_updated": "2026-01-26T19:08:17.077084+08:00",
   "rule_counts": {
-    "dns_rules": 251541,
-    "hosts_rules": 251248,
-    "browser_rules": 291791,
-    "total_rules": 794580
+    "dns_rules": 1414690,
+    "hosts_rules": 1414690,
+    "browser_rules": 7645857,
+    "total_rules": 10475237
   },
-  "rule_types_supported": [
-    "whitelist (@@)",
-    "exact_domain (pure domain)",
-    "wildcard (||domain^)",
-    "cname_intercept ($cname)",
-    "element_hiding (##)",
-    "category_based ($category=)",
-    "response_policy ($important, $redirect, etc.)"
+  "sources_used": 398,
+  "sources_total": 403,
+  "sources_failed": 5,
+  "syntax_version": "2.0",
+  "features": [
+    "whitelist_support",
+    "exact_domain",
+    "subdomain_wildcard",
+    "cname_blocking",
+    "category_rules",
+    "response_policy"
   ],
-  "categories_available": [
-    "ad",
-    "tracking",
-    "malware",
-    "phishing",
-    "social",
-    "porn",
-    "annoyance",
-    "cookie",
-    "privacy",
-    "security"
-  ],
-  "response_policies_available": [
-    "block",
-    "allow",
-    "redirect",
-    "removeparam",
-    "replace",
-    "csp",
-    "header",
-    "important",
-    "badfilter"
-  ],
-  "next_update": "2026-01-27T01:27:32.434477+08:00",
-  "generator": "Enhanced Rule Updater v2.0"
+  "notes": "完整语法支持：白名单、精确域名、子域通配、CNAME拦截、分类规则、响应策略",
+  "includes_gz_txt": true
 }
