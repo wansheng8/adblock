@@ -108,8 +108,25 @@ jobs:
         echo "🔍 规则验证..."
         if [ -f scripts/validate_rules.py ]; then
           python scripts/validate_rules.py --simple
+          VALIDATION_STATUS=$?
+          
+          if [ $VALIDATION_STATUS -eq 0 ]; then
+            echo "✅ 规则验证通过"
+            echo "validation_passed=true" >> "$GITHUB_OUTPUT"
+            echo "validation_exit_code=0" >> "$GITHUB_OUTPUT"
+          elif [ $VALIDATION_STATUS -eq 1 ]; then
+            echo "⚠️  规则验证警告"
+            echo "validation_passed=true" >> "$GITHUB_OUTPUT"
+            echo "validation_exit_code=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "❌ 规则验证失败"
+            echo "validation_passed=false" >> "$GITHUB_OUTPUT"
+            echo "validation_exit_code=$VALIDATION_STATUS" >> "$GITHUB_OUTPUT"
+          fi
         else
           echo "ℹ️  验证脚本不存在，跳过验证"
+          echo "validation_passed=true" >> "$GITHUB_OUTPUT"
+          echo "validation_exit_code=0" >> "$GITHUB_OUTPUT"
         fi
     
     - name: Step 5 - 检查变更
