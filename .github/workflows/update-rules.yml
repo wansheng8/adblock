@@ -387,7 +387,7 @@ jobs:
         touch dist/dns.txt dist/hosts.txt dist/filter.txt
         touch dist/metadata.json dist/validation_report.json 2>/dev/null || true
         
-        # 统计规则数量
+        # 统计规则数量 - 修复浏览器规则统计
         echo "📊 统计三层规则数量..."
         
         DNS_RULES=0
@@ -397,24 +397,28 @@ jobs:
         ENHANCED_RULES=0
         
         if [ -f dist/dns.txt ] && [ -s dist/dns.txt ]; then
+          # DNS规则统计：排除注释行和空行
           DNS_RULES=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' 2>/dev/null | wc -l 2>/dev/null || echo "0")
           DNS_RULES=$(echo "$DNS_RULES" | tr -cd '0-9')
           echo "📄 DNS规则统计: $DNS_RULES 条"
         fi
         
         if [ -f dist/hosts.txt ] && [ -s dist/hosts.txt ]; then
+          # Hosts规则统计：排除注释行和空行
           HOSTS_RULES=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' 2>/dev/null | wc -l 2>/dev/null || echo "0")
           HOSTS_RULES=$(echo "$HOSTS_RULES" | tr -cd '0-9')
           echo "📄 Hosts规则统计: $HOSTS_RULES 条"
         fi
         
         if [ -f dist/filter.txt ] && [ -s dist/filter.txt ]; then
-          FILTER_RULES=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' 2>/dev/null | wc -l 2>/dev/null || echo "0")
+          # 浏览器规则统计：修复统计方法
+          # 使用 awk 统计非空行和非注释行的规则
+          FILTER_RULES=$(awk '/^[^!]/ && !/^$/ {count++} END {print count+0}' dist/filter.txt 2>/dev/null || echo "0")
           FILTER_RULES=$(echo "$FILTER_RULES" | tr -cd '0-9')
           echo "📄 浏览器规则统计: $FILTER_RULES 条"
           
-          # 统计增强语法规则
-          ENHANCED_RULES=$(grep -E '@@\|\|\$dnstype=CNAME|\$category=|\$responsepolicy=' dist/filter.txt 2>/dev/null | wc -l 2>/dev/null || echo "0")
+          # 统计增强语法规则（包括白名单规则）
+          ENHANCED_RULES=$(grep -E '@@\||\$dnstype=CNAME|\$category=|\$responsepolicy=' dist/filter.txt 2>/dev/null | wc -l 2>/dev/null || echo "0")
           ENHANCED_RULES=$(echo "$ENHANCED_RULES" | tr -cd '0-9')
           if [ "$ENHANCED_RULES" -gt 0 ]; then
             echo "⚡ 增强语法规则: $ENHANCED_RULES 条"
@@ -512,10 +516,25 @@ jobs:
         
         echo "🔄 检测到变更，准备提交..."
         
-        # 获取规则统计
-        DNS_RULES=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        HOSTS_RULES=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        FILTER_RULES=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        # 获取规则统计 - 使用更稳定的统计方法
+        if [ -f dist/dns.txt ]; then
+          DNS_RULES=$(awk '/^[^#]/ && !/^$/ {count++} END {print count+0}' dist/dns.txt 2>/dev/null || echo "0")
+        else
+          DNS_RULES="0"
+        fi
+        
+        if [ -f dist/hosts.txt ]; then
+          HOSTS_RULES=$(awk '/^[^#]/ && !/^$/ {count++} END {print count+0}' dist/hosts.txt 2>/dev/null || echo "0")
+        else
+          HOSTS_RULES="0"
+        fi
+        
+        if [ -f dist/filter.txt ]; then
+          FILTER_RULES=$(awk '/^[^!]/ && !/^$/ {count++} END {print count+0}' dist/filter.txt 2>/dev/null || echo "0")
+        else
+          FILTER_RULES="0"
+        fi
+        
         TOTAL_RULES=$((DNS_RULES + HOSTS_RULES + FILTER_RULES))
         
         # 创建提交信息
@@ -595,6 +614,13 @@ jobs:
     
     - name: Step 9 - 生成工作流摘要
       if: always()
+      env:
+        # 从 Step 6 获取统计结果，如果 Step 6 失败则使用默认值
+        DNS_RULES_STEP6: ${{ steps.generate-files.outputs.dns_rules || '0' }}
+        HOSTS_RULES_STEP6: ${{ steps.generate-files.outputs.hosts_rules || '0' }}
+        FILTER_RULES_STEP6: ${{ steps.generate-files.outputs.filter_rules || '0' }}
+        TOTAL_RULES_STEP6: ${{ steps.generate-files.outputs.total_rules || '0' }}
+        ENHANCED_RULES_STEP6: ${{ steps.generate-files.outputs.enhanced_rules || '0' }}
       run: |
         echo ""
         echo "┌─────────────────────────────────────────┐"
@@ -613,37 +639,74 @@ jobs:
         CURRENT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')
         NEXT_TIME=$(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M:%S')
         
-        # 从文件重新统计规则数量（使用与Step 6相同的方法）
-        echo "📊 重新统计规则数量..."
+        # 使用 Step 6 的统计结果，如果不可用则重新统计
+        echo "📊 获取规则统计..."
         
-        DNS_RULES=0
-        HOSTS_RULES=0
-        FILTER_RULES=0
-        TOTAL_RULES=0
-        ENHANCED_RULES=0
-        
-        if [ -f dist/dns.txt ] && [ -s dist/dns.txt ]; then
-          DNS_RULES=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' 2>/dev/null | wc -l 2>/dev/null || echo "0")
-          DNS_RULES=$(echo "$DNS_RULES" | tr -cd '0-9')
+        if [ -n "$DNS_RULES_STEP6" ] && [ "$DNS_RULES_STEP6" != "0" ]; then
+          DNS_RULES="$DNS_RULES_STEP6"
+          echo "  ✅ 使用 Step 6 的 DNS 规则统计: $DNS_RULES 条"
+        elif [ -f dist/dns.txt ] && [ -s dist/dns.txt ]; then
+          # 备用：重新统计 DNS 规则
+          DNS_RULES=$(awk '/^[^#]/ && !/^$/ {count++} END {print count+0}' dist/dns.txt 2>/dev/null || echo "0")
+          echo "  ℹ️  重新统计 DNS 规则: $DNS_RULES 条"
+        else
+          DNS_RULES="0"
+          echo "  ⚠️  DNS 规则文件不存在，统计为 0"
         fi
         
-        if [ -f dist/hosts.txt ] && [ -s dist/hosts.txt ]; then
-          HOSTS_RULES=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' 2>/dev/null | wc -l 2>/dev/null || echo "0")
-          HOSTS_RULES=$(echo "$HOSTS_RULES" | tr -cd '0-9')
+        if [ -n "$HOSTS_RULES_STEP6" ] && [ "$HOSTS_RULES_STEP6" != "0" ]; then
+          HOSTS_RULES="$HOSTS_RULES_STEP6"
+          echo "  ✅ 使用 Step 6 的 Hosts 规则统计: $HOSTS_RULES 条"
+        elif [ -f dist/hosts.txt ] && [ -s dist/hosts.txt ]; then
+          # 备用：重新统计 Hosts 规则
+          HOSTS_RULES=$(awk '/^[^#]/ && !/^$/ {count++} END {print count+0}' dist/hosts.txt 2>/dev/null || echo "0")
+          echo "  ℹ️  重新统计 Hosts 规则: $HOSTS_RULES 条"
+        else
+          HOSTS_RULES="0"
+          echo "  ⚠️  Hosts 规则文件不存在，统计为 0"
         fi
         
-        if [ -f dist/filter.txt ] && [ -s dist/filter.txt ]; then
-          FILTER_RULES=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' 2>/dev/null | wc -l 2>/dev/null || echo "0")
-          FILTER_RULES=$(echo "$FILTER_RULES" | tr -cd '0-9')
+        # 关键修复：浏览器规则统计
+        if [ -n "$FILTER_RULES_STEP6" ] && [ "$FILTER_RULES_STEP6" != "0" ]; then
+          FILTER_RULES="$FILTER_RULES_STEP6"
+          echo "  ✅ 使用 Step 6 的浏览器规则统计: $FILTER_RULES 条"
+        elif [ -f dist/filter.txt ] && [ -s dist/filter.txt ]; then
+          # 备用：使用更可靠的统计方法重新统计浏览器规则
+          # 浏览器规则文件通常以 ! 开头的是注释，统计不以 ! 开头且非空的行
+          FILTER_RULES=$(awk '/^[^!]/ && !/^$/ {count++} END {print count+0}' dist/filter.txt 2>/dev/null || echo "0")
+          echo "  ℹ️  重新统计浏览器规则: $FILTER_RULES 条"
           
           # 统计增强语法规则
-          ENHANCED_RULES=$(grep -E '@@\|\|\$dnstype=CNAME|\$category=|\$responsepolicy=' dist/filter.txt 2>/dev/null | wc -l 2>/dev/null || echo "0")
-          ENHANCED_RULES=$(echo "$ENHANCED_RULES" | tr -cd '0-9')
+          if [ "$FILTER_RULES" -gt 0 ]; then
+            ENHANCED_RULES=$(grep -E '@@\||\$dnstype=CNAME|\$category=|\$responsepolicy=' dist/filter.txt 2>/dev/null | wc -l 2>/dev/null || echo "0")
+            ENHANCED_RULES=$(echo "$ENHANCED_RULES" | tr -cd '0-9')
+          fi
+        else
+          FILTER_RULES="0"
+          ENHANCED_RULES="0"
+          echo "  ⚠️  浏览器规则文件不存在，统计为 0"
         fi
         
-        TOTAL_RULES=$((DNS_RULES + HOSTS_RULES + FILTER_RULES))
+        # 使用 Step 6 的总计或重新计算
+        if [ -n "$TOTAL_RULES_STEP6" ] && [ "$TOTAL_RULES_STEP6" != "0" ]; then
+          TOTAL_RULES="$TOTAL_RULES_STEP6"
+        else
+          TOTAL_RULES=$((DNS_RULES + HOSTS_RULES + FILTER_RULES))
+        fi
         
-        # 写入三层规则统计表格 - 使用echo确保变量替换
+        # 使用 Step 6 的增强规则统计或已有的统计
+        if [ -n "$ENHANCED_RULES_STEP6" ] && [ "$ENHANCED_RULES_STEP6" != "0" ]; then
+          ENHANCED_RULES="$ENHANCED_RULES_STEP6"
+        fi
+        
+        echo "📊 最终统计结果:"
+        echo "  • DNS规则: $DNS_RULES 条"
+        echo "  • Hosts规则: $HOSTS_RULES 条"
+        echo "  • 浏览器规则: $FILTER_RULES 条"
+        echo "  • 总计: $TOTAL_RULES 条"
+        echo "  • 增强语法: $ENHANCED_RULES 条"
+        
+        # 写入三层规则统计表格
         echo "" >> "$SUMMARY_FILE"
         echo "### 📊 三层规则统计" >> "$SUMMARY_FILE"
         echo "" >> "$SUMMARY_FILE"
@@ -666,6 +729,11 @@ jobs:
         echo "- ✅ 响应策略 (\$responsepolicy=xxx)" >> "$SUMMARY_FILE"
         echo "- ✅ 元素隐藏规则 (##selector)" >> "$SUMMARY_FILE"
         echo "- ✅ 高级修饰符规则" >> "$SUMMARY_FILE"
+        
+        if [ "$ENHANCED_RULES" -gt 0 ]; then
+          echo "" >> "$SUMMARY_FILE"
+          echo "⚡ **增强语法规则**: $ENHANCED_RULES 条" >> "$SUMMARY_FILE"
+        fi
         
         # 添加文件列表
         echo "" >> "$SUMMARY_FILE"
@@ -805,13 +873,6 @@ jobs:
         echo "📅 **工作流**: $GITHUB_WORKFLOW" >> "$SUMMARY_FILE"
         
         echo "✅ 工作流摘要生成完成"
-        
-        # 输出统计信息供后续步骤使用
-        echo "dns_rules=$DNS_RULES" >> $GITHUB_OUTPUT
-        echo "hosts_rules=$HOSTS_RULES" >> $GITHUB_OUTPUT
-        echo "filter_rules=$FILTER_RULES" >> $GITHUB_OUTPUT
-        echo "total_rules=$TOTAL_RULES" >> $GITHUB_OUTPUT
-        echo "enhanced_rules=$ENHANCED_RULES" >> $GITHUB_OUTPUT
     
     - name: Step 10 - 工作流完成
       if: always()
