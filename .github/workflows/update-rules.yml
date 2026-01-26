@@ -391,7 +391,7 @@ jobs:
           echo "📄 浏览器规则统计: $FILTER_RULES 条"
           
           # 统计增强语法规则
-          ENHANCED_RULES=$(grep -E '@@\||\$dnstype=CNAME|\$category=|\$responsepolicy=' dist/filter.txt 2>/dev/null | wc -l 2>/dev/null || echo "0")
+          ENHANCED_RULES=$(grep -E '@@\|\|\$dnstype=CNAME|\$category=|\$responsepolicy=' dist/filter.txt 2>/dev/null | wc -l 2>/dev/null || echo "0")
           ENHANCED_RULES=$(echo "$ENHANCED_RULES" | tr -cd '0-9')
           if [ "$ENHANCED_RULES" -gt 0 ]; then
             echo "⚡ 增强语法规则: $ENHANCED_RULES 条"
@@ -498,27 +498,26 @@ jobs:
         # 创建提交信息
         COMMIT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')
         
-        cat > /tmp/commit_message.txt << EOF
-🤖 自动更新广告拦截规则 [$COMMIT_TIME]
-
-📊 规则统计:
-- DNS规则: $DNS_RULES 条
-- Hosts规则: $HOSTS_RULES 条
-- 浏览器规则: $FILTER_RULES 条
-- 总计: $TOTAL_RULES 条规则
-
-🎯 完整语法支持:
-• 白名单 (@@||domain^)
-• 精确域名匹配
-• 子域/通配 (||domain^)
-• CNAME拦截 (\$dnstype=CNAME)
-• 分类规则 (\$category=xxx)
-• 响应策略 (\$responsepolicy=xxx)
-
-🌐 包含额外规则源: sources/gz.txt
-⏰ 下次更新: $(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M')
-🤖 由 GitHub Actions 自动生成
-EOF
+        echo "🤖 自动更新广告拦截规则 [$COMMIT_TIME]" > /tmp/commit_message.txt
+        echo "" >> /tmp/commit_message.txt
+        echo "📊 规则统计:" >> /tmp/commit_message.txt
+        echo "- DNS规则: $DNS_RULES 条" >> /tmp/commit_message.txt
+        echo "- Hosts规则: $HOSTS_RULES 条" >> /tmp/commit_message.txt
+        echo "- 浏览器规则: $FILTER_RULES 条" >> /tmp/commit_message.txt
+        echo "- 总计: $TOTAL_RULES 条规则" >> /tmp/commit_message.txt
+        echo "" >> /tmp/commit_message.txt
+        echo "🎯 完整语法支持:" >> /tmp/commit_message.txt
+        echo "• 白名单 (@@||domain^)" >> /tmp/commit_message.txt
+        echo "• 精确域名匹配" >> /tmp/commit_message.txt
+        echo "• 子域/通配 (||domain^)" >> /tmp/commit_message.txt
+        echo "• CNAME拦截 (\$dnstype=CNAME)" >> /tmp/commit_message.txt
+        echo "• 分类规则 (\$category=xxx)" >> /tmp/commit_message.txt
+        echo "• 响应策略 (\$responsepolicy=xxx)" >> /tmp/commit_message.txt
+        echo "" >> /tmp/commit_message.txt
+        echo "🌐 包含额外规则源: sources/gz.txt" >> /tmp/commit_message.txt
+        NEXT_UPDATE_TIME=$(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M')
+        echo "⏰ 下次更新: $NEXT_UPDATE_TIME" >> /tmp/commit_message.txt
+        echo "🤖 由 GitHub Actions 自动生成" >> /tmp/commit_message.txt
         
         echo "💾 提交变更..."
         git commit -F /tmp/commit_message.txt
@@ -589,9 +588,9 @@ EOF
         HOSTS_RULES=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
         FILTER_RULES=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
         TOTAL_RULES=$((DNS_RULES + HOSTS_RULES + FILTER_RULES))
-        ENHANCED_RULES=$(grep -E '@@\||\$dnstype=CNAME|\$category=|\$responsepolicy=' dist/filter.txt 2>/dev/null | wc -l 2>/dev/null || echo "0")
+        ENHANCED_RULES=$(grep -E '@@\|\|\$dnstype=CNAME|\$category=|\$responsepolicy=' dist/filter.txt 2>/dev/null | wc -l 2>/dev/null || echo "0")
         
-        cat >> "$SUMMARY_FILE" << EOF
+        cat >> "$SUMMARY_FILE" << 'EOF'
         
         ### 📊 三层规则统计
         
@@ -607,12 +606,16 @@ EOF
         - ✅ 白名单规则 (@@||domain^)
         - ✅ 精确域名匹配
         - ✅ 子域/通配规则 (||domain^)
-        - ✅ CNAME拦截 (\$dnstype=CNAME)
-        - ✅ 分类规则 (\$category=xxx)
-        - ✅ 响应策略 (\$responsepolicy=xxx)
+        - ✅ CNAME拦截 ($dnstype=CNAME)
+        - ✅ 分类规则 ($category=xxx)
+        - ✅ 响应策略 ($responsepolicy=xxx)
         - ✅ 元素隐藏规则 (##selector)
         - ✅ 高级修饰符规则
         
+        EOF
+        
+        # 添加文件列表
+        cat >> "$SUMMARY_FILE" << 'EOF'
         ### 📁 生成的文件
         
         EOF
