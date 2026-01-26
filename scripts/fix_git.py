@@ -10,6 +10,7 @@ import shutil
 from pathlib import Path
 import json
 from datetime import datetime
+import subprocess
 
 
 class GitFixer:
@@ -18,6 +19,21 @@ class GitFixer:
         self.now = datetime.now()
         self.backup_dir = self.base_dir / '.git_backup'
         
+    def run_command(self, cmd, description=""):
+        """运行命令并处理输出"""
+        if description:
+            print(f"🔧 {description}...")
+        
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            if result.stdout.strip():
+                print(f"✅ 成功: {result.stdout.strip()}")
+            return True, result.stdout
+        else:
+            print(f"❌ 失败: {result.stderr.strip()}")
+            return False, result.stderr
+    
     def backup_git_status(self):
         """备份当前Git状态"""
         print("📦 正在备份Git状态...")
@@ -298,6 +314,69 @@ personal/
         print("\n✅ 安全清理完成")
         return True
     
+    def safe_git_push(self):
+        """安全的Git推送 - 解决冲突问题"""
+        print("📤 执行安全Git推送...")
+        
+        # 配置Git用户
+        self.run_command('git config user.name "github-actions[bot]"', "配置Git用户")
+        self.run_command('git config user.email "github-actions[bot]@users.noreply.github.com"', "配置Git邮箱")
+        
+        # 添加所有更改
+        print("📋 添加所有更改...")
+        os.system('git add -A')
+        
+        # 检查是否有更改
+        result = os.popen('git diff --cached --quiet').read()
+        if not result:
+            print("✅ 没有需要提交的更改")
+            return True
+        
+        print("🔄 检测到更改，准备提交...")
+        
+        # 创建提交信息
+        commit_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        commit_msg = f"""🤖 自动更新广告拦截规则 [{commit_time}]
+
+📊 自动更新规则文件
+⏰ 时间: {commit_time}
+🤖 由 GitFixer 自动生成"""
+        
+        # 提交
+        print("💾 提交更改...")
+        os.system(f'git commit -m "{commit_msg}"')
+        
+        # 尝试推送策略
+        print("🔄 尝试推送策略...")
+        
+        # 策略1: 先拉取再推送
+        print("1. 尝试拉取远程最新更改...")
+        if os.system('git pull origin main --rebase') == 0:
+            print("✅ 拉取成功")
+            print("2. 推送到远程...")
+            if os.system('git push origin HEAD:main') == 0:
+                print("✅ 推送成功")
+                return True
+            else:
+                print("❌ 推送失败")
+        else:
+            print("❌ 拉取失败")
+        
+        # 策略2: 使用 --force-with-lease
+        print("3. 尝试安全强制推送 (--force-with-lease)...")
+        if os.system('git push origin HEAD:main --force-with-lease') == 0:
+            print("✅ 安全强制推送成功")
+            return True
+        
+        # 策略3: 使用 --force (最后手段)
+        print("4. 尝试强制推送 (--force)...")
+        if os.system('git push origin HEAD:main --force') == 0:
+            print("✅ 强制推送成功")
+            return True
+        
+        print("❌ 所有推送策略都失败了")
+        return False
+    
     def git_health_check(self):
         """Git健康检查"""
         print("🩺 执行Git健康检查...")
@@ -378,7 +457,7 @@ personal/
         print("  1. 🛡️  安全修复（备份后清理缓存）")
         print("  2. 📝 仅更新.gitignore文件")
         print("  3. 🔍 仅检查状态（不修改）")
-        print("  4. 📤 准备提交并推送")
+        print("  4. 📤 安全推送（解决冲突）")
         print("  5. ❌ 退出")
         
         choice = input("\n请输入选择 (1-5): ").strip()
@@ -395,26 +474,10 @@ personal/
         elif choice == '3':
             os.system('git status')
         elif choice == '4':
-            print("\n📤 准备提交并推送...")
-            # 获取提交信息
-            commit_msg = input("请输入提交信息 (留空使用默认): ").strip()
-            if not commit_msg:
-                commit_msg = f"更新广告拦截规则 - {self.now.strftime('%Y-%m-%d %H:%M')}"
-            
-            # 检查是否有更改
-            result = os.popen('git status --porcelain').read().strip()
-            if result:
-                print("检测到更改，正在提交...")
-                os.system(f'git add .')
-                os.system(f'git commit -m "{commit_msg}"')
-                print("✅ 提交完成")
-                
-                push_now = input("是否推送到远程? (y/N): ").strip().lower()
-                if push_now == 'y':
-                    os.system('git push origin main')
-                    print("✅ 推送完成")
+            if self.safe_git_push():
+                print("\n✅ 推送成功!")
             else:
-                print("没有检测到更改")
+                print("\n❌ 推送失败，请检查网络或权限")
         elif choice == '5':
             print("退出")
         else:
