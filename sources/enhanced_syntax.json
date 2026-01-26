@@ -1,0 +1,105 @@
+{
+  "version": "2.0",
+  "description": "增强语法配置文件",
+  "syntax_rules": {
+    "whitelist": {
+      "description": "白名单规则，允许特定内容",
+      "examples": [
+        "@@||example.com^",
+        "@@||example.com^$important",
+        "@@||example.com^$domain=example.org"
+      ]
+    },
+    "exact_domain": {
+      "description": "精确域名规则，匹配完整域名",
+      "examples": [
+        "example.com",
+        "ads.example.com"
+      ]
+    },
+    "wildcard": {
+      "description": "子域/通配规则，匹配域名及其所有子域",
+      "examples": [
+        "||example.com^",
+        "||example.com^$script",
+        "||example.com^$image"
+      ]
+    },
+    "cname_intercept": {
+      "description": "CNAME拦截规则，阻止CNAME重定向",
+      "examples": [
+        "||example.com^$cname",
+        "||example.com^$cname=target.com"
+      ]
+    },
+    "element_hiding": {
+      "description": "元素隐藏规则，隐藏页面上的特定元素",
+      "examples": [
+        "##.ad-banner",
+        "##div[class*=\"ad-\"]",
+        "example.com##.advertisement"
+      ]
+    },
+    "category_based": {
+      "description": "分类规则，按内容分类进行过滤",
+      "categories": {
+        "ad": "广告内容",
+        "tracking": "跟踪器",
+        "malware": "恶意软件",
+        "phishing": "钓鱼网站",
+        "social": "社交媒体",
+        "porn": "成人内容",
+        "annoyance": "烦人内容",
+        "cookie": "Cookie弹窗",
+        "privacy": "隐私保护",
+        "security": "安全防护"
+      },
+      "examples": [
+        "||example.com^$category=ad",
+        "||example.com^$category=ad|tracking",
+        "||example.com^$category=privacy,domain=example.org"
+      ]
+    },
+    "response_policy": {
+      "description": "响应策略规则，指定拦截行为",
+      "policies": {
+        "important": "高优先级，覆盖其他规则",
+        "redirect": "重定向到其他URL",
+        "removeparam": "移除URL参数",
+        "csp": "内容安全策略",
+        "header": "修改HTTP头",
+        "badfilter": "禁用其他规则",
+        "denyallow": "允许特定域名",
+        "document": "文档级规则",
+        "generichide": "通用隐藏规则",
+        "specifichide": "特定隐藏规则"
+      },
+      "examples": [
+        "||example.com^$important",
+        "||example.com^$redirect=nooptext",
+        "||example.com^$removeparam=utm_source",
+        "||example.com^$csp=script-src 'self'"
+      ]
+    }
+  },
+  "priority_order": [
+    "whitelist",
+    "cname_intercept",
+    "response_policy",
+    "category_based",
+    "wildcard",
+    "exact_domain",
+    "element_hiding"
+  ],
+  "validation_rules": {
+    "max_rule_length": 2000,
+    "disallowed_characters": ["\x00"],
+    "domain_max_length": 253,
+    "label_max_length": 63
+  },
+  "generated_files": {
+    "dns.txt": "纯域名列表，用于DNS层面拦截",
+    "hosts.txt": "Hosts格式规则，用于系统hosts文件",
+    "filter.txt": "完整AdBlock语法规则，用于浏览器扩展"
+  }
+}
