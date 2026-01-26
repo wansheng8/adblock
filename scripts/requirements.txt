@@ -1,5 +1,28 @@
-# AdBlock 规则更新器依赖
+# AdBlock 规则更新器依赖 - 完整语法版
+# 基础依赖
 requests>=2.31.0
 beautifulsoup4>=4.12.0
 lxml>=4.9.0
-argparse>=1.4.0  # Python 3.2+ 内置，这里仅作说明
+
+# 数据验证和格式化
+jsonschema>=4.19.0
+pyyaml>=6.0
+
+# 高级功能支持
+urllib3>=2.0.0
+charset-normalizer>=3.2.0
+idna>=3.4
+certifi>=2023.7.22
+
+# 开发工具（可选）
+black>=23.9.0
+flake8>=6.1.0
+mypy>=1.5.0
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# 性能优化
+ujson>=5.8.0
+orjson>=3.9.0
+
+# 注意：argparse 是 Python 标准库，不需要单独安装
