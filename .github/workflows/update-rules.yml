@@ -123,27 +123,20 @@ jobs:
         
         echo "✅ 环境准备完成"
     
-    - name: Step 2 - 规则源同步（三层规则）
+    - name: Step 2 - 规则源同步（增强语法版）
       id: update-rules
       run: |
         echo ""
         echo "┌─────────────────────────────────────────┐"
         echo "│          🚀 规则源同步                  │"
-        echo "│    (三层规则：DNS/Hosts/浏览器)         │"
+        echo "│    (增强语法：支持完整AdBlock语法)      │"
         echo "└─────────────────────────────────────────┘"
         echo ""
         
-        # 确保 raw 目录是干净的
-        echo "🧹 确保规则源目录干净..."
-        if [ -d rules/raw ]; then
-          find rules/raw -type f -name "*.txt" -delete 2>/dev/null || true
-          find rules/raw -type f -name "*.json" -delete 2>/dev/null || true
-        fi
-        
-        echo "📊 开始规则源同步..."
+        echo "📊 开始规则源同步（增强语法版）..."
         START_TIME=$(date +%s)
         
-        # 运行规则更新脚本
+        # 运行增强版规则更新脚本
         if [ -f scripts/update_rules.py ]; then
           python scripts/update_rules.py
           UPDATE_STATUS=$?
@@ -168,17 +161,8 @@ jobs:
           exit 1
         fi
         
-        # 显示下载的规则文件
-        echo "📄 下载的规则文件:"
-        if [ -d rules/raw ]; then
-          RAW_FILES=$(find rules/raw -type f -name "*.txt" | wc -l)
-          echo "  在 rules/raw 中找到 $RAW_FILES 个规则文件"
-        else
-          echo "  ⚠️  rules/raw 目录不存在"
-        fi
-        
-        # 检查生成的三层规则文件
-        echo "📄 检查生成的三层规则文件..."
+        # 检查生成的增强规则文件
+        echo "📄 检查生成的增强规则文件..."
         
         if [ -f dist/dns.txt ] && [ -s dist/dns.txt ]; then
           DNS_SIZE=$(wc -c < dist/dns.txt)
@@ -186,7 +170,6 @@ jobs:
           echo "  ✅ dns.txt: $DNS_RULES 条规则 ($((DNS_SIZE/1024))KB)"
         else
           echo "  ❌ dns.txt 生成失败"
-          echo "update_success=false" >> "$GITHUB_OUTPUT"
           exit 1
         fi
         
@@ -196,7 +179,6 @@ jobs:
           echo "  ✅ hosts.txt: $HOSTS_RULES 条规则 ($((HOSTS_SIZE/1024))KB)"
         else
           echo "  ❌ hosts.txt 生成失败"
-          echo "update_success=false" >> "$GITHUB_OUTPUT"
           exit 1
         fi
         
@@ -204,10 +186,30 @@ jobs:
           FILTER_SIZE=$(wc -c < dist/filter.txt)
           FILTER_RULES=$(grep -v '^!' dist/filter.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
           echo "  ✅ filter.txt: $FILTER_RULES 条规则 ($((FILTER_SIZE/1024))KB)"
+          
+          # 检查增强语法特性
+          echo "  🎯 增强语法特性检查:"
+          WHITELIST_RULES=$(grep -c '^@@' dist/filter.txt 2>/dev/null || echo "0")
+          WILDCARD_RULES=$(grep -c '^||' dist/filter.txt | grep -c '\^$' 2>/dev/null || echo "0")
+          CNAME_RULES=$(grep -c '\$cname' dist/filter.txt 2>/dev/null || echo "0")
+          CATEGORY_RULES=$(grep -c '\$category' dist/filter.txt 2>/dev/null || echo "0")
+          
+          echo "    ├── 白名单规则 (@@): $WHITELIST_RULES 条"
+          echo "    ├── 子域/通配规则 (||): $WILDCARD_RULES 条"
+          echo "    ├── CNAME拦截规则: $CNAME_RULES 条"
+          echo "    └── 分类规则: $CATEGORY_RULES 条"
         else
           echo "  ❌ filter.txt 生成失败"
-          echo "update_success=false" >> "$GITHUB_OUTPUT"
           exit 1
+        fi
+        
+        # 检查元数据文件
+        if [ -f dist/metadata.json ]; then
+          echo "  📊 metadata.json: 规则元数据文件存在"
+        fi
+        
+        if [ -f dist/rule_stats.json ]; then
+          echo "  📈 rule_stats.json: 规则统计文件存在"
         fi
     
     - name: Step 3 - 规则合并（包含自定义规则）
