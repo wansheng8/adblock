@@ -116,6 +116,21 @@ jobs:
           echo "  ⚠️  sources/gz.txt 文件不存在，跳过额外规则源"
         fi
         
+        # 检查自定义规则
+        if [ -d "rules/custom" ] && [ "$(ls -A rules/custom 2>/dev/null)" ]; then
+          CUSTOM_COUNT=$(find rules/custom -name "*.txt" -type f 2>/dev/null | wc -l)
+          if [ $CUSTOM_COUNT -gt 0 ]; then
+            echo "  ✅ 自定义规则: $CUSTOM_COUNT 个文件"
+            echo "has_custom_rules=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "  ⚠️  自定义规则目录为空"
+            echo "has_custom_rules=false" >> "$GITHUB_OUTPUT"
+          fi
+        else
+          echo "  ℹ️  未找到自定义规则目录"
+          echo "has_custom_rules=false" >> "$GITHUB_OUTPUT"
+        fi
+        
         # 检查Python脚本权限
         echo "🔧 设置脚本权限..."
         chmod +x scripts/*.py 2>/dev/null || true
@@ -281,22 +296,26 @@ jobs:
         
         if [ ! -f scripts/validate_rules.py ]; then
           echo "❌ 规则验证脚本不存在"
+          echo "validation_exit_code=3" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         
         # 检查三层规则文件是否存在
         if [ ! -f dist/dns.txt ] || [ ! -s dist/dns.txt ]; then
           echo "❌ DNS规则文件不存在或为空"
+          echo "validation_exit_code=3" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         
         if [ ! -f dist/hosts.txt ] || [ ! -s dist/hosts.txt ]; then
           echo "❌ Hosts规则文件不存在或为空"
+          echo "validation_exit_code=3" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         
         if [ ! -f dist/filter.txt ] || [ ! -s dist/filter.txt ]; then
           echo "❌ 浏览器规则文件不存在或为空"
+          echo "validation_exit_code=3" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         
@@ -310,12 +329,16 @@ jobs:
         # 根据退出码判断验证结果
         if [ $VALIDATION_STATUS -eq 0 ]; then
           echo "✅ 规则验证通过 (耗时 ${DURATION}秒)"
+          echo "validation_exit_code=0" >> "$GITHUB_OUTPUT"
         elif [ $VALIDATION_STATUS -eq 1 ]; then
           echo "⚠️  规则验证警告 (耗时 ${DURATION}秒)"
+          echo "validation_exit_code=1" >> "$GITHUB_OUTPUT"
         elif [ $VALIDATION_STATUS -eq 2 ]; then
           echo "❌ 规则验证失败，没有有效规则 (耗时 ${DURATION}秒)"
+          echo "validation_exit_code=2" >> "$GITHUB_OUTPUT"
         else
           echo "⚠️  规则验证过程出现未知错误，退出码: $VALIDATION_STATUS (耗时 ${DURATION}秒)"
+          echo "validation_exit_code=$VALIDATION_STATUS" >> "$GITHUB_OUTPUT"
         fi
         
         # 验证步骤不阻塞后续流程
@@ -573,6 +596,13 @@ jobs:
     - name: Step 9 - 生成工作流摘要
       if: always()
       run: |
+        echo ""
+        echo "┌─────────────────────────────────────────┐"
+        echo "│          📋 生成工作流摘要              │"
+        echo "│    (完整语法版规则统计)                 │"
+        echo "└─────────────────────────────────────────┘"
+        echo ""
+        
         # 创建摘要文件
         SUMMARY_FILE="$GITHUB_STEP_SUMMARY"
         
@@ -583,49 +613,73 @@ jobs:
         CURRENT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')
         NEXT_TIME=$(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M:%S')
         
-        # 从文件重新统计规则数量
-        DNS_RULES=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        HOSTS_RULES=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        FILTER_RULES=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        # 从文件重新统计规则数量（使用与Step 6相同的方法）
+        echo "📊 重新统计规则数量..."
+        
+        DNS_RULES=0
+        HOSTS_RULES=0
+        FILTER_RULES=0
+        TOTAL_RULES=0
+        ENHANCED_RULES=0
+        
+        if [ -f dist/dns.txt ] && [ -s dist/dns.txt ]; then
+          DNS_RULES=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' 2>/dev/null | wc -l 2>/dev/null || echo "0")
+          DNS_RULES=$(echo "$DNS_RULES" | tr -cd '0-9')
+        fi
+        
+        if [ -f dist/hosts.txt ] && [ -s dist/hosts.txt ]; then
+          HOSTS_RULES=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' 2>/dev/null | wc -l 2>/dev/null || echo "0")
+          HOSTS_RULES=$(echo "$HOSTS_RULES" | tr -cd '0-9')
+        fi
+        
+        if [ -f dist/filter.txt ] && [ -s dist/filter.txt ]; then
+          FILTER_RULES=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' 2>/dev/null | wc -l 2>/dev/null || echo "0")
+          FILTER_RULES=$(echo "$FILTER_RULES" | tr -cd '0-9')
+          
+          # 统计增强语法规则
+          ENHANCED_RULES=$(grep -E '@@\|\|\$dnstype=CNAME|\$category=|\$responsepolicy=' dist/filter.txt 2>/dev/null | wc -l 2>/dev/null || echo "0")
+          ENHANCED_RULES=$(echo "$ENHANCED_RULES" | tr -cd '0-9')
+        fi
+        
         TOTAL_RULES=$((DNS_RULES + HOSTS_RULES + FILTER_RULES))
-        ENHANCED_RULES=$(grep -E '@@\|\|\$dnstype=CNAME|\$category=|\$responsepolicy=' dist/filter.txt 2>/dev/null | wc -l 2>/dev/null || echo "0")
         
-        cat >> "$SUMMARY_FILE" << 'EOF'
+        # 写入三层规则统计表格 - 使用echo确保变量替换
+        echo "" >> "$SUMMARY_FILE"
+        echo "### 📊 三层规则统计" >> "$SUMMARY_FILE"
+        echo "" >> "$SUMMARY_FILE"
+        echo "| 规则类型 | 数量 | 描述 |" >> "$SUMMARY_FILE"
+        echo "|----------|------|------|" >> "$SUMMARY_FILE"
+        echo "| DNS规则 | $DNS_RULES 条 | 纯域名格式，用于DNS服务 |" >> "$SUMMARY_FILE"
+        echo "| Hosts规则 | $HOSTS_RULES 条 | 0.0.0.0 + 域名格式 |" >> "$SUMMARY_FILE"
+        echo "| 浏览器规则 | $FILTER_RULES 条 | 完整AdBlock语法 |" >> "$SUMMARY_FILE"
+        echo "| **总计** | **$TOTAL_RULES 条** | 所有规则总和 |" >> "$SUMMARY_FILE"
         
-        ### 📊 三层规则统计
-        
-        | 规则类型 | 数量 | 描述 |
-        |----------|------|------|
-        | DNS规则 | $DNS_RULES 条 | 纯域名格式，用于DNS服务 |
-        | Hosts规则 | $HOSTS_RULES 条 | 0.0.0.0 + 域名格式 |
-        | 浏览器规则 | $FILTER_RULES 条 | 完整AdBlock语法 |
-        | **总计** | **$TOTAL_RULES 条** | 所有规则总和 |
-        
-        ### 🎯 增强语法支持
-        
-        - ✅ 白名单规则 (@@||domain^)
-        - ✅ 精确域名匹配
-        - ✅ 子域/通配规则 (||domain^)
-        - ✅ CNAME拦截 ($dnstype=CNAME)
-        - ✅ 分类规则 ($category=xxx)
-        - ✅ 响应策略 ($responsepolicy=xxx)
-        - ✅ 元素隐藏规则 (##selector)
-        - ✅ 高级修饰符规则
-        
-        EOF
+        # 写入增强语法支持
+        echo "" >> "$SUMMARY_FILE"
+        echo "### 🎯 增强语法支持" >> "$SUMMARY_FILE"
+        echo "" >> "$SUMMARY_FILE"
+        echo "- ✅ 白名单规则 (@@||domain^)" >> "$SUMMARY_FILE"
+        echo "- ✅ 精确域名匹配" >> "$SUMMARY_FILE"
+        echo "- ✅ 子域/通配规则 (||domain^)" >> "$SUMMARY_FILE"
+        echo "- ✅ CNAME拦截 (\$dnstype=CNAME)" >> "$SUMMARY_FILE"
+        echo "- ✅ 分类规则 (\$category=xxx)" >> "$SUMMARY_FILE"
+        echo "- ✅ 响应策略 (\$responsepolicy=xxx)" >> "$SUMMARY_FILE"
+        echo "- ✅ 元素隐藏规则 (##selector)" >> "$SUMMARY_FILE"
+        echo "- ✅ 高级修饰符规则" >> "$SUMMARY_FILE"
         
         # 添加文件列表
-        cat >> "$SUMMARY_FILE" << 'EOF'
-        ### 📁 生成的文件
-        
-        EOF
+        echo "" >> "$SUMMARY_FILE"
+        echo "### 📁 生成的文件" >> "$SUMMARY_FILE"
+        echo "" >> "$SUMMARY_FILE"
         
         if [ -d dist ]; then
           for file in dist/*; do
             if [ -f "$file" ]; then
               filename=$(basename "$file")
               size=$(wc -c < "$file" 2>/dev/null || echo "0")
+              lines=$(wc -l < "$file" 2>/dev/null || echo "0")
               
+              # 转换文件大小为人类可读格式
               if [ "$size" -ge 1048576 ]; then
                 human_size="$((size/1048576))MB"
               elif [ "$size" -ge 1024 ]; then
@@ -634,15 +688,16 @@ jobs:
                 human_size="${size}B"
               fi
               
+              # 根据文件类型显示不同信息
               case "$filename" in
                 "dns.txt")
-                  echo "- **dns.txt** - DNS规则文件 ($human_size)" >> "$SUMMARY_FILE"
+                  echo "- **dns.txt** - DNS规则文件 ($human_size, $lines 行)" >> "$SUMMARY_FILE"
                   ;;
                 "hosts.txt")
-                  echo "- **hosts.txt** - Hosts规则文件 ($human_size)" >> "$SUMMARY_FILE"
+                  echo "- **hosts.txt** - Hosts规则文件 ($human_size, $lines 行)" >> "$SUMMARY_FILE"
                   ;;
                 "filter.txt")
-                  echo "- **filter.txt** - 浏览器规则文件 ($human_size)" >> "$SUMMARY_FILE"
+                  echo "- **filter.txt** - 浏览器规则文件 ($human_size, $lines 行)" >> "$SUMMARY_FILE"
                   ;;
                 "metadata.json")
                   echo "- **metadata.json** - 规则元数据 ($human_size)" >> "$SUMMARY_FILE"
@@ -650,33 +705,113 @@ jobs:
               esac
             fi
           done
+        else
+          echo "⚠️ dist 目录不存在" >> "$SUMMARY_FILE"
         fi
         
-        cat >> "$SUMMARY_FILE" << EOF
+        # 添加额外规则源信息
+        echo "" >> "$SUMMARY_FILE"
+        echo "### 🔗 规则源信息" >> "$SUMMARY_FILE"
+        echo "" >> "$SUMMARY_FILE"
         
-        ### 🔄 更新信息
+        if [ -f sources/sources.json ] && [ -s sources/sources.json ]; then
+          SOURCE_COUNT=$(grep -c '"name"' sources/sources.json 2>/dev/null || echo "0")
+          echo "- **规则源总数**: $SOURCE_COUNT 个" >> "$SUMMARY_FILE"
+        fi
         
-        - **更新时间**: $CURRENT_TIME (北京时间)
-        - **更新频率**: 每8小时自动更新
-        - **下次更新**: $NEXT_TIME (北京时间)
-        - **验证标准**: 严格验证（阈值${VALIDITY_THRESHOLD}%）
-        - **额外规则源**: sources/gz.txt
-        - **新语法**: 三层规则系统
+        if [ -f sources/gz.txt ] && [ -s sources/gz.txt ]; then
+          GZ_SIZE=$(wc -c < sources/gz.txt 2>/dev/null || echo "0")
+          GZ_LINES=$(wc -l < sources/gz.txt 2>/dev/null || echo "0")
+          echo "- **额外规则源 (gz.txt)**: $GZ_LINES 行" >> "$SUMMARY_FILE"
+        else
+          echo "- **额外规则源**: 未配置" >> "$SUMMARY_FILE"
+        fi
         
-        ### 📋 步骤执行状态
+        # 写入更新信息
+        echo "" >> "$SUMMARY_FILE"
+        echo "### 🔄 更新信息" >> "$SUMMARY_FILE"
+        echo "" >> "$SUMMARY_FILE"
         
-        | 步骤 | 状态 |
-        |------|------|
-        | 环境准备 | ✅ |
-        | 规则源同步 | ${{ steps.update-rules.outputs.update_success == 'true' && '✅' || '❌' }} |
-        | 规则合并 | ${{ steps.setup.outputs.has_custom_rules == 'true' && '✅' || '⏭️' }} |
-        | 规则验证 | ${{ steps.validate-rules.outputs.validation_exit_code == '0' && '✅' || steps.validate-rules.outputs.validation_exit_code == '1' && '⚠️' || '⏭️' }} |
-        | 规则优化 | ✅ |
-        | 文件生成 | ✅ |
-        | 变更推送 | ${{ steps.check-changes.outputs.changes_detected == 'true' && '✅' || '⏭️' }} |
+        # 使用env中的VALIDITY_THRESHOLD
+        VALIDITY_THRESHOLD="${{ env.VALIDITY_THRESHOLD }}"
         
-        🤖 由 GitHub Actions 自动执行
-        EOF
+        echo "- **更新时间**: $CURRENT_TIME (北京时间)" >> "$SUMMARY_FILE"
+        echo "- **更新频率**: 每8小时自动更新" >> "$SUMMARY_FILE"
+        echo "- **下次更新**: $NEXT_TIME (北京时间)" >> "$SUMMARY_FILE"
+        echo "- **验证标准**: 严格验证（阈值 ${VALIDITY_THRESHOLD}%）" >> "$SUMMARY_FILE"
+        echo "- **增强语法规则**: $ENHANCED_RULES 条" >> "$SUMMARY_FILE"
+        echo "- **新语法**: 三层规则系统" >> "$SUMMARY_FILE"
+        
+        # 写入步骤执行状态（使用GitHub Actions表达式）
+        echo "" >> "$SUMMARY_FILE"
+        echo "### 📋 步骤执行状态" >> "$SUMMARY_FILE"
+        echo "" >> "$SUMMARY_FILE"
+        echo "| 步骤 | 状态 | 说明 |" >> "$SUMMARY_FILE"
+        echo "|------|------|------|" >> "$SUMMARY_FILE"
+        
+        # 步骤1: 环境准备
+        echo "| 1. 环境准备 | ✅ | 目录结构已创建 |" >> "$SUMMARY_FILE"
+        
+        # 步骤2: 规则源同步
+        if [ "${{ steps.update-rules.outputs.update_success }}" = "true" ]; then
+          echo "| 2. 规则源同步 | ✅ | 三层规则已同步 |" >> "$SUMMARY_FILE"
+        else
+          echo "| 2. 规则源同步 | ❌ | 规则同步失败 |" >> "$SUMMARY_FILE"
+        fi
+        
+        # 步骤3: 规则合并
+        if [ "${{ steps.setup.outputs.has_custom_rules }}" = "true" ]; then
+          echo "| 3. 规则合并 | ✅ | 自定义规则已合并 |" >> "$SUMMARY_FILE"
+        else
+          echo "| 3. 规则合并 | ⏭️ | 无自定义规则，已跳过 |" >> "$SUMMARY_FILE"
+        fi
+        
+        # 步骤4: 规则验证
+        if [ -z "${{ steps.validate-rules.outputs.validation_exit_code }}" ]; then
+          echo "| 4. 规则验证 | ⏭️ | 验证脚本不存在，已跳过 |" >> "$SUMMARY_FILE"
+        elif [ "${{ steps.validate-rules.outputs.validation_exit_code }}" = "0" ]; then
+          echo "| 4. 规则验证 | ✅ | 所有规则验证通过 |" >> "$SUMMARY_FILE"
+        elif [ "${{ steps.validate-rules.outputs.validation_exit_code }}" = "1" ]; then
+          echo "| 4. 规则验证 | ⚠️ | 规则验证有警告 |" >> "$SUMMARY_FILE"
+        else
+          echo "| 4. 规则验证 | ⏭️ | 验证步骤已跳过 |" >> "$SUMMARY_FILE"
+        fi
+        
+        # 步骤5: 规则优化
+        echo "| 5. 规则优化 | ✅ | 规则已优化和格式化 |" >> "$SUMMARY_FILE"
+        
+        # 步骤6: 生成最终文件
+        echo "| 6. 生成最终文件 | ✅ | 三层规则文件已生成 |" >> "$SUMMARY_FILE"
+        
+        # 步骤7: 检查变更
+        if [ "${{ steps.check-changes.outputs.changes_detected }}" = "true" ]; then
+          echo "| 7. 检查变更 | ✅ | 检测到文件变更 |" >> "$SUMMARY_FILE"
+        else
+          echo "| 7. 检查变更 | ⏭️ | 无文件变更 |" >> "$SUMMARY_FILE"
+        fi
+        
+        # 步骤8: 安全推送变更
+        if [ "${{ steps.check-changes.outputs.changes_detected }}" = "true" ]; then
+          echo "| 8. 安全推送变更 | ✅ | 变更已安全推送 |" >> "$SUMMARY_FILE"
+        else
+          echo "| 8. 安全推送变更 | ⏭️ | 无变更，无需推送 |" >> "$SUMMARY_FILE"
+        fi
+        
+        # 添加自动化信息
+        echo "" >> "$SUMMARY_FILE"
+        echo "---" >> "$SUMMARY_FILE"
+        echo "🤖 **自动化执行** - 由 GitHub Actions 自动生成" >> "$SUMMARY_FILE"
+        echo "🔗 **仓库地址**: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY" >> "$SUMMARY_FILE"
+        echo "📅 **工作流**: $GITHUB_WORKFLOW" >> "$SUMMARY_FILE"
+        
+        echo "✅ 工作流摘要生成完成"
+        
+        # 输出统计信息供后续步骤使用
+        echo "dns_rules=$DNS_RULES" >> $GITHUB_OUTPUT
+        echo "hosts_rules=$HOSTS_RULES" >> $GITHUB_OUTPUT
+        echo "filter_rules=$FILTER_RULES" >> $GITHUB_OUTPUT
+        echo "total_rules=$TOTAL_RULES" >> $GITHUB_OUTPUT
+        echo "enhanced_rules=$ENHANCED_RULES" >> $GITHUB_OUTPUT
     
     - name: Step 10 - 工作流完成
       if: always()
