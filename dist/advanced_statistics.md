@@ -1,6 +1,6 @@
 # 📊 AdBlock 规则高级统计报告
 
-> 本报告由 GitHub Actions 自动生成，更新时间: 2026-01-26 16:44:18
+> 本报告由 GitHub Actions 自动生成，更新时间: 2026-01-26 17:23:47
 
 ## 📈 三层规则统计
 
@@ -39,9 +39,9 @@
 
 ## 🔄 更新信息
 
-- **最后更新时间**: 2026-01-26 16:44:18 (北京时间)
+- **最后更新时间**: 2026-01-26 17:23:47 (北京时间)
 - **更新频率**: 每8小时自动更新
-- **下次更新时间**: 2026-01-27 00:44:18 (北京时间)
+- **下次更新时间**: 2026-01-27 01:23:47 (北京时间)
 - **验证标准**: 严格验证（阈值90%）
 
 ## 📁 文件列表
@@ -49,10 +49,11 @@
 | 文件名 | 描述 | 大小 |
 |--------|------|------|
 | advanced_statistics.md | 高级统计报告 | 1KB |
-| dns.txt | DNS规则文件 | 32MB |
-| filter.txt | 浏览器规则文件 | 43MB |
-| format_report.json | 其他文件 | 463B |
-| hosts.txt | Hosts规则文件 | 44MB |
-| metadata.json | 规则元数据 | 35KB |
-| validation_report.json | 验证报告 | 5KB |
+| dns.txt | DNS规则文件 | 4MB |
+| enhanced_validation_report.json | 其他文件 | 6KB |
+| filter.txt | 浏览器规则文件 | 6MB |
+| hosts.txt | Hosts规则文件 | 6MB |
+| metadata.json | 规则元数据 | 935B |
+| rule_stats.json | 其他文件 | 123B |
+| validation_report.json | 验证报告 | 0B |
 

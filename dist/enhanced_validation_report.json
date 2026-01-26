@@ -1,0 +1,255 @@
+{
+  "timestamp": "2026-01-26 09:23:47",
+  "validation_results": {
+    "dns": {
+      "total": 251541,
+      "valid": 251384,
+      "invalid": 157,
+      "errors": [
+        {
+          "line": 12,
+          "rule": ".ads.controller.js",
+          "message": "域名标签为空"
+        },
+        {
+          "line": 13,
+          "rule": ".beacon.min.js",
+          "message": "域名标签为空"
+        },
+        {
+          "line": 14,
+          "rule": ".eloqua.js",
+          "message": "域名标签为空"
+        },
+        {
+          "line": 15,
+          "rule": ".gatracking.js",
+          "message": "域名标签为空"
+        },
+        {
+          "line": 16,
+          "rule": ".outbound-links.pageview-props.revenue.tagged-events.js",
+          "message": "域名标签为空"
+        },
+        {
+          "line": 17,
+          "rule": ".pageview-props.js",
+          "message": "域名标签为空"
+        },
+        {
+          "line": 18,
+          "rule": ".prebid-bundle.js",
+          "message": "域名标签为空"
+        },
+        {
+          "line": 19,
+          "rule": ".prtrackings.com",
+          "message": "域名标签为空"
+        },
+        {
+          "line": 20,
+          "rule": ".skimlinks.js",
+          "message": "域名标签为空"
+        },
+        {
+          "line": 21,
+          "rule": ".z.dkt-ib.com",
+          "message": "域名标签为空"
+        }
+      ],
+      "warnings": [],
+      "domain_types": {
+        "exact_domain": 251384
+      }
+    },
+    "hosts": {
+      "total": 251248,
+      "valid": 251091,
+      "invalid": 157,
+      "errors": [
+        {
+          "line": 12,
+          "rule": "0.0.0.0 .ads.controller.js",
+          "message": "无效的域名格式"
+        },
+        {
+          "line": 13,
+          "rule": "0.0.0.0 .beacon.min.js",
+          "message": "无效的域名格式"
+        },
+        {
+          "line": 14,
+          "rule": "0.0.0.0 .eloqua.js",
+          "message": "无效的域名格式"
+        },
+        {
+          "line": 15,
+          "rule": "0.0.0.0 .gatracking.js",
+          "message": "无效的域名格式"
+        },
+        {
+          "line": 16,
+          "rule": "0.0.0.0 .outbound-links.pageview-props.revenue.tagged-events.js",
+          "message": "无效的域名格式"
+        },
+        {
+          "line": 17,
+          "rule": "0.0.0.0 .pageview-props.js",
+          "message": "无效的域名格式"
+        },
+        {
+          "line": 18,
+          "rule": "0.0.0.0 .prebid-bundle.js",
+          "message": "无效的域名格式"
+        },
+        {
+          "line": 19,
+          "rule": "0.0.0.0 .prtrackings.com",
+          "message": "无效的域名格式"
+        },
+        {
+          "line": 20,
+          "rule": "0.0.0.0 .skimlinks.js",
+          "message": "无效的域名格式"
+        },
+        {
+          "line": 21,
+          "rule": "0.0.0.0 .z.dkt-ib.com",
+          "message": "无效的域名格式"
+        }
+      ],
+      "warnings": [],
+      "ip_types": {
+        "ipv4": 251091
+      }
+    },
+    "browser": {
+      "total": 291791,
+      "valid": 218886,
+      "invalid": 72905,
+      "errors": [
+        {
+          "line": 14905,
+          "rule": "$replace=/head>/head><meta charset=\"utf-8\">/,document,to=podhale24.pl|copycenter...",
+          "message": "无法识别的规则类型"
+        },
+        {
+          "line": 14906,
+          "rule": "$replace=/openNewTab\\(\".*?\".{0\\,10}\\)/null/,document,subdocument,to=turbovidhls....",
+          "message": "无法识别的规则类型"
+        },
+        {
+          "line": 14907,
+          "rule": "$replace=/window\\.location\\.replace\\(urlRandom\\);//,document,domain=pelisplus-of...",
+          "message": "无法识别的规则类型"
+        },
+        {
+          "line": 14908,
+          "rule": "&siteid=*&adid=$removeparam",
+          "message": "无法识别的规则类型"
+        },
+        {
+          "line": 14909,
+          "rule": "*.damoh.tv2.no/$replace=/(<VAST[\\s\\S]*?>)[\\s\\S]*<\\/VAST>/\\$1<\\/VAST>/",
+          "message": "无法识别的规则类型"
+        },
+        {
+          "line": 14913,
+          "rule": ".ads.controller.js$script",
+          "message": "无法识别的规则类型"
+        },
+        {
+          "line": 14920,
+          "rule": ".prebid-bundle.js$script",
+          "message": "无法识别的规则类型"
+        },
+        {
+          "line": 14921,
+          "rule": ".prtrackings.com$popup",
+          "message": "无法识别的规则类型"
+        },
+        {
+          "line": 14926,
+          "rule": "/^https?:\\/\\/\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\/.*(\\?|&)__cpo=aHR0c/$replace=/_...",
+          "message": "无法识别的规则类型"
+        },
+        {
+          "line": 14927,
+          "rule": "/_next/static/chunks/*.js$replace=/throw Error\\(i\\((329|418)\\)\\)/null/,domain=yf...",
+          "message": "无法识别的规则类型"
+        }
+      ],
+      "warnings": [
+        {
+          "line": 3079,
+          "rule": "###index_banner[src*=\".imgdd.com\"]",
+          "message": "规则包含通配符*"
+        },
+        {
+          "line": 3080,
+          "rule": "###index_banner[src*=\".meituan.net\"]",
+          "message": "规则包含通配符*"
+        },
+        {
+          "line": 3174,
+          "rule": "###kt_player > div[style$=\"display: block;\"][style*=\"inset: 0px;\"]",
+          "message": "规则包含通配符*"
+        },
+        {
+          "line": 3580,
+          "rule": "###piao_div_0[style*=\"width:140px;\"]",
+          "message": "规则包含通配符*"
+        },
+        {
+          "line": 3581,
+          "rule": "###piao_div_1[style*=\"width:140px;\"]",
+          "message": "规则包含通配符*"
+        }
+      ],
+      "syntax_types": {
+        "element_hiding": 14883,
+        "response_policy": 67,
+        "exact_domain": 38,
+        "whitelist": 1561,
+        "wildcard": 202337
+      },
+      "category_usage": {},
+      "response_policies": {
+        "csp": 28,
+        "badfilter": 30,
+        "generichide": 475,
+        "document": 804,
+        "important": 7,
+        "redirect": 38,
+        "removeparam": 1
+      }
+    }
+  },
+  "summary": {
+    "total_rules": 794580,
+    "valid_rules": 721361,
+    "invalid_rules": 73219,
+    "validity_rate": 90.78519469405221
+  },
+  "syntax_support": {
+    "whitelist": "白名单规则 (@@开头)",
+    "exact_domain": "精确域名规则",
+    "wildcard": "子域/通配规则 (||开头 ^结尾)",
+    "cname": "CNAME拦截规则 ($cname)",
+    "element_hiding": "元素隐藏规则 (##, #@#, #?#)",
+    "category": "分类规则 ($category=)",
+    "response_policy": "响应策略规则"
+  },
+  "categories": [
+    "ad",
+    "tracking",
+    "malware",
+    "phishing",
+    "social",
+    "porn",
+    "annoyance",
+    "cookie",
+    "privacy",
+    "security"
+  ]
+}
