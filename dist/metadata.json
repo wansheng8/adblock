@@ -1,10 +1,10 @@
 {
-  "last_updated": "2026-01-28T10:14:26.599231+08:00",
+  "last_updated": "2026-01-28T16:43:07.168723+08:00",
   "rule_counts": {
-    "dns_rules": 1438529,
-    "hosts_rules": 1438529,
-    "browser_rules": 8096487,
-    "total_rules": 10973545
+    "dns_rules": 1438618,
+    "hosts_rules": 1438618,
+    "browser_rules": 7949237,
+    "total_rules": 10826473
   },
   "sources_used": 397,
   "sources_total": 402,
