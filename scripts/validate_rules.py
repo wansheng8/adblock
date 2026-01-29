@@ -105,7 +105,7 @@ class RuleValidator:
             return result
         
         # 7. 纯域名规则
-        if re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', rule):
+        if re.match(r'^[a-zAZ0-9.-]+\.[a-zA-Z]{2,}$', rule):
             result['type'] = 'simple_domain'
             result['domain'] = rule
             result['valid'] = True
@@ -402,6 +402,23 @@ class RuleValidator:
             overall_validity = (total_valid / total_rules) * 100
             print(f"总体有效性: {overall_validity:.1f}%")
         
+        # 检查DNS检测结果
+        dns_file = self.base_dir / 'dist/dns_results.json'
+        if dns_file.exists():
+            try:
+                with open(dns_file, 'r', encoding='utf-8') as f:
+                    dns_data = json.load(f)
+                
+                valid = dns_data.get('statistics', {}).get('valid_count', 0)
+                failed = dns_data.get('statistics', {}).get('failed_count', 0)
+                total = valid + failed
+                
+                if total > 0:
+                    rate = (valid / total) * 100
+                    print(f"📊 DNS检测结果: {valid}/{total} 可达 ({rate:.1f}%)")
+            except:
+                print("⚠️  DNS检测结果文件格式错误")
+        
         # 生成详细报告
         report = {
             "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -444,7 +461,7 @@ class RuleValidator:
             ('dns.txt', 'DNS规则文件'),
             ('hosts.txt', 'Hosts规则文件'),
             ('filter.txt', '浏览器规则文件'),
-            ('ping_results.json', 'Ping检测结果')
+            ('dns_results.json', 'DNS检测结果')
         ]
         
         all_exist = True
@@ -460,7 +477,7 @@ class RuleValidator:
                     all_exist = False
                 else:
                     # 粗略检查规则数量
-                    if filename != 'ping_results.json':
+                    if filename != 'dns_results.json':
                         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
                             content = f.read()
                         
@@ -476,22 +493,22 @@ class RuleValidator:
                 print(f"❌ {description}: 不存在")
                 all_exist = False
         
-        # 检查Ping检测结果
-        ping_file = self.base_dir / 'dist/ping_results.json'
-        if ping_file.exists():
+        # 检查DNS检测结果
+        dns_file = self.base_dir / 'dist/dns_results.json'
+        if dns_file.exists():
             try:
-                with open(ping_file, 'r', encoding='utf-8') as f:
-                    ping_data = json.load(f)
+                with open(dns_file, 'r', encoding='utf-8') as f:
+                    dns_data = json.load(f)
                 
-                valid = ping_data.get('statistics', {}).get('valid_count', 0)
-                failed = ping_data.get('statistics', {}).get('failed_count', 0)
+                valid = dns_data.get('statistics', {}).get('valid_count', 0)
+                failed = dns_data.get('statistics', {}).get('failed_count', 0)
                 total = valid + failed
                 
                 if total > 0:
                     rate = (valid / total) * 100
-                    print(f"📊 Ping检测结果: {valid}/{total} 可达 ({rate:.1f}%)")
+                    print(f"📊 DNS检测结果: {valid}/{total} 可达 ({rate:.1f}%)")
             except:
-                print("⚠️  Ping检测结果文件格式错误")
+                print("⚠️  DNS检测结果文件格式错误")
         
         if all_exist:
             print("\n✅ 所有规则文件都存在且非空")
