@@ -438,7 +438,7 @@ class RuleFormatter:
             ('dns.txt', 'DNS规则'),
             ('hosts.txt', 'Hosts规则'),
             ('filter.txt', '浏览器规则'),
-            ('ping_results.json', 'Ping检测结果')
+            ('dns_results.json', 'DNS检测结果')
         ]
         
         stats = {}
@@ -449,7 +449,7 @@ class RuleFormatter:
             if filepath.exists():
                 file_sizes[description] = filepath.stat().st_size
                 
-                if filename != 'ping_results.json':
+                if filename != 'dns_results.json':
                     with open(filepath, 'r', encoding='utf-8') as f:
                         content = f.read()
                     
@@ -462,22 +462,22 @@ class RuleFormatter:
                     
                     stats[description] = len(rule_lines)
         
-        # 读取Ping检测结果
-        ping_file = self.base_dir / 'dist' / 'ping_results.json'
-        ping_stats = {}
-        if ping_file.exists():
-            with open(ping_file, 'r', encoding='utf-8') as f:
-                ping_data = json.load(f)
-                ping_stats = ping_data.get('statistics', {})
+        # 读取DNS检测结果
+        dns_file = self.base_dir / 'dist' / 'dns_results.json'
+        dns_stats = {}
+        if dns_file.exists():
+            with open(dns_file, 'r', encoding='utf-8') as f:
+                dns_data = json.load(f)
+                dns_stats = dns_data.get('statistics', {})
         
         # 生成统计报告
         report = {
             "timestamp": self.now.strftime('%Y-%m-%d %H:%M:%S'),
             "rule_statistics": stats,
             "file_sizes_bytes": file_sizes,
-            "ping_statistics": ping_stats,
+            "dns_statistics": dns_stats,
             "syntax_version": "adblock_1.0",
-            "notes": "Adblock语法规则，所有域名已通过Ping检测"
+            "notes": "Adblock语法规则，所有域名已通过DNS可达性检测"
         }
         
         report_file = self.base_dir / 'dist/format_report.json'
@@ -489,11 +489,11 @@ class RuleFormatter:
             size_kb = file_sizes.get(desc, 0) / 1024
             print(f"  ├── {desc}: {count} 条 ({size_kb:.1f} KB)")
         
-        if ping_stats:
-            total = ping_stats.get('total_tested', 0)
-            valid = ping_stats.get('valid_count', 0)
-            rate = ping_stats.get('success_rate', 0) * 100
-            print(f"  ├── Ping检测: {valid}/{total} 可达 ({rate:.1f}%)")
+        if dns_stats:
+            total = dns_stats.get('total_tested', 0)
+            valid = dns_stats.get('valid_count', 0)
+            rate = dns_stats.get('success_rate', 0) * 100
+            print(f"  ├── DNS检测: {valid}/{total} 可达 ({rate:.1f}%)")
         
         total_rules = sum(stats.values())
         total_size = sum(file_sizes.values()) / 1024
@@ -537,7 +537,7 @@ class RuleFormatter:
         print("  • dns.txt: 纯域名，用于DNS/AdGuard Home")
         print("  • hosts.txt: 0.0.0.0 + 域名，用于系统hosts")
         print("  • filter.txt: 完整Adblock语法，用于浏览器扩展")
-        print("  • 所有域名已通过Ping检测")
+        print("  • 所有域名已通过DNS可达性检测")
         print("=" * 60)
         
         return results
