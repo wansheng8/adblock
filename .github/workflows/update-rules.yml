@@ -2,8 +2,17 @@ name: AdBlock Rules Auto-Updater
 
 on:
   workflow_dispatch:
+    inputs:
+      log_level:
+        description: 'Log level'
+        required: true
+        default: 'verbose'
+        type: choice
+        options:
+        - verbose
+        - quiet
   schedule:
-    - cron: '0 0,8,16 * * *'  # 北京时间 08:00, 16:00, 00:00 (次日)
+    - cron: '0 0,8,16 * * *'  # UTC时间，对应北京时间 08:00, 16:00, 00:00
   push:
     branches: [main]
     paths:
@@ -15,494 +24,202 @@ on:
 
 env:
   PYTHON_VERSION: '3.11'
-  VALIDITY_THRESHOLD: '90'
 
 jobs:
-  update:
+  update-rules:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
-    timeout-minutes: 30
+    timeout-minutes: 45
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Setup Python ${{ env.PYTHON_VERSION }}
+    - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
     
-    - name: Cache Python dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('scripts/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-    
-    - name: Install dependencies
+    - name: Install Python dependencies
       run: |
-        echo "📦 安装依赖..."
         python -m pip install --upgrade pip
         pip install requests beautifulsoup4 lxml
-        echo "✅ 依赖安装完成"
+        echo "✅ Dependencies installed"
     
-    - name: Step 1 - 环境准备
-      id: setup
+    - name: Prepare directories
       run: |
-        echo ""
-        echo "┌─────────────────────────────────────────┐"
-        echo "│          📁 环境准备                    │"
-        echo "│    (创建目录/检查配置)                  │"
-        echo "└─────────────────────────────────────────┘"
-        echo ""
-        
-        # 清理并重新创建目录结构
-        echo "🧹 清理旧规则文件..."
-        
-        # 清空临时和中间目录
-        if [ -d dist ]; then
-          echo "  📁 清空 dist 目录..."
-          rm -rf dist/*
-        fi
-        
-        if [ -d rules/raw ]; then
-          echo "  📁 清空 rules/raw 目录..."
-          rm -rf rules/raw/*
-        fi
-        
-        if [ -d rules/processed ]; then
-          echo "  📁 清空 rules/processed 目录..."
-          rm -rf rules/processed/*
-        fi
-        
-        # 创建必要目录（如果不存在）
-        echo "📁 创建目录结构..."
+        echo "📁 Preparing directories..."
         mkdir -p dist rules/raw rules/processed rules/custom
         
-        # 检查重要文件
-        echo "🔍 检查重要文件..."
+        echo "🔧 Setting permissions..."
+        chmod +x scripts/*.py || true
         
-        if [ ! -f "sources/sources.json" ]; then
-          echo "❌ sources/sources.json 文件不存在"
-          exit 1
-        else
-          echo "  ✅ sources/sources.json"
-        fi
-        
-        if [ ! -f "scripts/update_rules.py" ]; then
-          echo "❌ scripts/update_rules.py 文件不存在"
-          exit 1
-        else
-          echo "  ✅ scripts/update_rules.py"
-        fi
-        
-        # 检查 gz.txt 文件
-        if [ -f "sources/gz.txt" ]; then
-          size=$(wc -c < "sources/gz.txt" 2>/dev/null || echo "0")
-          if [ "$size" -gt 0 ]; then
-            echo "  ✅ sources/gz.txt (额外规则源)"
-          else
-            echo "  ⚠️  sources/gz.txt 为空"
-          fi
-        else
-          echo "  ⚠️  sources/gz.txt 文件不存在，跳过额外规则源"
-        fi
-        
-        # 检查Python脚本权限
-        echo "🔧 设置脚本权限..."
-        chmod +x scripts/*.py 2>/dev/null || true
-        
-        echo "✅ 环境准备完成"
+        echo "✅ Directories ready"
     
-    - name: Step 2 - 规则源同步（含Ping检测）
-      id: update-rules
+    - name: Clean previous files
       run: |
-        echo ""
-        echo "┌─────────────────────────────────────────┐"
-        echo "│          🚀 规则源同步                  │"
-        echo "│    (Adblock语法 + Ping检测)             │"
-        echo "└─────────────────────────────────────────┘"
-        echo ""
+        echo "🧹 Cleaning old files..."
+        rm -rf rules/raw/* 2>/dev/null || true
+        rm -rf rules/processed/* 2>/dev/null || true
+        echo "✅ Cleanup complete"
+    
+    - name: Run rule updater (Adblock + Ping)
+      run: |
+        echo "🚀 Running Adblock rule updater with Ping detection..."
+        python scripts/update_rules.py
         
-        # 确保 raw 目录是干净的
-        echo "🧹 确保规则源目录干净..."
-        if [ -d rules/raw ]; then
-          find rules/raw -type f -name "*.txt" -delete 2>/dev/null || true
-          find rules/raw -type f -name "*.json" -delete 2>/dev/null || true
-        fi
-        
-        echo "📊 开始规则源同步..."
-        START_TIME=$(date +%s)
-        
-        # 运行规则更新脚本
-        if [ -f scripts/update_rules.py ]; then
-          python scripts/update_rules.py
-          UPDATE_STATUS=$?
-          
-          END_TIME=$(date +%s)
-          DURATION=$((END_TIME - START_TIME))
-          
-          if [ $UPDATE_STATUS -eq 0 ]; then
-            echo "✅ 规则源同步成功 (耗时 ${DURATION}秒)"
-            echo "update_success=true" >> "$GITHUB_OUTPUT"
-          elif [ $UPDATE_STATUS -eq 1 ]; then
-            echo "⚠️  规则源同步部分失败，继续执行 (耗时 ${DURATION}秒)"
-            echo "update_success=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "❌ 规则源同步失败，退出码: $UPDATE_STATUS (耗时 ${DURATION}秒)"
-            echo "update_success=false" >> "$GITHUB_OUTPUT"
-            exit $UPDATE_STATUS
-          fi
-        else
-          echo "❌ 规则更新脚本不存在"
-          echo "update_success=false" >> "$GITHUB_OUTPUT"
-          exit 1
-        fi
-        
-        # 检查生成的三层规则文件
-        echo "📄 检查生成的三层规则文件..."
-        
+        echo "📊 Checking generated files..."
         if [ -f dist/dns.txt ] && [ -s dist/dns.txt ]; then
-          DNS_SIZE=$(wc -c < dist/dns.txt)
-          DNS_RULES=$(grep -v '^#' dist/dns.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          echo "  ✅ dns.txt: $DNS_RULES 条规则 ($((DNS_SIZE/1024))KB)"
+          dns_count=$(grep -v '^#' dist/dns.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          echo "✅ DNS rules: $dns_count lines"
         else
-          echo "  ❌ dns.txt 生成失败"
-          echo "update_success=false" >> "$GITHUB_OUTPUT"
+          echo "❌ DNS rules file missing or empty"
           exit 1
         fi
         
         if [ -f dist/hosts.txt ] && [ -s dist/hosts.txt ]; then
-          HOSTS_SIZE=$(wc -c < dist/hosts.txt)
-          HOSTS_RULES=$(grep -v '^#' dist/hosts.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          echo "  ✅ hosts.txt: $HOSTS_RULES 条规则 ($((HOSTS_SIZE/1024))KB)"
+          hosts_count=$(grep -v '^#' dist/hosts.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          echo "✅ Hosts rules: $hosts_count lines"
         else
-          echo "  ❌ hosts.txt 生成失败"
-          echo "update_success=false" >> "$GITHUB_OUTPUT"
+          echo "❌ Hosts rules file missing or empty"
           exit 1
         fi
         
         if [ -f dist/filter.txt ] && [ -s dist/filter.txt ]; then
-          FILTER_SIZE=$(wc -c < dist/filter.txt)
-          FILTER_RULES=$(grep -v '^!' dist/filter.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          echo "  ✅ filter.txt: $FILTER_RULES 条规则 ($((FILTER_SIZE/1024))KB)"
+          filter_count=$(grep -v '^!' dist/filter.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          echo "✅ Filter rules: $filter_count lines"
         else
-          echo "  ❌ filter.txt 生成失败"
-          echo "update_success=false" >> "$GITHUB_OUTPUT"
+          echo "❌ Filter rules file missing or empty"
           exit 1
         fi
-        
-        # 检查Ping检测结果
-        if [ -f dist/ping_results.json ]; then
-          echo "🔍 检查Ping检测结果..."
-          VALID_COUNT=$(grep -o '"valid_count":[0-9]*' dist/ping_results.json | grep -o '[0-9]*' || echo "0")
-          FAILED_COUNT=$(grep -o '"failed_count":[0-9]*' dist/ping_results.json | grep -o '[0-9]*' || echo "0")
-          TOTAL=$((VALID_COUNT + FAILED_COUNT))
-          
-          if [ "$TOTAL" -gt 0 ]; then
-            RATE=$((VALID_COUNT * 100 / TOTAL))
-            echo "  📊 Ping检测: $VALID_COUNT/$TOTAL 可达 ($RATE%)"
-          fi
-        fi
     
-    - name: Step 3 - 规则格式化
-      if: steps.update-rules.outputs.update_success == 'true'
+    - name: Format rules
       run: |
-        echo ""
-        echo "┌─────────────────────────────────────────┐"
-        echo "│          🎨 规则格式化                  │"
-        echo "│    (Adblock语法格式化)                  │"
-        echo "└─────────────────────────────────────────┘"
-        echo ""
-        
-        echo "📊 开始规则格式化..."
-        START_TIME=$(date +%s)
-        
+        echo "🎨 Formatting rules..."
         if [ -f scripts/format_rules.py ]; then
           python scripts/format_rules.py
-          FORMAT_STATUS=$?
-          
-          END_TIME=$(date +%s)
-          DURATION=$((END_TIME - START_TIME))
-          
-          if [ $FORMAT_STATUS -eq 0 ]; then
-            echo "✅ 规则格式化成功 (耗时 ${DURATION}秒)"
+          echo "✅ Formatting complete"
+        else
+          echo "⚠️ Format script not found, skipping"
+        fi
+    
+    - name: Validate rules
+      run: |
+        echo "🔍 Validating rules..."
+        if [ -f scripts/validate_rules.py ]; then
+          python scripts/validate_rules.py --simple
+          echo "✅ Validation complete"
+        else
+          echo "⚠️ Validate script not found, skipping"
+        fi
+    
+    - name: Create summary report
+      if: always()
+      run: |
+        echo "📋 Creating summary report..."
+        
+        # Get current timestamp
+        TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        
+        # Count rules
+        DNS_COUNT=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        HOSTS_COUNT=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        FILTER_COUNT=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        TOTAL_COUNT=$((DNS_COUNT + HOSTS_COUNT + FILTER_COUNT))
+        
+        # Check ping results
+        if [ -f dist/ping_results.json ]; then
+          VALID_COUNT=$(grep -o '"valid_count":[0-9]*' dist/ping_results.json | grep -o '[0-9]*' || echo "0")
+          FAILED_COUNT=$(grep -o '"failed_count":[0-9]*' dist/ping_results.json | grep -o '[0-9]*' || echo "0")
+          TOTAL_PING=$((VALID_COUNT + FAILED_COUNT))
+          if [ "$TOTAL_PING" -gt 0 ]; then
+            SUCCESS_RATE=$((VALID_COUNT * 100 / TOTAL_PING))
           else
-            echo "⚠️  规则格式化过程出现警告 (耗时 ${DURATION}秒)"
+            SUCCESS_RATE=0
           fi
         else
-          echo "ℹ️  规则格式化脚本不存在，跳过此步骤"
+          VALID_COUNT=0
+          FAILED_COUNT=0
+          SUCCESS_RATE=0
         fi
+        
+        cat > $GITHUB_STEP_SUMMARY << EOF
+# 🎯 AdBlock Rules Update Summary
+        
+## 📊 Rule Statistics
+| Rule Type | Count | Format |
+|-----------|-------|--------|
+| DNS Rules | $DNS_COUNT | Pure domains |
+| Hosts Rules | $HOSTS_COUNT | 0.0.0.0 + domain |
+| Filter Rules | $FILTER_COUNT | Adblock syntax |
+| **Total** | **$TOTAL_COUNT** | All rules |
+
+## 🔍 Ping Detection Results
+- ✅ Reachable domains: **$VALID_COUNT**
+- ❌ Unreachable domains: **$FAILED_COUNT**
+- 📈 Success rate: **$SUCCESS_RATE%**
+
+## 🎯 Adblock Syntax Features
+- ✅ Whitelist rules (@@||domain.com^)
+- ✅ Domain blocking rules (||domain.com^)
+- ✅ Element hiding rules (##.ad-banner)
+- ✅ Modifier rules (\$script,third-party)
+- ✅ All domains verified by ping
+
+## ⏰ Update Information
+- **Update time**: $TIMESTAMP
+- **Next update**: Every 8 hours
+- **Additional sources**: sources/gz.txt
+- **Syntax version**: Adblock v1.0
+
+🤖 This update was automatically generated by GitHub Actions.
+EOF
     
-    - name: Step 4 - 规则验证
-      if: steps.update-rules.outputs.update_success == 'true'
-      continue-on-error: true
+    - name: Commit and push changes
+      if: success()
       run: |
-        echo ""
-        echo "┌─────────────────────────────────────────┐"
-        echo "│          🔍 规则验证器                  │"
-        echo "│    (Adblock语法验证)                    │"
-        echo "└─────────────────────────────────────────┘"
-        echo ""
+        echo "🚀 Checking for changes..."
         
-        echo "📊 开始规则验证..."
-        START_TIME=$(date +%s)
-        
-        if [ ! -f scripts/validate_rules.py ]; then
-          echo "❌ 规则验证脚本不存在"
-          exit 0
-        fi
-        
-        # 检查三层规则文件是否存在
-        if [ ! -f dist/dns.txt ] || [ ! -s dist/dns.txt ]; then
-          echo "❌ DNS规则文件不存在或为空"
-          exit 0
-        fi
-        
-        if [ ! -f dist/hosts.txt ] || [ ! -s dist/hosts.txt ]; then
-          echo "❌ Hosts规则文件不存在或为空"
-          exit 0
-        fi
-        
-        if [ ! -f dist/filter.txt ] || [ ! -s dist/filter.txt ]; then
-          echo "❌ 浏览器规则文件不存在或为空"
-          exit 0
-        fi
-        
-        # 运行验证脚本（简单模式）
-        python scripts/validate_rules.py --simple
-        VALIDATION_STATUS=$?
-        
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - START_TIME))
-        
-        if [ $VALIDATION_STATUS -eq 0 ]; then
-          echo "✅ 规则验证通过 (耗时 ${DURATION}秒)"
-        elif [ $VALIDATION_STATUS -eq 1 ]; then
-          echo "⚠️  规则验证警告 (耗时 ${DURATION}秒)"
-        else
-          echo "❌ 规则验证失败 (耗时 ${DURATION}秒)"
-        fi
-        
-        exit 0
-    
-    - name: Step 5 - 检查变更并提交
-      id: check-commit
-      run: |
-        echo ""
-        echo "┌─────────────────────────────────────────┐"
-        echo "│          🔄 检查变更并提交              │"
-        echo "└─────────────────────────────────────────┘"
-        echo ""
-        
-        echo "🔍 检查Git状态..."
-        
-        # 配置Git用户
+        # Configure git
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         
-        # 添加所有变更
-        git add -A
-        
-        # 检查是否有变更
-        if git diff --cached --quiet; then
-          echo "✅ 没有检测到变更"
-          echo "changes_detected=false" >> "$GITHUB_OUTPUT"
+        # Check if there are any changes
+        if git diff --quiet --exit-code; then
+          echo "✅ No changes detected"
           exit 0
         fi
         
-        echo "🔄 检测到变更"
-        echo "changes_detected=true" >> "$GITHUB_OUTPUT"
+        echo "📝 Changes detected, creating commit..."
         
-        # 获取规则统计
-        DNS_RULES=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        HOSTS_RULES=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        FILTER_RULES=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        TOTAL_RULES=$((DNS_RULES + HOSTS_RULES + FILTER_RULES))
+        # Add changed files
+        git add -A
         
-        # 获取Ping检测结果
-        if [ -f dist/ping_results.json ]; then
-          VALID_COUNT=$(grep -o '"valid_count":[0-9]*' dist/ping_results.json | grep -o '[0-9]*' || echo "0")
-          FAILED_COUNT=$(grep -o '"failed_count":[0-9]*' dist/ping_results.json | grep -o '[0-9]*' || echo "0")
-          TOTAL_PING=$((VALID_COUNT + FAILED_COUNT))
-          if [ "$TOTAL_PING" -gt 0 ]; then
-            PING_RATE=$((VALID_COUNT * 100 / TOTAL_PING))
-          else
-            PING_RATE=0
-          fi
-        else
-          VALID_COUNT=0
-          FAILED_COUNT=0
-          PING_RATE=0
-        fi
+        # Get rule counts for commit message
+        DNS_COUNT=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        HOSTS_COUNT=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        FILTER_COUNT=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        TOTAL_COUNT=$((DNS_COUNT + HOSTS_COUNT + FILTER_COUNT))
         
-        # 创建提交信息
-        COMMIT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')
+        # Create commit message
+        COMMIT_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
         
-        cat > /tmp/commit_message.txt << EOF
-🤖 自动更新广告拦截规则 - Adblock语法版 [$COMMIT_TIME]
+        git commit -m "🤖 Auto-update adblock rules [$COMMIT_TIME]
 
-📊 规则统计:
-- DNS规则: $DNS_RULES 条
-- Hosts规则: $HOSTS_RULES 条
-- 浏览器规则: $FILTER_RULES 条
-- 总计: $TOTAL_RULES 条规则
+📊 Rules:
+- DNS: $DNS_COUNT domains
+- Hosts: $HOSTS_COUNT entries  
+- Filter: $FILTER_COUNT rules
+- Total: $TOTAL_COUNT rules
 
-🔍 Ping检测:
-- 可达域名: $VALID_COUNT 个
-- 不可达域名: $FAILED_COUNT 个
-- 成功率: $PING_RATE%
-
-🎯 Adblock语法特性:
-• 白名单规则 (@@||domain^)
-• 域名阻断规则 (||domain^)
-• 元素隐藏规则 (##selector)
-• 修饰符规则 (\$script,third-party)
-• 所有域名已通过Ping检测
-
-🌐 包含额外规则源: sources/gz.txt
-⏰ 下次更新: $(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M')
-🤖 由 GitHub Actions 自动生成
-EOF
+🎯 Adblock syntax with ping verification
+🌐 Includes sources/gz.txt
+🔄 Auto-updated by GitHub Actions"
         
-        echo "💾 提交变更..."
-        git commit -F /tmp/commit_message.txt
+        echo "📤 Pushing changes..."
+        git push
         
-        echo "📊 提交摘要:"
-        git show --stat --oneline HEAD
-        
-        echo "🔄 执行安全推送..."
-        
-        # 先拉取再推送
-        echo "1. 拉取远程最新更改..."
-        if git pull origin main --rebase; then
-          echo "✅ 拉取成功，正在推送..."
-          if git push origin HEAD:main; then
-            echo "✅ 推送成功"
-          else
-            echo "❌ 推送失败，尝试安全强制推送..."
-            if git push origin HEAD:main --force-with-lease; then
-              echo "✅ 安全强制推送成功"
-            else
-              echo "⚠️  推送失败，跳过推送步骤"
-            fi
-          fi
-        else
-          echo "❌ 拉取失败，尝试直接推送..."
-          if git push origin HEAD:main; then
-            echo "✅ 直接推送成功"
-          else
-            echo "⚠️  推送失败，跳过推送步骤"
-          fi
-        fi
-        
-        echo "🎉 推送完成"
-    
-    - name: Step 6 - 生成工作流摘要
-      if: always()
-      run: |
-        # 创建摘要文件
-        SUMMARY_FILE="$GITHUB_STEP_SUMMARY"
-        
-        echo "## 📋 AdBlock 规则更新摘要 - Adblock语法版" > "$SUMMARY_FILE"
-        echo "" >> "$SUMMARY_FILE"
-        
-        # 获取规则统计
-        DNS_RULES=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        HOSTS_RULES=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        FILTER_RULES=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        TOTAL_RULES=$((DNS_RULES + HOSTS_RULES + FILTER_RULES))
-        
-        # 获取Ping检测结果
-        if [ -f dist/ping_results.json ]; then
-          VALID_COUNT=$(grep -o '"valid_count":[0-9]*' dist/ping_results.json | grep -o '[0-9]*' || echo "0")
-          FAILED_COUNT=$(grep -o '"failed_count":[0-9]*' dist/ping_results.json | grep -o '[0-9]*' || echo "0")
-          TOTAL_PING=$((VALID_COUNT + FAILED_COUNT))
-          if [ "$TOTAL_PING" -gt 0 ]; then
-            PING_RATE=$((VALID_COUNT * 100 / TOTAL_PING))
-          else
-            PING_RATE=0
-          fi
-        else
-          VALID_COUNT=0
-          FAILED_COUNT=0
-          PING_RATE=0
-        fi
-        
-        CURRENT_TIME=$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')
-        NEXT_TIME=$(TZ='Asia/Shanghai' date -d '+8 hours' +'%Y-%m-%d %H:%M:%S')
-        
-        cat >> "$SUMMARY_FILE" << EOF
-        
-        ### 📊 规则统计
-        
-        | 规则类型 | 数量 | 描述 |
-        |----------|------|------|
-        | DNS规则 | $DNS_RULES 条 | 纯域名格式 |
-        | Hosts规则 | $HOSTS_RULES 条 | 0.0.0.0 + 域名格式 |
-        | 浏览器规则 | $FILTER_RULES 条 | Adblock语法 |
-        | **总计** | **$TOTAL_RULES 条** | 所有规则总和 |
-        
-        ### 🔍 Ping检测结果
-        
-        - ✅ 可达域名: $VALID_COUNT 个
-        - ❌ 不可达域名: $FAILED_COUNT 个
-        - 📈 成功率: $PING_RATE%
-        
-        ### 🎯 Adblock语法特性
-        
-        - ✅ 白名单规则 (@@||domain^)
-        - ✅ 域名阻断规则 (||domain^)
-        - ✅ 元素隐藏规则 (##selector)
-        - ✅ 修饰符规则 (\$script,third-party)
-        - ✅ Hosts规则 (0.0.0.0 domain)
-        - ✅ 正则表达式规则 (/advertisement/)
-        
-        ### 🔄 更新信息
-        
-        - **更新时间**: $CURRENT_TIME (北京时间)
-        - **更新频率**: 每8小时自动更新
-        - **下次更新**: $NEXT_TIME (北京时间)
-        - **额外规则源**: sources/gz.txt
-        - **语法版本**: Adblock语法版
-        
-        🤖 由 GitHub Actions 自动执行
-        EOF
-    
-    - name: Step 7 - 工作流完成
-      if: always()
-      run: |
-        echo ""
-        echo "┌─────────────────────────────────────────┐"
-        echo "│          ✅ 工作流执行完成              │"
-        echo "└─────────────────────────────────────────┘"
-        echo ""
-        
-        echo "📋 执行总结:"
-        echo "  ├── 语法版本: Adblock语法版"
-        echo "  ├── 执行状态: ${{ job.status }}"
-        echo "  ├── 规则总数: $(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0") DNS"
-        echo "  ├── Ping检测: 已执行域名可达性检测"
-        echo "  └── 额外规则源: sources/gz.txt"
-        echo ""
-        
-        echo "🎯 Adblock语法特性:"
-        echo "  • 白名单规则 (@@||domain^)"
-        echo "  • 域名阻断规则 (||domain^)"
-        echo "  • 元素隐藏规则 (##selector)"
-        echo "  • 修饰符规则 (\$script,third-party)"
-        echo "  • 所有域名已通过Ping检测"
-        echo ""
-        
-        echo "📅 运行时间设置 (北京时间):"
-        echo "  每天 08:00, 16:00, 00:00 (次日)"
-        echo ""
-        
-        echo "🎉 广告拦截规则更新流程已完成!"
+        echo "✅ Changes pushed successfully"
