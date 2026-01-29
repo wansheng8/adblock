@@ -1,86 +1,126 @@
-name: Update AdBlock Rules
+name: AdBlock Rules Auto-Updater
 
 on:
   workflow_dispatch:  # 允许手动触发
   schedule:
-    # 每8小时运行一次（UTC时间）
+    # 每8小时运行一次 (UTC时间)
     - cron: '0 */8 * * *'
   push:
     branches: [main]
     paths:
       - 'sources/**'
       - 'scripts/**'
-      - '.github/workflows/**'
+      - '.github/workflows/update-rules.yml'
 
 jobs:
   update:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # 允许写入仓库
+    timeout-minutes: 30
     
     steps:
-    - name: Checkout repository
+    # 步骤1: 检出代码
+    - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
+      
+    # 步骤2: 设置Python
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-    
+        
+    # 步骤3: 安装依赖
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests beautifulsoup4 lxml
-    
-    - name: Create directories
+        pip install requests
+        
+    # 步骤4: 运行规则更新器
+    - name: Update rules
       run: |
-        mkdir -p dist
-        mkdir -p rules/raw
-        mkdir -p rules/custom
+        # 创建必要的目录
+        mkdir -p dist rules/raw rules/custom
+        
+        # 确保脚本有执行权限
         chmod +x scripts/*.py 2>/dev/null || true
-    
-    - name: Run rule updater
-      run: python scripts/update_rules.py
-    
-    - name: Check for changes
-      id: git-check
+        
+        # 运行更新脚本
+        python scripts/update_rules.py
+        
+        # 检查生成的文件
+        if [ -f dist/dns.txt ]; then
+          echo "✅ DNS rules file created"
+        else
+          echo "❌ DNS rules file not created"
+          exit 1
+        fi
+        
+        if [ -f dist/hosts.txt ]; then
+          echo "✅ Hosts rules file created"
+        else
+          echo "❌ Hosts rules file not created"
+          exit 1
+        fi
+        
+        if [ -f dist/filter.txt ]; then
+          echo "✅ Filter rules file created"
+        else
+          echo "❌ Filter rules file not created"
+          exit 1
+        fi
+        
+    # 步骤5: 格式化规则 (可选)
+    - name: Format rules
       run: |
+        if [ -f scripts/format_rules.py ]; then
+          python scripts/format_rules.py
+          echo "✅ Rules formatted"
+        else
+          echo "⚠️ Format script not found, skipping"
+        fi
+        
+    # 步骤6: 验证规则 (可选)
+    - name: Validate rules
+      continue-on-error: true
+      run: |
+        if [ -f scripts/validate_rules.py ]; then
+          python scripts/validate_rules.py --simple
+          echo "✅ Rules validated"
+        else
+          echo "⚠️ Validate script not found, skipping"
+        fi
+        
+    # 步骤7: 配置Git并推送
+    - name: Commit and push
+      run: |
+        # 配置Git用户
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         
-        # 添加所有文件
+        # 检查是否有更改
         git add -A
         
-        # 检查是否有变更
         if git diff --cached --quiet; then
-          echo "has_changes=false" >> $GITHUB_OUTPUT
+          echo "✅ No changes to commit"
         else
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-        fi
-    
-    - name: Commit and push changes
-      if: steps.git-check.outputs.has_changes == 'true'
-      run: |
-        # 获取规则统计
-        DNS_COUNT=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        HOSTS_COUNT=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        FILTER_COUNT=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        TOTAL_COUNT=$((DNS_COUNT + HOSTS_COUNT + FILTER_COUNT))
-        
-        # 提交消息
-        COMMIT_TIME=$(date +'%Y-%m-%d %H:%M')
-        git commit -m "🤖 Auto-update adblock rules [$COMMIT_TIME]
-
-📊 Rules:
+          # 获取规则数量
+          DNS_COUNT=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          HOSTS_COUNT=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          FILTER_COUNT=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          
+          # 创建提交信息
+          COMMIT_MSG="🤖 Auto-update adblock rules $(date +'%Y-%m-%d %H:%M')
+          
+📊 Rules updated:
 - DNS: $DNS_COUNT domains
 - Hosts: $HOSTS_COUNT entries  
 - Filter: $FILTER_COUNT rules
-- Total: $TOTAL_COUNT rules
+- Total: $((DNS_COUNT + HOSTS_COUNT + FILTER_COUNT)) rules
 
 ⚡ Optimized DNS detection
 🔄 Auto-updated by GitHub Actions"
-        
-        # 推送到仓库
-        git push
+          
+          # 提交并推送
+          git commit -m "$COMMIT_MSG"
+          git push
+          echo "✅ Changes committed and pushed"
+        fi
