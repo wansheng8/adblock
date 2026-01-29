@@ -1,215 +1,113 @@
-name: AdBlock Rules Auto-Updater
+name: Update AdBlock Rules
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # 手动触发
   schedule:
-    - cron: '0 0,8,16 * * *'  # UTC时间，对应北京时间 08:00, 16:00, 00:00
+    # 每天运行3次（UTC时间0:00, 8:00, 16:00）
+    - cron: '0 0,8,16 * * *'
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - 'sources/**'
       - 'scripts/**'
-      - 'rules/custom/**'
       - '.github/workflows/**'
 
-env:
-  PYTHON_VERSION: '3.11'
+permissions:
+  contents: write  # 允许推送代码到仓库
 
 jobs:
-  update-rules:
+  update:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    timeout-minutes: 45
+    timeout-minutes: 30  # 超时时间
     
     steps:
+    # 步骤1: 检出代码
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    
-    - name: Setup Python
+        
+    # 步骤2: 设置Python环境
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install Python dependencies
+        python-version: '3.11'
+        
+    # 步骤3: 安装依赖
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests beautifulsoup4 lxml
-        echo "✅ Dependencies installed"
-    
-    - name: Prepare directories
-      run: |
-        echo "📁 Preparing directories..."
-        mkdir -p dist rules/raw rules/processed rules/custom
+        pip install requests
         
-        echo "🔧 Setting permissions..."
-        chmod +x scripts/*.py || true
+    # 步骤4: 创建必要目录
+    - name: Create directories
+      run: |
+        mkdir -p dist
+        mkdir -p rules/raw
+        mkdir -p rules/custom
+        chmod +x scripts/*.py 2>/dev/null || true
         
-        echo "✅ Directories ready"
-    
-    - name: Clean previous files
+    # 步骤5: 运行规则更新器
+    - name: Run rule updater
       run: |
-        echo "🧹 Cleaning old files..."
-        rm -rf rules/raw/* 2>/dev/null || true
-        rm -rf rules/processed/* 2>/dev/null || true
-        echo "✅ Cleanup complete"
-    
-    - name: Run rule updater (Adblock + Ping)
-      run: |
-        echo "🚀 Running Adblock rule updater with Ping detection..."
+        echo "Starting rule update..."
         python scripts/update_rules.py
         
-        echo "📊 Checking generated files..."
-        if [ -f dist/dns.txt ] && [ -s dist/dns.txt ]; then
-          dns_count=$(grep -v '^#' dist/dns.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          echo "✅ DNS rules: $dns_count lines"
-        else
-          echo "❌ DNS rules file missing or empty"
-          exit 1
-        fi
-        
-        if [ -f dist/hosts.txt ] && [ -s dist/hosts.txt ]; then
-          hosts_count=$(grep -v '^#' dist/hosts.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          echo "✅ Hosts rules: $hosts_count lines"
-        else
-          echo "❌ Hosts rules file missing or empty"
-          exit 1
-        fi
-        
-        if [ -f dist/filter.txt ] && [ -s dist/filter.txt ]; then
-          filter_count=$(grep -v '^!' dist/filter.txt | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          echo "✅ Filter rules: $filter_count lines"
-        else
-          echo "❌ Filter rules file missing or empty"
-          exit 1
-        fi
-    
+    # 步骤6: 格式化规则（如果存在）
     - name: Format rules
       run: |
-        echo "🎨 Formatting rules..."
-        if [ -f scripts/format_rules.py ]; then
+        if [ -f "scripts/format_rules.py" ]; then
+          echo "Formatting rules..."
           python scripts/format_rules.py
-          echo "✅ Formatting complete"
         else
-          echo "⚠️ Format script not found, skipping"
-        fi
-    
-    - name: Validate rules
-      run: |
-        echo "🔍 Validating rules..."
-        if [ -f scripts/validate_rules.py ]; then
-          python scripts/validate_rules.py --simple
-          echo "✅ Validation complete"
-        else
-          echo "⚠️ Validate script not found, skipping"
-        fi
-    
-    - name: Create summary report
-      if: always()
-      run: |
-        echo "📋 Creating summary report..."
-        
-        # Get current timestamp
-        TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-        
-        # Count rules
-        DNS_COUNT=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        HOSTS_COUNT=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        FILTER_COUNT=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        TOTAL_COUNT=$((DNS_COUNT + HOSTS_COUNT + FILTER_COUNT))
-        
-        # Check ping results
-        if [ -f dist/ping_results.json ]; then
-          VALID_COUNT=$(grep -o '"valid_count":[0-9]*' dist/ping_results.json | grep -o '[0-9]*' || echo "0")
-          FAILED_COUNT=$(grep -o '"failed_count":[0-9]*' dist/ping_results.json | grep -o '[0-9]*' || echo "0")
-          TOTAL_PING=$((VALID_COUNT + FAILED_COUNT))
-          if [ "$TOTAL_PING" -gt 0 ]; then
-            SUCCESS_RATE=$((VALID_COUNT * 100 / TOTAL_PING))
-          else
-            SUCCESS_RATE=0
-          fi
-        else
-          VALID_COUNT=0
-          FAILED_COUNT=0
-          SUCCESS_RATE=0
+          echo "Format script not found, skipping"
         fi
         
-        cat > $GITHUB_STEP_SUMMARY << EOF
-# 🎯 AdBlock Rules Update Summary
-        
-## 📊 Rule Statistics
-| Rule Type | Count | Format |
-|-----------|-------|--------|
-| DNS Rules | $DNS_COUNT | Pure domains |
-| Hosts Rules | $HOSTS_COUNT | 0.0.0.0 + domain |
-| Filter Rules | $FILTER_COUNT | Adblock syntax |
-| **Total** | **$TOTAL_COUNT** | All rules |
-
-## 🔍 Ping Detection Results
-- ✅ Reachable domains: **$VALID_COUNT**
-- ❌ Unreachable domains: **$FAILED_COUNT**
-- 📈 Success rate: **$SUCCESS_RATE%**
-
-## 🎯 Adblock Syntax Features
-- ✅ Whitelist rules (@@||domain.com^)
-- ✅ Domain blocking rules (||domain.com^)
-- ✅ Element hiding rules (##.ad-banner)
-- ✅ Modifier rules (\$script,third-party)
-- ✅ All domains verified by ping
-
-## ⏰ Update Information
-- **Update time**: $TIMESTAMP
-- **Next update**: Every 8 hours
-- **Additional sources**: sources/gz.txt
-- **Syntax version**: Adblock v1.0
-
-🤖 This update was automatically generated by GitHub Actions.
-EOF
-    
-    - name: Commit and push changes
-      if: success()
+    # 步骤7: 检查是否有变更
+    - name: Check for changes
+      id: check-changes
       run: |
-        echo "🚀 Checking for changes..."
+        echo "Checking for changes..."
         
-        # Configure git
+        # 配置Git用户
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         
-        # Check if there are any changes
-        if git diff --quiet --exit-code; then
-          echo "✅ No changes detected"
-          exit 0
-        fi
-        
-        echo "📝 Changes detected, creating commit..."
-        
-        # Add changed files
+        # 检查是否有变更
         git add -A
-        
-        # Get rule counts for commit message
-        DNS_COUNT=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        HOSTS_COUNT=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        FILTER_COUNT=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-        TOTAL_COUNT=$((DNS_COUNT + HOSTS_COUNT + FILTER_COUNT))
-        
-        # Create commit message
-        COMMIT_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-        
-        git commit -m "🤖 Auto-update adblock rules [$COMMIT_TIME]
-
+        if git diff --cached --quiet; then
+          echo "changes=false" >> $GITHUB_OUTPUT
+          echo "No changes detected"
+        else
+          echo "changes=true" >> $GITHUB_OUTPUT
+          echo "Changes detected"
+          
+          # 获取规则统计
+          DNS_COUNT=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          HOSTS_COUNT=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          FILTER_COUNT=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+          
+          # 创建提交信息
+          COMMIT_MESSAGE="🤖 Auto-update adblock rules $(date +'%Y-%m-%d %H:%M')
+          
 📊 Rules:
 - DNS: $DNS_COUNT domains
 - Hosts: $HOSTS_COUNT entries  
 - Filter: $FILTER_COUNT rules
-- Total: $TOTAL_COUNT rules
+- Total: $((DNS_COUNT + HOSTS_COUNT + FILTER_COUNT)) rules
 
 🎯 Adblock syntax with ping verification
-🌐 Includes sources/gz.txt
 🔄 Auto-updated by GitHub Actions"
+          
+          echo "commit_message<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
         
-        echo "📤 Pushing changes..."
+    # 步骤8: 提交并推送变更
+    - name: Commit and push changes
+      if: steps.check-changes.outputs.changes == 'true'
+      run: |
+        echo "Committing and pushing changes..."
+        git commit -m "${{ steps.check-changes.outputs.commit_message }}"
         git push
-        
-        echo "✅ Changes pushed successfully"
