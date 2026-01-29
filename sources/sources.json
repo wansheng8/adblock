@@ -75,6 +75,118 @@
       "priority": 900,
       "category": "chinese",
       "format": "adblock"
+    },
+    {
+      "name": "fanboy_annoyance",
+      "url": "https://www.fanboy.co.nz/fanboy-annoyance.txt",
+      "enabled": true,
+      "priority": 1000,
+      "category": "annoyances",
+      "format": "adblock"
+    },
+    {
+      "name": "fanboy_social",
+      "url": "https://www.fanboy.co.nz/fanboy-social.txt",
+      "enabled": true,
+      "priority": 1100,
+      "category": "social",
+      "format": "adblock"
+    },
+    {
+      "name": "peter_lowe_list",
+      "url": "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=adblockplus&showintro=0&mimetype=plaintext",
+      "enabled": true,
+      "priority": 1200,
+      "category": "ads",
+      "format": "adblock"
+    },
+    {
+      "name": "adaway",
+      "url": "https://adaway.org/hosts.txt",
+      "enabled": true,
+      "priority": 1300,
+      "category": "hosts",
+      "format": "hosts"
+    },
+    {
+      "name": "steven_black_hosts",
+      "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
+      "enabled": true,
+      "priority": 1400,
+      "category": "hosts",
+      "format": "hosts"
+    },
+    {
+      "name": "mvps_hosts",
+      "url": "https://winhelp2002.mvps.org/hosts.txt",
+      "enabled": true,
+      "priority": 1500,
+      "category": "hosts",
+      "format": "hosts"
+    },
+    {
+      "name": "someone_who_cares_hosts",
+      "url": "https://someonewhocares.org/hosts/zero/hosts",
+      "enabled": true,
+      "priority": 1600,
+      "category": "hosts",
+      "format": "hosts"
+    },
+    {
+      "name": "anti_ad",
+      "url": "https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/anti-ad-easylist.txt",
+      "enabled": true,
+      "priority": 1700,
+      "category": "chinese",
+      "format": "adblock"
+    },
+    {
+      "name": "xinggsf_adfilter",
+      "url": "https://raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/mv.txt",
+      "enabled": true,
+      "priority": 1800,
+      "category": "chinese",
+      "format": "adblock"
+    },
+    {
+      "name": "cjx_annoyance_list",
+      "url": "https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt",
+      "enabled": true,
+      "priority": 1900,
+      "category": "chinese",
+      "format": "adblock"
+    },
+    {
+      "name": "cjx_adblock_list",
+      "url": "https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjxlist.txt",
+      "enabled": true,
+      "priority": 2000,
+      "category": "chinese",
+      "format": "adblock"
+    },
+    {
+      "name": "neo_hosts",
+      "url": "https://cdn.jsdelivr.net/gh/neoFelhz/neohosts@gh-pages/basic/hosts",
+      "enabled": true,
+      "priority": 2100,
+      "category": "hosts",
+      "format": "hosts"
+    },
+    {
+      "name": "hblock_hosts",
+      "url": "https://hblock.molinero.dev/hosts",
+      "enabled": true,
+      "priority": 2200,
+      "category": "hosts",
+      "format": "hosts"
+    },
+    {
+      "name": "adguard_tracking",
+      "url": "https://filters.adtidy.org/extension/ublock/filters/3_optimized.txt",
+      "enabled": true,
+      "priority": 2300,
+      "category": "tracking",
+      "format": "adblock"
     }
   ],
   "metadata": {
