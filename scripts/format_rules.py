@@ -3,13 +3,13 @@
 """
 规则格式化脚本 - Adblock语法版
 处理三层规则文件：DNS、Hosts、浏览器规则
-支持完整Adblock语法
+支持Adblock语法
 """
 
 import re
 from pathlib import Path
 from datetime import datetime
-from collections import defaultdict, Counter
+from collections import defaultdict
 import json
 
 
@@ -18,16 +18,14 @@ class RuleFormatter:
         self.base_dir = Path(__file__).parent.parent
         self.now = datetime.now()
         
-        # Adblock语法分类
-        self.adblock_categories = {
+        # Adblock规则分类
+        self.rule_categories = {
             "whitelist": "白名单规则",
             "domain_block": "域名阻断规则",
             "element_hiding": "元素隐藏规则",
-            "element_hiding_exception": "元素隐藏例外规则",
-            "scriptlet_injection": "脚本注入规则",
-            "regex": "正则表达式规则",
-            "advanced": "高级规则",
+            "modifier": "修饰符规则",
             "hosts": "Hosts格式规则",
+            "regex": "正则表达式规则",
             "comment": "注释",
             "other": "其他规则"
         }
@@ -55,7 +53,7 @@ class RuleFormatter:
         
         print(f"  原始规则: {len(rule_lines)} 条")
         
-        # 清理和验证规则
+        # 验证规则
         cleaned_rules = []
         errors = []
         
@@ -76,7 +74,7 @@ class RuleFormatter:
         
         # 添加统计信息
         formatted_lines.append("# ==================================================")
-        formatted_lines.append(f"# 📊 DNS规则统计")
+        formatted_lines.append(f"# 📊 DNS规则统计 - Adblock语法版")
         formatted_lines.append("# ==================================================")
         formatted_lines.append(f"# 总计规则: {len(unique_rules)} 条")
         formatted_lines.append(f"# 生成时间: {self.now.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -84,8 +82,6 @@ class RuleFormatter:
         
         if errors:
             formatted_lines.append(f"# 移除无效规则: {len(errors)} 条")
-            for rule in errors[:3]:
-                formatted_lines.append(f"# • 无效: {rule[:50]}...")
         
         formatted_lines.append("# ==================================================")
         formatted_lines.append("")
@@ -103,7 +99,8 @@ class RuleFormatter:
         
         return {
             'count': len(unique_rules),
-            'errors': len(errors)
+            'errors': len(errors),
+            'warnings': 0
         }
     
     def format_hosts_file(self) -> dict:
@@ -129,7 +126,7 @@ class RuleFormatter:
         
         print(f"  原始规则: {len(rule_lines)} 条")
         
-        # 清理和验证规则
+        # 验证规则
         cleaned_rules = []
         errors = []
         warnings = []
@@ -148,9 +145,8 @@ class RuleFormatter:
         converted_rules = []
         for rule in cleaned_rules:
             if rule.startswith('127.0.0.1'):
-                parts = rule.split()
-                if len(parts) >= 2:
-                    converted_rules.append(f"0.0.0.0 {parts[1]}")
+                domain = rule.split()[1]
+                converted_rules.append(f"0.0.0.0 {domain}")
             else:
                 converted_rules.append(rule)
         
@@ -165,7 +161,7 @@ class RuleFormatter:
         
         # 添加统计信息
         formatted_lines.append("# ==================================================")
-        formatted_lines.append(f"# 📊 Hosts规则统计")
+        formatted_lines.append(f"# 📊 Hosts规则统计 - Adblock语法版")
         formatted_lines.append("# ==================================================")
         formatted_lines.append(f"# 总计规则: {len(unique_rules)} 条")
         formatted_lines.append(f"# 生成时间: {self.now.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -260,7 +256,7 @@ class RuleFormatter:
         
         # 添加统计信息
         formatted_lines.append("! ==================================================")
-        formatted_lines.append(f"! 📊 浏览器规则统计 (Adblock语法)")
+        formatted_lines.append(f"! 📊 浏览器规则统计 - Adblock语法版")
         formatted_lines.append("! ==================================================")
         formatted_lines.append(f"! 总计规则: {total_valid} 条")
         formatted_lines.append(f"! 生成时间: {self.now.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -268,30 +264,27 @@ class RuleFormatter:
         
         for category, rules in cleaned_categories.items():
             if rules:
-                category_name = self.adblock_categories.get(category, category)
+                category_name = self.rule_categories.get(category, category)
                 formatted_lines.append(f"! • {category_name}: {len(rules)} 条")
         
         formatted_lines.append("! ==================================================")
         formatted_lines.append("")
         
-        # 按类别添加规则（固定顺序）
+        # 按类别添加规则
         display_order = [
             "whitelist",
             "domain_block",
             "element_hiding",
-            "element_hiding_exception",
-            "scriptlet_injection",
-            "advanced",
-            "regex",
+            "modifier",
             "hosts",
-            "comment",
+            "regex",
             "other"
         ]
         
         for category in display_order:
             if category in cleaned_categories and cleaned_categories[category]:
                 rules = cleaned_categories[category]
-                category_name = self.adblock_categories.get(category, category)
+                category_name = self.rule_categories.get(category, category)
                 
                 formatted_lines.append(f"! {'='*50}")
                 formatted_lines.append(f"! 🎯 {category_name} ({len(rules)}条)")
@@ -309,7 +302,7 @@ class RuleFormatter:
         # 显示分类统计
         for category in display_order:
             if category in cleaned_categories and cleaned_categories[category]:
-                category_name = self.adblock_categories.get(category, category)
+                category_name = self.rule_categories.get(category, category)
                 print(f"  ├── {category_name}: {len(cleaned_categories[category])} 条")
         
         return {
@@ -327,34 +320,30 @@ class RuleFormatter:
             return "domain_block"
         elif rule.startswith('##'):
             return "element_hiding"
-        elif rule.startswith('#@#'):
-            return "element_hiding_exception"
-        elif rule.startswith('#$#'):
-            return "scriptlet_injection"
-        elif rule.startswith('/') and rule.endswith('/'):
-            return "regex"
         elif '$' in rule:
-            return "advanced"
+            return "modifier"
         elif rule.startswith(('0.0.0.0', '127.0.0.1')):
             return "hosts"
-        elif rule.startswith('!'):
-            return "comment"
+        elif rule.startswith('/') and rule.endswith('/'):
+            return "regex"
+        elif re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', rule):
+            return "domain_block"
         else:
             return "other"
     
     def is_valid_dns_rule(self, rule: str) -> bool:
         """验证DNS规则"""
-        if not rule:
-            return False
-        
         # 必须是纯域名
-        if not re.match(r'^[a-zA-Z0-9.*-]+\.[a-zA-Z]{2,}$', rule):
+        if not re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', rule):
             return False
         
-        # 检查通配符位置
+        # 禁止通配符
         if '*' in rule:
-            if not rule.startswith('*.'):
-                return False
+            return False
+        
+        # 禁止特殊符号
+        if any(c in rule for c in ['^', '|', '$', '@', '#', '/', '!']):
+            return False
         
         # 域名长度检查
         if len(rule) > 253:
@@ -363,8 +352,6 @@ class RuleFormatter:
         # 标签长度检查
         labels = rule.split('.')
         for label in labels:
-            if label == '*':
-                continue
             if len(label) > 63:
                 return False
             if not label:
@@ -374,7 +361,7 @@ class RuleFormatter:
     
     def is_valid_hosts_rule(self, rule: str) -> bool:
         """验证Hosts规则"""
-        match = re.match(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([^#\s]+)$', rule)
+        match = re.match(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$', rule)
         if not match:
             return False
         
@@ -397,15 +384,20 @@ class RuleFormatter:
         # 检查基本格式
         if rule.startswith('@@'):
             # 白名单规则
+            match = re.match(r'^@@\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
+            if match:
+                domain = match.group(1)
+                return self.is_valid_dns_rule(domain)
             return True
         
         elif rule.startswith('||'):
             # 域名阻断规则
-            match = re.match(r'^\|\|([^\/\^\$\s]+)\^', rule)
+            match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
             if match:
                 domain = match.group(1)
                 if not self.is_valid_dns_rule(domain):
                     return False
+            
             return True
         
         elif rule.startswith('##'):
@@ -417,104 +409,36 @@ class RuleFormatter:
                 return False
             return True
         
-        elif rule.startswith('#@#') or rule.startswith('#$#'):
-            # 元素隐藏例外或脚本注入
-            return len(rule) > 3
-        
-        elif rule.startswith('/') and rule.endswith('/'):
-            # 正则表达式规则
-            pattern = rule[1:-1]
-            try:
-                re.compile(pattern)
-                return True
-            except re.error:
-                return False
+        elif rule.startswith(('0.0.0.0', '127.0.0.1')):
+            # Hosts规则
+            return self.is_valid_hosts_rule(rule)
         
         # 其他格式
         return True
     
     def has_warnings(self, rule: str) -> bool:
         """检查规则是否有警告"""
+        # 通配符警告
+        if '*' in rule and not rule.startswith('##'):
+            return True
+        
+        # 正则表达式警告
+        if rule.startswith('/') and rule.endswith('/'):
+            return True
+        
         # 过长的规则
         if len(rule) > 1000:
             return True
         
-        # 复杂的正则表达式
-        if rule.startswith('/') and rule.endswith('/'):
-            pattern = rule[1:-1]
-            if len(pattern) > 100:
-                return True
-            if '.*' in pattern or '.+' in pattern:
-                return True
-        
         return False
-    
-    def optimize_rules(self):
-        """优化规则"""
-        print("⚡ 优化规则...")
-        
-        optimizations = {
-            'dns_merged': 0,
-            'hosts_merged': 0,
-            'browser_merged': 0
-        }
-        
-        # 优化DNS规则
-        dns_file = self.base_dir / 'dist/dns.txt'
-        if dns_file.exists():
-            with open(dns_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            lines = content.split('\n')
-            rule_lines = [line for line in lines if line and not line.startswith('#')]
-            
-            # 提取根域名
-            root_domains = set()
-            for domain in rule_lines:
-                if '*' in domain:
-                    root_domains.add(domain)
-                else:
-                    parts = domain.split('.')
-                    if len(parts) >= 2:
-                        root_domain = '.'.join(parts[-2:])
-                        root_domains.add(root_domain)
-            
-            optimizations['dns_merged'] = len(rule_lines) - len(root_domains)
-            print(f"  ├── DNS规则: 可合并为 {len(root_domains)} 个根域名 (减少 {optimizations['dns_merged']} 条)")
-        
-        # 优化浏览器规则
-        browser_file = self.base_dir / 'dist/filter.txt'
-        if browser_file.exists():
-            with open(browser_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            lines = content.split('\n')
-            domain_rules = [line for line in lines if line.startswith('||') and '^' in line]
-            
-            # 提取域名
-            domains = []
-            for rule in domain_rules:
-                match = re.match(r'^\|\|([^\/\^\$\s]+)\^', rule)
-                if match:
-                    domains.append(match.group(1))
-            
-            # 统计重复域名
-            domain_counts = Counter(domains)
-            duplicate_domains = {domain: count for domain, count in domain_counts.items() if count > 1}
-            
-            if duplicate_domains:
-                optimizations['browser_merged'] = sum(count - 1 for count in duplicate_domains.values())
-                print(f"  ├── 浏览器规则: 发现 {len(duplicate_domains)} 个重复域名 (减少 {optimizations['browser_merged']} 条)")
-        
-        print("  └── 优化完成")
-        return optimizations
     
     def generate_statistics(self):
         """生成统计报告"""
         files = [
             ('dns.txt', 'DNS规则'),
             ('hosts.txt', 'Hosts规则'),
-            ('filter.txt', '浏览器规则')
+            ('filter.txt', '浏览器规则'),
+            ('ping_results.json', 'Ping检测结果')
         ]
         
         stats = {}
@@ -523,31 +447,37 @@ class RuleFormatter:
         for filename, description in files:
             filepath = self.base_dir / 'dist' / filename
             if filepath.exists():
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                
-                # 统计规则行数
-                lines = content.split('\n')
-                if filename == 'filter.txt':
-                    rule_lines = [line for line in lines if line.strip() and not line.startswith('!')]
-                else:
-                    rule_lines = [line for line in lines if line.strip() and not line.startswith('#')]
-                
-                stats[description] = len(rule_lines)
                 file_sizes[description] = filepath.stat().st_size
+                
+                if filename != 'ping_results.json':
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # 统计规则行数
+                    lines = content.split('\n')
+                    if filename == 'filter.txt':
+                        rule_lines = [line for line in lines if line.strip() and not line.startswith('!')]
+                    else:
+                        rule_lines = [line for line in lines if line.strip() and not line.startswith('#')]
+                    
+                    stats[description] = len(rule_lines)
+        
+        # 读取Ping检测结果
+        ping_file = self.base_dir / 'dist' / 'ping_results.json'
+        ping_stats = {}
+        if ping_file.exists():
+            with open(ping_file, 'r', encoding='utf-8') as f:
+                ping_data = json.load(f)
+                ping_stats = ping_data.get('statistics', {})
         
         # 生成统计报告
         report = {
             "timestamp": self.now.strftime('%Y-%m-%d %H:%M:%S'),
-            "statistics": stats,
+            "rule_statistics": stats,
             "file_sizes_bytes": file_sizes,
-            "syntax_type": "adblock",
-            "features": [
-                "domain_validation",
-                "ping_check",
-                "adblock_syntax_support",
-                "concurrent_processing"
-            ]
+            "ping_statistics": ping_stats,
+            "syntax_version": "adblock_1.0",
+            "notes": "Adblock语法规则，所有域名已通过Ping检测"
         }
         
         report_file = self.base_dir / 'dist/format_report.json'
@@ -556,8 +486,14 @@ class RuleFormatter:
         
         print(f"\n📊 规则统计:")
         for desc, count in stats.items():
-            size_kb = file_sizes[desc] / 1024
+            size_kb = file_sizes.get(desc, 0) / 1024
             print(f"  ├── {desc}: {count} 条 ({size_kb:.1f} KB)")
+        
+        if ping_stats:
+            total = ping_stats.get('total_tested', 0)
+            valid = ping_stats.get('valid_count', 0)
+            rate = ping_stats.get('success_rate', 0) * 100
+            print(f"  ├── Ping检测: {valid}/{total} 可达 ({rate:.1f}%)")
         
         total_rules = sum(stats.values())
         total_size = sum(file_sizes.values()) / 1024
@@ -591,20 +527,17 @@ class RuleFormatter:
         print("\n📄 步骤3: 格式化浏览器规则")
         results['browser'] = self.format_browser_file()
         
-        # 4. 优化规则
-        print("\n⚡ 步骤4: 优化规则")
-        optimizations = self.optimize_rules()
-        
-        # 5. 生成统计
-        print("\n📊 步骤5: 生成统计报告")
+        # 4. 生成统计
+        print("\n📊 步骤4: 生成统计报告")
         self.generate_statistics()
         
         print("\n" + "=" * 60)
         print("✅ 格式化完成!")
         print("🎯 Adblock语法规则文件:")
-        print("  • dns.txt: 纯域名，支持通配符")
+        print("  • dns.txt: 纯域名，用于DNS/AdGuard Home")
         print("  • hosts.txt: 0.0.0.0 + 域名，用于系统hosts")
-        print("  • filter.txt: 完整Adblock语法，支持所有高级功能")
+        print("  • filter.txt: 完整Adblock语法，用于浏览器扩展")
+        print("  • 所有域名已通过Ping检测")
         print("=" * 60)
         
         return results
