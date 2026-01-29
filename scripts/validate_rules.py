@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 规则验证脚本 - Adblock语法版
-验证三层规则文件的语法正确性
+验证三层规则文件的语法正确性，支持Adblock语法
 """
 
 import re
 import sys
 import json
-import socket
-import time
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
@@ -22,55 +20,105 @@ class RuleValidator:
         
         # Adblock语法模式
         self.adblock_patterns = {
-            'whitelist': re.compile(r'^@@'),
-            'domain_block': re.compile(r'^\|\|([^\/\^\$\s]+)\^'),
+            'whitelist': re.compile(r'^@@\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^'),
+            'domain_block': re.compile(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^'),
             'element_hiding': re.compile(r'^##'),
-            'regex': re.compile(r'^/(.*)/$'),
-            'hosts': re.compile(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([^#\s]+)'),
-            'advanced': re.compile(r'\$[a-z]+='),
-            'comment': re.compile(r'^[!\[#]')
+            'hosts_rule': re.compile(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$'),
+            'modifier_rule': re.compile(r'.*\$.+'),
+            'regex_rule': re.compile(r'^/.*/$'),
+            'simple_domain': re.compile(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
         }
     
-    def validate_domain_format(self, domain: str) -> bool:
-        """验证域名格式"""
-        if not domain or len(domain) > 253:
-            return False
+    def classify_rule(self, rule: str) -> Dict[str, Any]:
+        """分类Adblock规则类型"""
+        rule = rule.strip()
         
-        # 允许通配符
-        if '*' in domain:
-            if not domain.startswith('*.'):
-                return False
-            domain = domain[2:]
+        if not rule or rule.startswith(('!', '#', '[')):
+            return {'type': 'comment', 'valid': True}
         
-        # 基本域名格式验证
-        if not re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', domain):
-            return False
+        result = {
+            'type': 'unknown',
+            'valid': False,
+            'domain': '',
+            'adblock_syntax': False,
+            'raw_rule': rule
+        }
         
-        # 检查标签长度
-        labels = domain.split('.')
-        for label in labels:
-            if len(label) > 63 or not label:
-                return False
-        
-        return True
-    
-    def ping_domain(self, domain: str) -> Tuple[bool, str]:
-        """Ping检查域名"""
-        if not domain or domain.startswith('*.'):
-            return True, "通配符域名跳过检查"
-        
-        try:
-            # 尝试DNS解析
-            start_time = time.time()
-            socket.setdefaulttimeout(3)
-            ip_address = socket.gethostbyname(domain)
-            resolve_time = time.time() - start_time
+        # 1. 白名单规则
+        if rule.startswith('@@'):
+            result['type'] = 'whitelist'
+            result['adblock_syntax'] = True
             
-            return True, f"DNS解析成功: {ip_address} ({resolve_time:.2f}s)"
-        except socket.gaierror:
-            return False, "DNS解析失败"
-        except Exception as e:
-            return False, f"检查失败: {str(e)}"
+            match = re.match(r'^@@\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
+            if match:
+                result['domain'] = match.group(1)
+                result['valid'] = True
+            
+            return result
+        
+        # 2. 域名阻断规则
+        if rule.startswith('||') and '^' in rule:
+            result['type'] = 'domain_block'
+            result['adblock_syntax'] = True
+            
+            match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
+            if match:
+                result['domain'] = match.group(1)
+                result['valid'] = True
+            
+            return result
+        
+        # 3. 元素隐藏规则
+        if rule.startswith('##'):
+            result['type'] = 'element_hiding'
+            result['adblock_syntax'] = True
+            result['valid'] = True if len(rule) > 2 else False
+            return result
+        
+        # 4. Hosts规则
+        match = re.match(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$', rule)
+        if match:
+            result['type'] = 'hosts_rule'
+            result['domain'] = match.group(2)
+            result['valid'] = True
+            return result
+        
+        # 5. 带修饰符的规则
+        if '$' in rule:
+            result['type'] = 'modifier_rule'
+            result['adblock_syntax'] = True
+            
+            # 提取域名
+            base_part = rule.split('$')[0]
+            match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', base_part)
+            if match:
+                result['domain'] = match.group(1)
+            
+            result['valid'] = True
+            return result
+        
+        # 6. 正则表达式规则
+        if rule.startswith('/') and rule.endswith('/'):
+            result['type'] = 'regex_rule'
+            result['adblock_syntax'] = True
+            result['valid'] = True
+            return result
+        
+        # 7. 纯域名规则
+        if re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', rule):
+            result['type'] = 'simple_domain'
+            result['domain'] = rule
+            result['valid'] = True
+            return result
+        
+        # 8. 其他Adblock格式
+        if re.match(r'^\|\|', rule) or re.match(r'^@@', rule) or '^' in rule:
+            result['type'] = 'adblock_other'
+            result['adblock_syntax'] = True
+            result['valid'] = True
+            return result
+        
+        return result
     
     def validate_dns_file(self) -> dict:
         """验证DNS规则文件"""
@@ -96,24 +144,22 @@ class RuleValidator:
             
             total_rules += 1
             
-            # 验证域名格式
-            if self.validate_domain_format(line):
-                valid_rules += 1
-                
-                # 对有效域名进行ping检查
-                if not line.startswith('*.'):
-                    ping_result, ping_msg = self.ping_domain(line)
-                    if not ping_result:
-                        warnings.append({
-                            'line': line_num,
-                            'rule': line[:80] + ('...' if len(line) > 80 else ''),
-                            'message': f'域名无法访问: {ping_msg}'
-                        })
+            rule_info = self.classify_rule(line)
+            
+            if rule_info['valid'] and rule_info['type'] == 'simple_domain':
+                if self.is_valid_dns_rule(rule_info.get('domain', '')):
+                    valid_rules += 1
+                else:
+                    errors.append({
+                        'line': line_num,
+                        'rule': line[:80] + ('...' if len(line) > 80 else ''),
+                        'message': '无效的DNS规则格式'
+                    })
             else:
                 errors.append({
                     'line': line_num,
                     'rule': line[:80] + ('...' if len(line) > 80 else ''),
-                    'message': '无效的DNS规则格式'
+                    'message': f'不支持的DNS规则类型: {rule_info["type"]}'
                 })
         
         return {
@@ -121,7 +167,7 @@ class RuleValidator:
             'valid': valid_rules,
             'invalid': total_rules - valid_rules,
             'errors': errors[:10],
-            'warnings': warnings[:5]
+            'warnings': warnings
         }
     
     def validate_hosts_file(self) -> dict:
@@ -148,11 +194,10 @@ class RuleValidator:
             
             total_rules += 1
             
-            # 验证Hosts规则格式
-            match = re.match(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([^#\s]+)$', line)
-            if match:
-                domain = match.group(2)
-                if self.validate_domain_format(domain):
+            rule_info = self.classify_rule(line)
+            
+            if rule_info['valid'] and rule_info['type'] == 'hosts_rule':
+                if self.is_valid_dns_rule(rule_info.get('domain', '')):
                     valid_rules += 1
                     
                     # 检查是否使用127.0.0.1
@@ -162,21 +207,11 @@ class RuleValidator:
                             'rule': line[:80] + ('...' if len(line) > 80 else ''),
                             'message': '建议使用0.0.0.0而非127.0.0.1'
                         })
-                    
-                    # ping检查
-                    if not domain.startswith('*.'):
-                        ping_result, ping_msg = self.ping_domain(domain)
-                        if not ping_result:
-                            warnings.append({
-                                'line': line_num,
-                                'rule': line[:80] + ('...' if len(line) > 80 else ''),
-                                'message': f'域名无法访问: {ping_msg}'
-                            })
                 else:
                     errors.append({
                         'line': line_num,
                         'rule': line[:80] + ('...' if len(line) > 80 else ''),
-                        'message': '无效的域名格式'
+                        'message': '无效的Hosts规则格式'
                     })
             else:
                 errors.append({
@@ -217,8 +252,7 @@ class RuleValidator:
             
             total_rules += 1
             
-            # 分类和验证规则
-            rule_info = self.classify_adblock_rule(line)
+            rule_info = self.classify_rule(line)
             
             if rule_info['valid']:
                 valid_rules += 1
@@ -230,16 +264,6 @@ class RuleValidator:
                         'rule': line[:80] + ('...' if len(line) > 80 else ''),
                         'message': self.get_warning_message(line, rule_info)
                     })
-                
-                # 对域名规则进行ping检查
-                if rule_info.get('domain') and not rule_info['domain'].startswith('*.'):
-                    ping_result, ping_msg = self.ping_domain(rule_info['domain'])
-                    if not ping_result:
-                        warnings.append({
-                            'line': line_num,
-                            'rule': line[:80] + ('...' if len(line) > 80 else ''),
-                            'message': f'域名无法访问: {ping_msg}'
-                        })
             else:
                 errors.append({
                     'line': line_num,
@@ -255,76 +279,36 @@ class RuleValidator:
             'warnings': warnings[:5]
         }
     
-    def classify_adblock_rule(self, rule: str) -> Dict[str, Any]:
-        """分类Adblock规则"""
-        if not rule:
-            return {'type': 'empty', 'valid': False}
+    def is_valid_dns_rule(self, domain: str) -> bool:
+        """验证DNS规则"""
+        if not domain:
+            return False
         
-        if rule.startswith('!'):
-            return {'type': 'comment', 'valid': True}
+        # 必须是纯域名
+        if not re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', domain):
+            return False
         
-        result = {
-            'type': 'unknown',
-            'valid': False,
-            'domain': '',
-            'raw_rule': rule
-        }
+        # 禁止通配符
+        if '*' in domain:
+            return False
         
-        if rule.startswith('@@'):
-            result['type'] = 'whitelist'
-            # 提取域名
-            match = re.match(r'^@@\|\|([^\/\^\$\s]+)\^', rule)
-            if match:
-                result['domain'] = match.group(1)
-                if self.validate_domain_format(result['domain']):
-                    result['valid'] = True
-            else:
-                result['valid'] = True  # 白名单规则可能没有域名
+        # 禁止特殊符号
+        if any(c in domain for c in ['^', '|', '$', '@', '#', '/']):
+            return False
         
-        elif rule.startswith('||') and '^' in rule:
-            result['type'] = 'domain_block'
-            match = re.match(r'^\|\|([^\/\^\$\s]+)\^', rule)
-            if match:
-                result['domain'] = match.group(1)
-                if self.validate_domain_format(result['domain']):
-                    result['valid'] = True
+        # 域名长度检查
+        if len(domain) > 253:
+            return False
         
-        elif rule.startswith('##'):
-            result['type'] = 'element_hiding'
-            result['valid'] = True if len(rule) > 2 else False
+        # 标签长度检查
+        labels = domain.split('.')
+        for label in labels:
+            if len(label) > 63:
+                return False
+            if not label:
+                return False
         
-        elif rule.startswith('/') and rule.endswith('/'):
-            result['type'] = 'regex'
-            try:
-                re.compile(rule[1:-1])
-                result['valid'] = True
-            except re.error:
-                result['valid'] = False
-        
-        elif '$' in rule:
-            result['type'] = 'advanced'
-            result['valid'] = True
-            # 尝试提取域名
-            match = re.match(r'^\|\|([^\/\^\$\s]+)\^', rule.split('$')[0])
-            if match:
-                result['domain'] = match.group(1)
-        
-        elif re.match(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+', rule):
-            result['type'] = 'hosts'
-            match = re.match(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([^#\s]+)', rule)
-            if match:
-                result['domain'] = match.group(2)
-                if self.validate_domain_format(result['domain']):
-                    result['valid'] = True
-        
-        else:
-            # 尝试作为简单域名
-            if self.validate_domain_format(rule):
-                result['type'] = 'simple_domain'
-                result['domain'] = rule
-                result['valid'] = True
-        
-        return result
+        return True
     
     def has_warnings(self, rule: str, rule_info: Dict[str, Any]) -> bool:
         """检查规则是否有警告"""
@@ -332,14 +316,20 @@ class RuleValidator:
         if len(rule) > 1000:
             return True
         
-        # 复杂的正则表达式
-        if rule_info['type'] == 'regex':
-            pattern = rule[1:-1]
-            if len(pattern) > 100:
-                return True
+        # 通配符警告
+        if '*' in rule and not rule.startswith('##'):
+            return True
+        
+        # 正则表达式警告
+        if rule.startswith('/') and rule.endswith('/'):
+            return True
         
         # 127.0.0.1警告
         if rule.startswith('127.0.0.1'):
+            return True
+        
+        # 过长的元素隐藏规则
+        if rule_info['type'] == 'element_hiding' and len(rule) > 500:
             return True
         
         return False
@@ -348,10 +338,14 @@ class RuleValidator:
         """获取警告消息"""
         if len(rule) > 1000:
             return "规则过长"
-        elif rule_info['type'] == 'regex':
+        elif '*' in rule and not rule.startswith('##'):
+            return "规则包含通配符*"
+        elif rule.startswith('/') and rule.endswith('/'):
             return "规则使用正则表达式"
         elif rule.startswith('127.0.0.1'):
             return "建议使用0.0.0.0而非127.0.0.1"
+        elif rule_info['type'] == 'element_hiding' and len(rule) > 500:
+            return "CSS选择器过长"
         
         return "规则可能有潜在问题"
     
@@ -418,12 +412,8 @@ class RuleValidator:
                 "invalid_rules": total_invalid,
                 "validity_rate": overall_validity if total_rules > 0 else 0
             },
-            "syntax_type": "adblock",
-            "validation_features": [
-                "domain_format_validation",
-                "ping_check",
-                "adblock_syntax_validation"
-            ]
+            "syntax_version": "adblock_1.0",
+            "notes": "Adblock语法验证，支持完整Adblock语法规则"
         }
         
         # 保存报告
@@ -453,7 +443,8 @@ class RuleValidator:
         required_files = [
             ('dns.txt', 'DNS规则文件'),
             ('hosts.txt', 'Hosts规则文件'),
-            ('filter.txt', '浏览器规则文件')
+            ('filter.txt', '浏览器规则文件'),
+            ('ping_results.json', 'Ping检测结果')
         ]
         
         all_exist = True
@@ -469,28 +460,38 @@ class RuleValidator:
                     all_exist = False
                 else:
                     # 粗略检查规则数量
-                    with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-                        content = f.read()
-                    
-                    if filename == 'filter.txt':
-                        lines = [line.strip() for line in content.split('\n') if line.strip() and not line.startswith('!')]
-                    else:
-                        lines = [line.strip() for line in content.split('\n') if line.strip() and not line.startswith('#')]
-                    
-                    print(f"✅ {description}: 存在 ({file_size:,} 字节, {len(lines)} 条规则)")
-                    
-                    # 检查Adblock语法规则
-                    if filename == 'filter.txt' and len(lines) > 0:
-                        adblock_rules = 0
-                        for line in lines[:20]:  # 只检查前20行
-                            if any(line.startswith(pattern) for pattern in ['||', '@@', '##', '#@#', '#$#', '/']):
-                                adblock_rules += 1
+                    if filename != 'ping_results.json':
+                        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                            content = f.read()
                         
-                        if adblock_rules > 0:
-                            print(f"  ⚡ 检测到Adblock语法规则: {adblock_rules} 条")
+                        if filename == 'filter.txt':
+                            lines = [line.strip() for line in content.split('\n') if line.strip() and not line.startswith('!')]
+                        else:
+                            lines = [line.strip() for line in content.split('\n') if line.strip() and not line.startswith('#')]
+                        
+                        print(f"✅ {description}: 存在 ({file_size:,} 字节, {len(lines)} 条规则)")
+                    else:
+                        print(f"✅ {description}: 存在 ({file_size:,} 字节)")
             else:
                 print(f"❌ {description}: 不存在")
                 all_exist = False
+        
+        # 检查Ping检测结果
+        ping_file = self.base_dir / 'dist/ping_results.json'
+        if ping_file.exists():
+            try:
+                with open(ping_file, 'r', encoding='utf-8') as f:
+                    ping_data = json.load(f)
+                
+                valid = ping_data.get('statistics', {}).get('valid_count', 0)
+                failed = ping_data.get('statistics', {}).get('failed_count', 0)
+                total = valid + failed
+                
+                if total > 0:
+                    rate = (valid / total) * 100
+                    print(f"📊 Ping检测结果: {valid}/{total} 可达 ({rate:.1f}%)")
+            except:
+                print("⚠️  Ping检测结果文件格式错误")
         
         if all_exist:
             print("\n✅ 所有规则文件都存在且非空")
