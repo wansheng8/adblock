@@ -1,236 +1,78 @@
 {
-  "update_frequency": 8,
-  "timezone": "Asia/Shanghai",
-  "language": "zh-CN",
-  "description": "多源去广告规则自动更新系统 - 主流规则源",
-  "version": "1.0.0",
+  "name": "AdBlock Rules Sources - Adblock语法版",
+  "description": "广告拦截规则源配置 - 支持完整Adblock语法",
+  "version": "adblock_2.0",
+  "last_updated": "2024-01-01",
   "sources": [
     {
-      "name": "AdGuard Base filter",
-      "url": "https://filters.adtidy.org/android/filters/2_optimized.txt",
-      "type": "filter",
+      "name": "easylist",
+      "url": "https://easylist.to/easylist/easylist.txt",
       "enabled": true,
-      "priority": 1,
-      "description": "AdGuard 官方基础广告过滤规则",
-      "license": "GPL-3.0",
-      "update_frequency": "daily"
+      "priority": 100,
+      "category": "ads",
+      "syntax": "adblock"
     },
     {
-      "name": "AdGuard Chinese filter",
-      "url": "https://filters.adtidy.org/android/filters/224_optimized.txt",
-      "type": "filter",
+      "name": "easyprivacy",
+      "url": "https://easylist.to/easylist/easyprivacy.txt",
       "enabled": true,
-      "priority": 1,
-      "description": "AdGuard 中文广告过滤规则",
-      "license": "GPL-3.0",
-      "update_frequency": "daily"
+      "priority": 200,
+      "category": "privacy",
+      "syntax": "adblock"
     },
     {
-      "name": "AdGuard Mobile Ads filter",
-      "url": "https://filters.adtidy.org/android/filters/11_optimized.txt",
-      "type": "filter",
+      "name": "adguard_base",
+      "url": "https://filters.adtidy.org/extension/ublock/filters/2.txt",
       "enabled": true,
-      "priority": 1,
-      "description": "AdGuard 移动端广告过滤规则",
-      "license": "GPL-3.0",
-      "update_frequency": "daily"
+      "priority": 300,
+      "category": "base",
+      "syntax": "adblock"
     },
     {
-      "name": "AdGuard DNS filter",
-      "url": "https://filters.adtidy.org/extension/filters/15.txt",
-      "type": "dns",
+      "name": "adguard_spyware",
+      "url": "https://filters.adtidy.org/extension/ublock/filters/3.txt",
       "enabled": true,
-      "priority": 2,
-      "description": "AdGuard 官方 DNS 过滤规则",
-      "license": "GPL-3.0",
-      "update_frequency": "daily"
+      "priority": 400,
+      "category": "spyware",
+      "syntax": "adblock"
     },
     {
-      "name": "AdRules DNS List",
-      "url": "https://adrules.top/dns.txt",
-      "type": "dns",
+      "name": "adguard_social",
+      "url": "https://filters.adtidy.org/extension/ublock/filters/4.txt",
       "enabled": true,
-      "priority": 2,
-      "description": "AdRules 提供的 DNS 广告拦截规则",
-      "license": "Custom",
-      "update_frequency": "daily"
+      "priority": 500,
+      "category": "social",
+      "syntax": "adblock"
     },
     {
-      "name": "CJX's Annoyance List",
-      "url": "https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt",
-      "type": "filter",
+      "name": "adguard_annoyances",
+      "url": "https://filters.adtidy.org/extension/ublock/filters/14.txt",
       "enabled": true,
-      "priority": 3,
-      "description": "CJX 恼人元素移除规则",
-      "license": "MIT",
-      "update_frequency": "daily"
+      "priority": 600,
+      "category": "annoyances",
+      "syntax": "adblock"
     },
     {
-      "name": "EasyList",
-      "url": "https://easylist-downloads.adblockplus.org/easylist.txt",
-      "type": "filter",
+      "name": "adguard_mobile",
+      "url": "https://filters.adtidy.org/extension/ublock/filters/11.txt",
       "enabled": true,
-      "priority": 1,
-      "description": "全球最常用的广告过滤规则",
-      "license": "GPL-3.0",
-      "update_frequency": "daily"
-    },
-    {
-      "name": "EasyList China",
-      "url": "https://easylist-downloads.adblockplus.org/easylistchina.txt",
-      "type": "filter",
-      "enabled": true,
-      "priority": 1,
-      "description": "EasyList 中文规则",
-      "license": "GPL-3.0",
-      "update_frequency": "daily"
-    },
-    {
-      "name": "EasyPrivacy",
-      "url": "https://easylist-downloads.adblockplus.org/easyprivacy.txt",
-      "type": "filter",
-      "enabled": true,
-      "priority": 2,
-      "description": "隐私与跟踪防护规则",
-      "license": "GPL-3.0",
-      "update_frequency": "daily"
-    },
-    {
-      "name": "xinggsf mv",
-      "url": "https://raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/mv.txt",
-      "type": "filter",
-      "enabled": true,
-      "priority": 3,
-      "description": "视频广告拦截规则",
-      "license": "Custom",
-      "update_frequency": "daily"
-    },
-    {
-      "name": "jiekouAD",
-      "url": "https://code.gitlink.org.cn/damengzhu/banad/raw/branch/main/jiekouAD.txt",
-      "type": "filter",
-      "enabled": true,
-      "priority": 3,
-      "description": "接口广告拦截规则",
-      "license": "Custom",
-      "update_frequency": "daily"
-    },
-    {
-      "name": "AWAvenue Ads Rule",
-      "url": "https://adrules.top/dns.txt",
-      "type": "dns",
-      "enabled": true,
-      "priority": 2,
-      "description": "AWAvenue DNS 广告拦截规则",
-      "license": "Custom",
-      "update_frequency": "daily"
-    },
-    {
-      "name": "DNS-Blocklists Light",
-      "url": "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/light.txt",
-      "type": "dns",
-      "enabled": true,
-      "priority": 2,
-      "description": "HaGeZi 轻量级 DNS 黑名单",
-      "license": "MIT",
-      "update_frequency": "daily"
-    },
-    {
-      "name": "Hblock",
-      "url": "https://raw.githubusercontent.com/damienvandesande/HBlock/master/hosts",
-      "type": "host",
-      "enabled": true,
-      "priority": 2,
-      "description": "Hblock hosts 广告与恶意域名拦截",
-      "license": "MIT",
-      "update_frequency": "daily"
-    },
-    {
-      "name": "OISD Basic",
-      "url": "https://raw.githubusercontent.com/OISD/OISD-blocklist/master/hosts_basic.txt",
-      "type": "host",
-      "enabled": true,
-      "priority": 1,
-      "description": "OISD 基础版 hosts 规则",
-      "license": "MIT",
-      "update_frequency": "daily"
-    },
-    {
-      "name": "StevenBlack hosts",
-      "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
-      "type": "host",
-      "enabled": true,
-      "priority": 1,
-      "description": "StevenBlack 综合 hosts 阻断列表",
-      "license": "MIT",
-      "update_frequency": "daily"
-    },
-    {
-      "name": "Pollock hosts",
-      "url": "https://winhelp2002.mvps.org/hosts.txt",
-      "type": "host",
-      "enabled": true,
-      "priority": 2,
-      "description": "Dan Pollock hosts 广告阻断列表",
-      "license": "Custom",
-      "update_frequency": "daily"
-    },
-    {
-      "name": "混合规则集合",
-      "url": "https://raw.githubusercontent.com/wansheng8/adblock/main/sources/gz.txt",
-      "type": "mixed",
-      "enabled": true,
-      "priority": 1,
-      "description": "混合多个第三方规则源的集合，包含多种广告拦截规则",
-      "license": "Mixed",
-      "update_frequency": "daily"
+      "priority": 700,
+      "category": "mobile",
+      "syntax": "adblock"
     }
-    
   ],
-  "rule_categories": [
-    "广告拦截",
-    "隐私保护",
-    "安全防护",
-    "恼人元素移除",
-    "DNS过滤",
-    "主机文件",
-    "社交媒体拦截",
-    "恶意软件阻止",
-    "跟踪防护",
-    "挖矿脚本阻止",
-    "钓鱼网站拦截",
-    "移动广告拦截",
-    "视频广告拦截",
-    "弹窗广告拦截"
-  ],
-  "optimization": {
-    "remove_duplicates": true,
-    "validate_syntax": true,
-    "sort_rules": true,
-    "compress_rules": true,
-    "max_rules": 500000,
-    "min_rule_length": 3,
-    "max_rule_length": 250
-  },
-  "compatibility": {
-    "adguard": true,
-    "ublock_origin": true,
-    "adblock_plus": true,
-    "pi_hole": true,
-    "adguard_home": true,
-    "dnsmasq": true,
-    "hosts_file": true,
-    "smart_dns": true
-  },
-  "statistics": {
-    "enabled": true,
-    "track_updates": true,
-    "log_invalid_rules": true,
-    "generate_report": true
-  },
-  "notifications": {
-    "on_success": false,
-    "on_failure": true,
-    "on_change": true
+  "metadata": {
+    "syntax_type": "adblock",
+    "features": [
+      "domain_validation",
+      "ping_check",
+      "concurrent_processing",
+      "adblock_syntax_support"
+    ],
+    "output_files": [
+      "dns.txt",
+      "hosts.txt",
+      "filter.txt"
+    ]
   }
 }
