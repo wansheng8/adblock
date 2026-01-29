@@ -1,12 +1,12 @@
 name: Update AdBlock Rules
 
 on:
-  workflow_dispatch:  # 手动触发
+  workflow_dispatch:  # 允许手动触发
   schedule:
-    # 每天运行3次（UTC时间0:00, 8:00, 16:00）
-    - cron: '0 0,8,16 * * *'
+    # 每8小时运行一次（UTC时间）
+    - cron: '0 */8 * * *'
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'sources/**'
       - 'scripts/**'
@@ -15,10 +15,14 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允许写入仓库
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -41,43 +45,42 @@ jobs:
       run: python scripts/update_rules.py
     
     - name: Check for changes
-      id: check-changes
+      id: git-check
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # 添加所有文件
         git add -A
+        
+        # 检查是否有变更
         if git diff --cached --quiet; then
-          echo "changes=false" >> $GITHUB_OUTPUT
-          echo "No changes detected"
+          echo "has_changes=false" >> $GITHUB_OUTPUT
         else
-          echo "changes=true" >> $GITHUB_OUTPUT
-          
-          # 获取规则统计
-          DNS_COUNT=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          HOSTS_COUNT=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          FILTER_COUNT=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
-          
-          # 创建提交信息
-          cat > /tmp/commit_message.txt << EOF
-🤖 Auto-update adblock rules $(date +'%Y-%m-%d %H:%M')
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Commit and push changes
+      if: steps.git-check.outputs.has_changes == 'true'
+      run: |
+        # 获取规则统计
+        DNS_COUNT=$(grep -v '^#' dist/dns.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        HOSTS_COUNT=$(grep -v '^#' dist/hosts.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        FILTER_COUNT=$(grep -v '^!' dist/filter.txt 2>/dev/null | grep -v '^$' | wc -l 2>/dev/null || echo "0")
+        TOTAL_COUNT=$((DNS_COUNT + HOSTS_COUNT + FILTER_COUNT))
+        
+        # 提交消息
+        COMMIT_TIME=$(date +'%Y-%m-%d %H:%M')
+        git commit -m "🤖 Auto-update adblock rules [$COMMIT_TIME]
 
 📊 Rules:
 - DNS: $DNS_COUNT domains
 - Hosts: $HOSTS_COUNT entries  
 - Filter: $FILTER_COUNT rules
-- Total: $((DNS_COUNT + HOSTS_COUNT + FILTER_COUNT)) rules
+- Total: $TOTAL_COUNT rules
 
-⚡ Optimized DNS detection (200 threads)
-🔄 Auto-updated by GitHub Actions
-EOF
-          
-          echo "commit_message<<EOF" >> $GITHUB_OUTPUT
-          cat /tmp/commit_message.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-        fi
-    
-    - name: Commit and push
-      if: steps.check-changes.outputs.changes == 'true'
-      run: |
-        git commit -m "${{ steps.check-changes.outputs.commit_message }}"
+⚡ Optimized DNS detection
+🔄 Auto-updated by GitHub Actions"
+        
+        # 推送到仓库
         git push
