@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-修复 Git 跟踪问题的脚本 - 增强版
-支持高级广告拦截规则语法处理
+修复 Git 跟踪问题的脚本 - Adblock语法版
+支持Adblock语法规则处理
 """
 
 import os
@@ -10,7 +10,6 @@ import shutil
 from pathlib import Path
 import json
 from datetime import datetime
-import subprocess
 
 
 class GitFixer:
@@ -19,21 +18,6 @@ class GitFixer:
         self.now = datetime.now()
         self.backup_dir = self.base_dir / '.git_backup'
         
-    def run_command(self, cmd, description=""):
-        """运行命令并处理输出"""
-        if description:
-            print(f"🔧 {description}...")
-        
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        
-        if result.returncode == 0:
-            if result.stdout.strip():
-                print(f"✅ 成功: {result.stdout.strip()}")
-            return True, result.stdout
-        else:
-            print(f"❌ 失败: {result.stderr.strip()}")
-            return False, result.stderr
-    
     def backup_git_status(self):
         """备份当前Git状态"""
         print("📦 正在备份Git状态...")
@@ -79,10 +63,10 @@ class GitFixer:
             print("✅ 没有未提交的更改")
             return False, []
     
-    def create_advanced_gitignore(self):
-        """创建高级 .gitignore 文件（支持广告拦截规则项目）"""
+    def create_adblock_gitignore(self):
+        """创建Adblock语法项目专用 .gitignore 文件"""
         gitignore_content = """# ==============================================
-# 🚀 AdBlock 规则项目专用 .gitignore
+# 🚀 AdBlock 规则项目专用 .gitignore (Adblock语法版)
 # ==============================================
 
 # Python
@@ -183,19 +167,18 @@ venv.bak/
 *~
 *.vim
 
-# 我们不忽略的重要目录:
-# - dist/ (包含生成的规则文件) - 必须提交！
-# - rules/raw/ (包含原始规则文件) - 必须提交！
-# - sources/ (规则源配置) - 必须提交！
-# - scripts/ (Python脚本) - 必须提交！
-# - docs/ (文档) - 建议提交
-# - .github/ (GitHub Actions配置) - 必须提交！
+# Adblock规则项目专用
+# 必须跟踪的文件:
+# - dist/ (包含生成的规则文件)
+# - sources/ (规则源配置)
+# - scripts/ (Python脚本)
+# - .github/ (GitHub Actions配置)
 
-# 临时构建文件（但不忽略 dist/）
+# 临时构建文件
 build_temp/
 temp_build/
 
-# 备份目录（自动备份）
+# 备份目录
 .git_backup/
 backup_*/
 old_*/
@@ -215,7 +198,7 @@ personal/
         with open('.gitignore', 'w', encoding='utf-8') as f:
             f.write(gitignore_content)
         
-        print("✅ 已创建高级 .gitignore 文件")
+        print("✅ 已创建Adblock语法专用 .gitignore 文件")
         return True
     
     def check_ignored_files(self):
@@ -237,7 +220,7 @@ personal/
         """分析项目结构"""
         print("📁 分析项目结构...")
         
-        important_dirs = ['dist', 'rules', 'sources', 'scripts', 'docs', '.github']
+        important_dirs = ['dist', 'sources', 'scripts', '.github']
         missing_dirs = []
         
         for dir_name in important_dirs:
@@ -303,7 +286,7 @@ personal/
         
         # 显示主要规则文件
         print("\n4. 主要规则文件:")
-        rule_files = ['dist/blacklist.txt', 'dist/whitelist.txt', 'sources/sources.json']
+        rule_files = ['dist/dns.txt', 'dist/hosts.txt', 'dist/filter.txt', 'sources/sources.json']
         for file in rule_files:
             if (self.base_dir / file).exists():
                 size = (self.base_dir / file).stat().st_size
@@ -313,69 +296,6 @@ personal/
         
         print("\n✅ 安全清理完成")
         return True
-    
-    def safe_git_push(self):
-        """安全的Git推送 - 解决冲突问题"""
-        print("📤 执行安全Git推送...")
-        
-        # 配置Git用户
-        self.run_command('git config user.name "github-actions[bot]"', "配置Git用户")
-        self.run_command('git config user.email "github-actions[bot]@users.noreply.github.com"', "配置Git邮箱")
-        
-        # 添加所有更改
-        print("📋 添加所有更改...")
-        os.system('git add -A')
-        
-        # 检查是否有更改
-        result = os.popen('git diff --cached --quiet').read()
-        if not result:
-            print("✅ 没有需要提交的更改")
-            return True
-        
-        print("🔄 检测到更改，准备提交...")
-        
-        # 创建提交信息
-        commit_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        commit_msg = f"""🤖 自动更新广告拦截规则 [{commit_time}]
-
-📊 自动更新规则文件
-⏰ 时间: {commit_time}
-🤖 由 GitFixer 自动生成"""
-        
-        # 提交
-        print("💾 提交更改...")
-        os.system(f'git commit -m "{commit_msg}"')
-        
-        # 尝试推送策略
-        print("🔄 尝试推送策略...")
-        
-        # 策略1: 先拉取再推送
-        print("1. 尝试拉取远程最新更改...")
-        if os.system('git pull origin main --rebase') == 0:
-            print("✅ 拉取成功")
-            print("2. 推送到远程...")
-            if os.system('git push origin HEAD:main') == 0:
-                print("✅ 推送成功")
-                return True
-            else:
-                print("❌ 推送失败")
-        else:
-            print("❌ 拉取失败")
-        
-        # 策略2: 使用 --force-with-lease
-        print("3. 尝试安全强制推送 (--force-with-lease)...")
-        if os.system('git push origin HEAD:main --force-with-lease') == 0:
-            print("✅ 安全强制推送成功")
-            return True
-        
-        # 策略3: 使用 --force (最后手段)
-        print("4. 尝试强制推送 (--force)...")
-        if os.system('git push origin HEAD:main --force') == 0:
-            print("✅ 强制推送成功")
-            return True
-        
-        print("❌ 所有推送策略都失败了")
-        return False
     
     def git_health_check(self):
         """Git健康检查"""
@@ -426,7 +346,7 @@ personal/
     def run_repair(self):
         """运行完整的修复流程"""
         print("=" * 60)
-        print("🔧 Git跟踪修复工具 - 增强版")
+        print("🔧 Git跟踪修复工具 - Adblock语法版")
         print("=" * 60)
         
         # 1. Git健康检查
@@ -443,7 +363,7 @@ personal/
             print("未找到 .gitignore 文件")
             create_now = input("是否创建? (y/N): ").strip().lower()
             if create_now == 'y':
-                self.create_advanced_gitignore()
+                self.create_adblock_gitignore()
         else:
             print("已找到 .gitignore 文件")
         
@@ -457,7 +377,7 @@ personal/
         print("  1. 🛡️  安全修复（备份后清理缓存）")
         print("  2. 📝 仅更新.gitignore文件")
         print("  3. 🔍 仅检查状态（不修改）")
-        print("  4. 📤 安全推送（解决冲突）")
+        print("  4. 📤 准备提交并推送")
         print("  5. ❌ 退出")
         
         choice = input("\n请输入选择 (1-5): ").strip()
@@ -470,14 +390,30 @@ personal/
                 print("  2. 提交更改: git commit -m '修复Git跟踪'")
                 print("  3. 推送到远程: git push origin main")
         elif choice == '2':
-            self.create_advanced_gitignore()
+            self.create_adblock_gitignore()
         elif choice == '3':
             os.system('git status')
         elif choice == '4':
-            if self.safe_git_push():
-                print("\n✅ 推送成功!")
+            print("\n📤 准备提交并推送...")
+            # 获取提交信息
+            commit_msg = input("请输入提交信息 (留空使用默认): ").strip()
+            if not commit_msg:
+                commit_msg = f"更新Adblock规则 - {self.now.strftime('%Y-%m-%d %H:%M')}"
+            
+            # 检查是否有更改
+            result = os.popen('git status --porcelain').read().strip()
+            if result:
+                print("检测到更改，正在提交...")
+                os.system(f'git add .')
+                os.system(f'git commit -m "{commit_msg}"')
+                print("✅ 提交完成")
+                
+                push_now = input("是否推送到远程? (y/N): ").strip().lower()
+                if push_now == 'y':
+                    os.system('git push origin main')
+                    print("✅ 推送完成")
             else:
-                print("\n❌ 推送失败，请检查网络或权限")
+                print("没有检测到更改")
         elif choice == '5':
             print("退出")
         else:
