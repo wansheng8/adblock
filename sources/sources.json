@@ -1,7 +1,7 @@
 {
-  "name": "AdBlock Rules Sources - Adblock语法版",
-  "description": "广告拦截规则源配置 - 支持完整Adblock语法",
-  "version": "adblock_2.0",
+  "name": "AdBlock Rules Sources",
+  "description": "广告拦截规则源配置 - Adblock语法版",
+  "version": "adblock_1.0",
   "last_updated": "2024-01-01",
   "sources": [
     {
@@ -10,7 +10,7 @@
       "enabled": true,
       "priority": 100,
       "category": "ads",
-      "syntax": "adblock"
+      "format": "adblock"
     },
     {
       "name": "easyprivacy",
@@ -18,7 +18,7 @@
       "enabled": true,
       "priority": 200,
       "category": "privacy",
-      "syntax": "adblock"
+      "format": "adblock"
     },
     {
       "name": "adguard_base",
@@ -26,7 +26,7 @@
       "enabled": true,
       "priority": 300,
       "category": "base",
-      "syntax": "adblock"
+      "format": "adblock"
     },
     {
       "name": "adguard_spyware",
@@ -34,7 +34,7 @@
       "enabled": true,
       "priority": 400,
       "category": "spyware",
-      "syntax": "adblock"
+      "format": "adblock"
     },
     {
       "name": "adguard_social",
@@ -42,7 +42,7 @@
       "enabled": true,
       "priority": 500,
       "category": "social",
-      "syntax": "adblock"
+      "format": "adblock"
     },
     {
       "name": "adguard_annoyances",
@@ -50,7 +50,7 @@
       "enabled": true,
       "priority": 600,
       "category": "annoyances",
-      "syntax": "adblock"
+      "format": "adblock"
     },
     {
       "name": "adguard_mobile",
@@ -58,21 +58,34 @@
       "enabled": true,
       "priority": 700,
       "category": "mobile",
-      "syntax": "adblock"
+      "format": "adblock"
+    },
+    {
+      "name": "adguard_dns",
+      "url": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
+      "enabled": true,
+      "priority": 800,
+      "category": "dns",
+      "format": "adblock"
+    },
+    {
+      "name": "adguard_chinese",
+      "url": "https://filters.adtidy.org/extension/ublock/filters/224.txt",
+      "enabled": true,
+      "priority": 900,
+      "category": "chinese",
+      "format": "adblock"
     }
   ],
   "metadata": {
-    "syntax_type": "adblock",
-    "features": [
-      "domain_validation",
-      "ping_check",
-      "concurrent_processing",
-      "adblock_syntax_support"
-    ],
+    "syntax": "adblock",
+    "ping_check": true,
     "output_files": [
       "dns.txt",
       "hosts.txt",
-      "filter.txt"
+      "filter.txt",
+      "metadata.json",
+      "ping_results.json"
     ]
   }
 }
