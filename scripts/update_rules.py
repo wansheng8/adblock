@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-广告拦截规则更新脚本 - 完整语法版
-支持：白名单(@@)、精确域名、子域/通配(||+^)、CNAME拦截、分类规则、响应策略
+广告拦截规则更新脚本 - Adblock语法版
+支持完整Adblock语法，包含ping检查功能
 """
 
 import json
@@ -11,11 +11,14 @@ import datetime
 import re
 import sys
 import traceback
+import socket
+import time
+import concurrent.futures
 from pathlib import Path
 from typing import Tuple, List, Dict, Any, Set
 from urllib.parse import urlparse
-import socket
-import hashlib
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class RuleUpdater:
@@ -23,17 +26,32 @@ class RuleUpdater:
         self.config_path = config_path
         self.base_dir = Path(__file__).parent.parent
         
-        # 支持的规则类型
-        self.rule_patterns = {
-            'whitelist': re.compile(r'^@@\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^?'),
-            'domain_block': re.compile(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^'),
-            'exact_domain': re.compile(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^?$'),
-            'cname_block': re.compile(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^\$dnstype=CNAME'),
-            'hosts_rule': re.compile(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$'),
+        # Adblock语法模式
+        self.adblock_patterns = {
+            'comment': re.compile(r'^[!\[#]'),
+            'whitelist': re.compile(r'^@@'),
+            'domain_block': re.compile(r'^\|\|([^\/\^\$\s]+)\^'),
             'element_hiding': re.compile(r'^##'),
-            'response_policy': re.compile(r'\$responsepolicy='),
-            'category_rule': re.compile(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^\$(\w+)=(.*)'),
-            'simple_domain': re.compile(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+            'element_hiding_exception': re.compile(r'^#@#'),
+            'scriptlet_injection': re.compile(r'^#\$#'),
+            'html_filtering': re.compile(r'^#\$?#'),
+            'regex_rule': re.compile(r'^/(.*)/$'),
+            'hosts_rule': re.compile(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([^#\s]+)'),
+            'cname_rule': re.compile(r'\$dnstype=CNAME'),
+            'advanced_rule': re.compile(r'\$[a-z]+=')
+        }
+        
+        # 域名验证缓存
+        self.domain_cache = {}
+        self.domain_lock = threading.Lock()
+        
+        # Ping统计
+        self.ping_stats = {
+            'total_domains': 0,
+            'resolved_domains': 0,
+            'failed_domains': 0,
+            'valid_domains': 0,
+            'invalid_domains': 0
         }
     
     def load_gz_sources(self) -> List[Dict[str, Any]]:
@@ -64,7 +82,7 @@ class RuleUpdater:
                         'enabled': True,
                         'priority': 999 + idx,
                         'type': 'gz_txt',
-                        'category': 'mixed'  # 混合规则
+                        'category': 'mixed'
                     }
                     gz_sources.append(source)
                     print(f"  ├── [{idx+1:03d}] 额外规则源: {url[:80]}...")
@@ -146,150 +164,267 @@ class RuleUpdater:
             print(f"❌ 获取失败 {source['name']}: {str(e)}")
             return False, ""
     
+    def is_valid_domain_format(self, domain: str) -> bool:
+        """验证域名格式"""
+        if not domain or len(domain) > 253:
+            return False
+        
+        # 允许通配符
+        if '*' in domain:
+            # 通配符必须在开头
+            if not domain.startswith('*.'):
+                return False
+            # 移除通配符部分后验证
+            domain = domain[2:]
+        
+        # 基本域名格式验证
+        if not re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', domain):
+            return False
+        
+        # 检查标签长度
+        labels = domain.split('.')
+        for label in labels:
+            if len(label) > 63 or not label:
+                return False
+        
+        return True
+    
+    def ping_domain(self, domain: str) -> Tuple[bool, str]:
+        """Ping检查域名是否存在"""
+        if not domain:
+            return False, "空域名"
+        
+        # 检查缓存
+        with self.domain_lock:
+            if domain in self.domain_cache:
+                return self.domain_cache[domain]
+        
+        # 如果是通配符域名，不进行ping检查
+        if domain.startswith('*.'):
+            with self.domain_lock:
+                self.domain_cache[domain] = (True, "通配符域名")
+            return True, "通配符域名"
+        
+        # 移除可能的路径和参数
+        clean_domain = domain.split('/')[0].split('?')[0].split(':')[0]
+        
+        try:
+            # 方法1: 尝试DNS解析
+            start_time = time.time()
+            socket.setdefaulttimeout(5)
+            ip_address = socket.gethostbyname(clean_domain)
+            resolve_time = time.time() - start_time
+            
+            if ip_address:
+                result = (True, f"DNS解析成功: {ip_address} ({resolve_time:.2f}s)")
+            else:
+                result = (False, "DNS解析失败")
+                
+        except socket.gaierror:
+            # DNS解析失败，尝试HTTP请求
+            try:
+                test_url = f"http://{clean_domain}"
+                start_time = time.time()
+                response = requests.head(test_url, timeout=5, allow_redirects=True)
+                http_time = time.time() - start_time
+                
+                if response.status_code < 500:
+                    result = (True, f"HTTP可达: {response.status_code} ({http_time:.2f}s)")
+                else:
+                    result = (False, f"HTTP错误: {response.status_code}")
+            except Exception as e:
+                result = (False, f"连接失败: {str(e)}")
+        except Exception as e:
+            result = (False, f"检查失败: {str(e)}")
+        
+        # 更新缓存
+        with self.domain_lock:
+            self.domain_cache[domain] = result
+        
+        return result
+    
+    def extract_domain_from_rule(self, rule: str) -> str:
+        """从Adblock规则中提取域名"""
+        rule = rule.strip()
+        
+        if not rule or rule.startswith(('!', '#', '[')):
+            return ""
+        
+        # 1. 域名阻断规则: ||example.com^
+        match = re.match(r'^\|\|([^\/\^\$\s]+)\^', rule)
+        if match:
+            return match.group(1)
+        
+        # 2. 白名单规则: @@||example.com^
+        match = re.match(r'^@@\|\|([^\/\^\$\s]+)\^', rule)
+        if match:
+            return match.group(1)
+        
+        # 3. Hosts规则: 0.0.0.0 example.com
+        match = re.match(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([^#\s]+)', rule)
+        if match:
+            return match.group(2)
+        
+        # 4. 简单域名规则: example.com
+        if re.match(r'^[a-zA-Z0-9.*-]+\.[a-zA-Z]{2,}$', rule) and '/' not in rule and '$' not in rule:
+            return rule
+        
+        # 5. 带修饰符的规则: ||example.com^$domain=example.com
+        if '$' in rule:
+            base_part = rule.split('$')[0]
+            match = re.match(r'^\|\|([^\/\^\$\s]+)\^', base_part)
+            if match:
+                return match.group(1)
+        
+        return ""
+    
     def classify_rule_type(self, rule: str) -> Dict[str, Any]:
         """分类规则类型"""
         rule = rule.strip()
         
-        # 跳过注释
-        if not rule or rule.startswith(('!', '#', '[')):
-            return {'type': 'comment', 'valid': False}
+        if not rule:
+            return {'type': 'empty', 'valid': False}
+        
+        if rule.startswith('!'):
+            return {'type': 'comment', 'valid': True}
+        
+        if rule.startswith('#'):
+            if rule.startswith('##'):
+                return {'type': 'element_hiding', 'valid': True}
+            elif rule.startswith('#@#'):
+                return {'type': 'element_hiding_exception', 'valid': True}
+            elif rule.startswith('#$#'):
+                return {'type': 'scriptlet_injection', 'valid': True}
+            else:
+                return {'type': 'comment', 'valid': True}
         
         result = {
             'type': 'unknown',
-            'valid': True,
+            'valid': False,
             'domain': '',
-            'subdomain': False,
-            'exact': False,
-            'whitelist': False,
-            'cname': False,
-            'category': '',
-            'response_policy': False,
+            'is_adblock': False,
             'raw_rule': rule
         }
         
-        # 1. 白名单规则 (@@开头)
-        if rule.startswith('@@'):
-            result['type'] = 'whitelist'
-            result['whitelist'] = True
-            
-            # 提取域名
-            match = re.match(r'^@@\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
-            if match:
-                result['domain'] = match.group(1)
-                result['subdomain'] = rule.startswith('@@||') and rule.endswith('^')
-                result['exact'] = '^$' in rule
-            
-            return result
-        
-        # 2. 域名阻断规则 (||开头 ^结尾)
+        # 检查Adblock语法
         if rule.startswith('||') and '^' in rule:
             result['type'] = 'domain_block'
-            result['subdomain'] = True
-            
-            # 提取域名
-            match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
-            if match:
-                result['domain'] = match.group(1)
-                result['exact'] = rule.endswith('^$')
-            
-            # 检查CNAME拦截
-            if '$dnstype=CNAME' in rule:
-                result['type'] = 'cname_block'
-                result['cname'] = True
-            
-            # 检查分类规则
-            if '$' in rule:
-                parts = rule.split('$')
-                if len(parts) > 1:
-                    modifiers = parts[1]
-                    if 'category=' in modifiers:
-                        result['type'] = 'category_rule'
-                        match = re.search(r'category=([^,]+)', modifiers)
-                        if match:
-                            result['category'] = match.group(1)
-                    
-                    if 'responsepolicy=' in modifiers:
-                        result['response_policy'] = True
-            
-            return result
+            result['is_adblock'] = True
+            domain = self.extract_domain_from_rule(rule)
+            if domain and self.is_valid_domain_format(domain):
+                result['domain'] = domain
+                result['valid'] = True
         
-        # 3. Hosts规则
-        match = re.match(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$', rule)
-        if match:
-            result['type'] = 'hosts_rule'
-            result['domain'] = match.group(2)
-            return result
+        elif rule.startswith('@@'):
+            result['type'] = 'whitelist'
+            result['is_adblock'] = True
+            domain = self.extract_domain_from_rule(rule)
+            if domain and self.is_valid_domain_format(domain):
+                result['domain'] = domain
+                result['valid'] = True
+            else:
+                result['valid'] = True  # 白名单规则可能没有域名
         
-        # 4. 元素隐藏规则
-        if rule.startswith('##'):
-            result['type'] = 'element_hiding'
-            return result
+        elif rule.startswith('/') and rule.endswith('/'):
+            result['type'] = 'regex'
+            result['is_adblock'] = True
+            result['valid'] = True
         
-        # 5. 精确域名
-        if re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', rule):
+        elif '$' in rule and ('||' in rule or '@@' in rule):
+            result['type'] = 'advanced'
+            result['is_adblock'] = True
+            domain = self.extract_domain_from_rule(rule)
+            if domain and self.is_valid_domain_format(domain):
+                result['domain'] = domain
+                result['valid'] = True
+            else:
+                result['valid'] = True  # 高级规则可能没有域名
+        
+        elif re.match(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+', rule):
+            result['type'] = 'hosts'
+            domain = self.extract_domain_from_rule(rule)
+            if domain and self.is_valid_domain_format(domain):
+                result['domain'] = domain
+                result['valid'] = True
+        
+        elif re.match(r'^[a-zA-Z0-9.*-]+\.[a-zA-Z]{2,}$', rule):
             result['type'] = 'simple_domain'
-            result['domain'] = rule
-            result['exact'] = True
-            return result
-        
-        # 6. 带修饰符的规则
-        if '$' in rule and rule.startswith('||'):
-            result['type'] = 'advanced_rule'
-            
-            # 提取域名
-            base_part = rule.split('$')[0]
-            match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', base_part)
-            if match:
-                result['domain'] = match.group(1)
-                result['subdomain'] = True
-            
-            # 检查修饰符
-            modifiers = rule.split('$')[1]
-            if 'cname' in modifiers.lower():
-                result['cname'] = True
-            
-            if 'responsepolicy=' in modifiers:
-                result['response_policy'] = True
-            
-            return result
-        
-        # 7. 正则表达式规则（简化处理）
-        if rule.startswith('/') and rule.endswith('/'):
-            result['type'] = 'regex_rule'
-            result['valid'] = False  # 不处理正则表达式
-            return result
+            if self.is_valid_domain_format(rule):
+                result['domain'] = rule
+                result['valid'] = True
         
         return result
     
-    def process_rule_for_dns(self, rule_info: Dict[str, Any]) -> str:
-        """处理DNS规则"""
+    def process_rule_with_ping(self, rule: str) -> Tuple[str, str, str, bool]:
+        """处理单条规则，包含ping检查"""
+        rule_info = self.classify_rule_type(rule)
+        
         if not rule_info['valid']:
-            return ""
+            return "", "", "", False
         
-        # DNS规则只处理纯域名
-        if rule_info['domain'] and not rule_info['whitelist']:
-            return rule_info['domain']
+        dns_rule = ""
+        hosts_rule = ""
+        browser_rule = ""
+        is_valid = True
         
-        return ""
-    
-    def process_rule_for_hosts(self, rule_info: Dict[str, Any]) -> str:
-        """处理Hosts规则"""
-        if not rule_info['valid']:
-            return ""
+        # 如果是域名规则，进行ping检查
+        if rule_info.get('domain'):
+            domain = rule_info['domain']
+            self.ping_stats['total_domains'] += 1
+            
+            # 检查域名格式
+            if not self.is_valid_domain_format(domain):
+                self.ping_stats['invalid_domains'] += 1
+                is_valid = False
+            else:
+                # 执行ping检查
+                ping_result, ping_message = self.ping_domain(domain)
+                if ping_result:
+                    self.ping_stats['resolved_domains'] += 1
+                    self.ping_stats['valid_domains'] += 1
+                else:
+                    self.ping_stats['failed_domains'] += 1
+                    # 如果ping失败，标记为无效但可能仍然保留（根据规则类型）
+                    if rule_info['type'] in ['domain_block', 'hosts', 'simple_domain']:
+                        is_valid = False
         
-        # Hosts规则只处理纯域名（非白名单）
-        if rule_info['domain'] and not rule_info['whitelist']:
-            return f"0.0.0.0 {rule_info['domain']}"
+        # 根据规则类型生成三层规则
+        if is_valid:
+            rule_type = rule_info['type']
+            domain = rule_info.get('domain', '')
+            
+            if rule_type == 'simple_domain' and domain:
+                dns_rule = domain
+                hosts_rule = f"0.0.0.0 {domain}"
+                browser_rule = f"||{domain}^"
+            
+            elif rule_type == 'domain_block':
+                browser_rule = rule_info['raw_rule']
+                if domain:
+                    dns_rule = domain
+                    hosts_rule = f"0.0.0.0 {domain}"
+            
+            elif rule_type == 'whitelist':
+                browser_rule = rule_info['raw_rule']
+                # 白名单规则不加入DNS和Hosts
+            
+            elif rule_type == 'hosts':
+                hosts_rule = rule_info['raw_rule']
+                if domain:
+                    dns_rule = domain
+                    # 转换为主机规则格式
+                    if not hosts_rule.startswith('0.0.0.0'):
+                        parts = hosts_rule.split()
+                        if len(parts) >= 2:
+                            hosts_rule = f"0.0.0.0 {parts[1]}"
+            
+            elif rule_type in ['element_hiding', 'element_hiding_exception', 'scriptlet_injection', 'regex', 'advanced']:
+                browser_rule = rule_info['raw_rule']
+            
+            elif rule_info['is_adblock']:
+                browser_rule = rule_info['raw_rule']
         
-        return ""
-    
-    def process_rule_for_browser(self, rule_info: Dict[str, Any]) -> str:
-        """处理浏览器规则"""
-        if not rule_info['valid']:
-            return ""
-        
-        # 返回原始规则（浏览器支持所有规则类型）
-        return rule_info['raw_rule']
+        return dns_rule, hosts_rule, browser_rule, is_valid
     
     def process_content(self, content: str) -> Tuple[List[str], List[str], List[str]]:
         """处理整个内容，返回三层规则列表"""
@@ -298,41 +433,40 @@ class RuleUpdater:
         browser_rules = []
         
         lines = content.split('\n')
-        line_count = len(lines)
+        total_lines = len(lines)
         
-        print(f"  📄 处理 {line_count} 行...")
+        print(f"  📄 处理 {total_lines} 行...")
         
-        for line in lines:
-            rule_info = self.classify_rule_type(line)
+        # 使用线程池并发处理ping检查
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = []
+            for line in lines:
+                futures.append(executor.submit(self.process_rule_with_ping, line))
             
-            if rule_info['valid']:
-                # DNS规则
-                dns_rule = self.process_rule_for_dns(rule_info)
-                if dns_rule:
-                    dns_rules.append(dns_rule)
+            for i, future in enumerate(as_completed(futures)):
+                dns_rule, hosts_rule, browser_rule, is_valid = future.result()
                 
-                # Hosts规则
-                hosts_rule = self.process_rule_for_hosts(rule_info)
-                if hosts_rule:
-                    hosts_rules.append(hosts_rule)
+                if is_valid:
+                    if dns_rule:
+                        dns_rules.append(dns_rule)
+                    if hosts_rule:
+                        hosts_rules.append(hosts_rule)
+                    if browser_rule:
+                        browser_rules.append(browser_rule)
                 
-                # 浏览器规则
-                browser_rule = self.process_rule_for_browser(rule_info)
-                if browser_rule and not browser_rule.startswith(('!', '#')):
-                    browser_rules.append(browser_rule)
+                # 显示进度
+                if (i + 1) % 1000 == 0 or (i + 1) == total_lines:
+                    print(f"    └── 进度: {i + 1}/{total_lines} 行")
         
         return dns_rules, hosts_rules, browser_rules
     
-    def write_file(self, filename: str, rules: List[str], header: str, deduplicate: bool = True) -> int:
+    def write_file(self, filename: str, rules: List[str], header: str) -> int:
         """写入规则文件"""
         if not rules:
             return 0
         
         # 去重排序
-        if deduplicate:
-            unique_rules = sorted(set(rules))
-        else:
-            unique_rules = sorted(rules)
+        unique_rules = sorted(set(rules))
         
         # 写入文件
         output_file = self.base_dir / 'dist' / filename
@@ -341,7 +475,7 @@ class RuleUpdater:
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(header)
             f.write('\n'.join(unique_rules))
-            if not unique_rules[-1].endswith('\n'):
+            if unique_rules and not unique_rules[-1].endswith('\n'):
                 f.write('\n')
         
         return len(unique_rules)
@@ -349,7 +483,7 @@ class RuleUpdater:
     def run(self) -> bool:
         """执行更新流程"""
         print("=" * 60)
-        print("🚀 广告拦截规则更新器 - 完整语法版")
+        print("🚀 Adblock规则更新器 - 支持Ping检查")
         print("=" * 60)
         
         if not self.load_config():
@@ -358,6 +492,15 @@ class RuleUpdater:
         # 确保目录存在
         (self.base_dir / 'dist').mkdir(exist_ok=True)
         (self.base_dir / 'rules/raw').mkdir(parents=True, exist_ok=True)
+        
+        # 重置ping统计
+        self.ping_stats = {
+            'total_domains': 0,
+            'resolved_domains': 0,
+            'failed_domains': 0,
+            'valid_domains': 0,
+            'invalid_domains': 0
+        }
         
         all_dns_rules = []
         all_hosts_rules = []
@@ -407,6 +550,14 @@ class RuleUpdater:
             for name in failed_sources[:5]:
                 print(f"    • {name}")
         
+        # 显示ping统计
+        print(f"\n📡 Ping检查统计:")
+        print(f"  ├── 总域名数: {self.ping_stats['total_domains']}")
+        print(f"  ├── 解析成功: {self.ping_stats['resolved_domains']}")
+        print(f"  ├── 解析失败: {self.ping_stats['failed_domains']}")
+        print(f"  ├── 有效域名: {self.ping_stats['valid_domains']}")
+        print(f"  └── 无效域名: {self.ping_stats['invalid_domains']}")
+        
         # 生成时间
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
         
@@ -417,8 +568,7 @@ class RuleUpdater:
 # 规则数量: {len(all_dns_rules)} 条
 # 规则来源: sources/sources.json + sources/gz.txt
 # 语法: 纯域名 (example.com)
-# 支持: 域名拦截，CNAME拦截（通过DNS服务实现）
-# 用法: 导入到DNS过滤服务中
+# Ping检查: 已执行域名验证
 # ==================================================
 
 """
@@ -431,8 +581,7 @@ class RuleUpdater:
 # 规则数量: {len(all_hosts_rules)} 条
 # 规则来源: sources/sources.json + sources/gz.txt
 # 语法: 0.0.0.0 example.com
-# 支持: 系统级域名拦截
-# 用法: 复制到系统 hosts 文件中
+# Ping检查: 已执行域名验证
 # ==================================================
 
 """
@@ -444,17 +593,12 @@ class RuleUpdater:
 ! 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 ! 规则数量: {len(all_browser_rules)} 条
 ! 规则来源: sources/sources.json + sources/gz.txt
-! 支持语法:
-!   • 白名单: @@||example.com^
-!   • 精确域名: ||example.com^$domain=example.com
-!   • 子域/通配: ||example.com^
-!   • CNAME拦截: ||example.com^$dnstype=CNAME
-!   • 分类规则: ||example.com^$category=ads
-!   • 响应策略: ||example.com^$responsepolicy=block
+! 语法: 完整Adblock语法
+! Ping检查: 已执行域名验证
 ! ==================================================
 
 """
-        browser_count = self.write_file("filter.txt", all_browser_rules, browser_header, deduplicate=False)
+        browser_count = self.write_file("filter.txt", all_browser_rules, browser_header)
         
         # 生成元数据
         metadata = {
@@ -465,19 +609,18 @@ class RuleUpdater:
                 "browser_rules": browser_count,
                 "total_rules": dns_count + hosts_count + browser_count
             },
+            "ping_statistics": self.ping_stats,
             "sources_used": successful_sources,
             "sources_total": len(sorted_sources),
             "sources_failed": len(failed_sources),
-            "syntax_version": "2.0",
+            "syntax_version": "adblock_2.0",
             "features": [
-                "whitelist_support",
-                "exact_domain",
-                "subdomain_wildcard",
-                "cname_blocking",
-                "category_rules",
-                "response_policy"
+                "adblock_syntax",
+                "domain_validation",
+                "ping_check",
+                "concurrent_processing"
             ],
-            "notes": "完整语法支持：白名单、精确域名、子域通配、CNAME拦截、分类规则、响应策略",
+            "notes": "Adblock语法规则，包含域名ping检查功能",
             "includes_gz_txt": any(s.get('type') == 'gz_txt' for s in sorted_sources)
         }
         
@@ -491,13 +634,14 @@ class RuleUpdater:
         print(f"📊 浏览器规则: {browser_count} 条 (filter.txt)")
         print(f"📊 总计: {dns_count + hosts_count + browser_count} 条")
         print(f"📋 规则源: {successful_sources} 成功, {len(failed_sources)} 失败")
-        print("\n🎯 支持的语法:")
+        print(f"📡 域名验证: {self.ping_stats['valid_domains']}/{self.ping_stats['total_domains']} 个域名有效")
+        print("\n🎯 Adblock语法特性:")
+        print("  • 域名阻断: ||example.com^")
         print("  • 白名单: @@||example.com^")
-        print("  • 精确域名: example.com 或 ||example.com^$domain=example.com")
-        print("  • 子域/通配: ||example.com^")
-        print("  • CNAME拦截: ||example.com^$dnstype=CNAME")
-        print("  • 分类规则: ||example.com^$category=ads|tracking|malware")
-        print("  • 响应策略: ||example.com^$responsepolicy=block|redirect|modify")
+        print("  • 元素隐藏: ##.ad-banner")
+        print("  • 脚本注入: #$#alert('Blocked!')")
+        print("  • 正则表达式: /ads.*\\.com/")
+        print("  • 高级修饰符: ||example.com^$domain=example.com")
         print("=" * 60)
         
         return successful_sources > 0
