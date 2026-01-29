@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 """
 规则合并脚本 - Adblock语法版
-用于合并多个规则文件，支持完整Adblock语法
+用于合并多个规则文件，支持Adblock语法
 """
 
 import re
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
-from collections import defaultdict
+from collections import defaultdict, Counter
 import json
 from datetime import datetime
 
@@ -19,24 +19,22 @@ class RuleMerger:
         
         # Adblock语法模式
         self.adblock_patterns = [
-            r'^@@',  # 白名单
-            r'^\|\|',  # 域名阻断
+            r'^@@\|\|',  # 白名单
+            r'^\|\|.*\^',  # 域名阻断
             r'^##',  # 元素隐藏
-            r'^#@#',  # 元素隐藏例外
-            r'^#\$#',  # 脚本注入
-            r'^/\S+/$',  # 正则表达式
-            r'\$[a-z]+=',  # 高级修饰符
-            r'\$dnstype=',  # DNS类型
-            r'\$domain=',  # 域名限定
-            r'\$important',  # 重要规则
+            r'\$',  # 修饰符
+            r'^/',  # 正则表达式
+            r'^0\.0\.0\.0',  # Hosts规则
         ]
     
-    def is_adblock_rule(self, rule):
+    def is_adblock_rule(self, rule: str) -> bool:
         """检测是否是Adblock规则"""
         return any(re.search(pattern, rule) for pattern in self.adblock_patterns)
     
-    def classify_rule(self, rule):
-        """分类规则类型"""
+    def classify_adblock_rule(self, rule: str) -> str:
+        """分类Adblock规则类型"""
+        rule = rule.strip()
+        
         if not rule or rule.startswith('!'):
             return 'comment'
         
@@ -47,20 +45,18 @@ class RuleMerger:
                 return 'domain_block'
             elif rule.startswith('##'):
                 return 'element_hiding'
-            elif rule.startswith('#@#'):
-                return 'element_hiding_exception'
-            elif rule.startswith('#$#'):
-                return 'scriptlet_injection'
+            elif rule.startswith(('0.0.0.0', '127.0.0.1')):
+                return 'hosts'
+            elif '$' in rule:
+                return 'modifier'
             elif rule.startswith('/') and rule.endswith('/'):
                 return 'regex'
-            elif '$' in rule:
-                return 'advanced'
             else:
                 return 'adblock_other'
-        
-        elif rule.startswith(('0.0.0.0', '127.0.0.1', '::1')):
-            return 'hosts'
         else:
+            # 尝试匹配纯域名
+            if re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', rule):
+                return 'simple_domain'
             return 'other'
     
     def merge_files(self, file_paths: List[Path]) -> Tuple[List[str], dict]:
@@ -81,13 +77,11 @@ class RuleMerger:
                 for line in lines:
                     line = line.strip()
                     if line and not line.startswith('!'):
-                        rule_type = self.classify_rule(line)
+                        rule_type = self.classify_adblock_rule(line)
                         rule_stats[rule_type] += 1
                         
                         # 分离Adblock规则
-                        if rule_type in ['whitelist', 'domain_block', 'element_hiding', 
-                                       'element_hiding_exception', 'scriptlet_injection', 
-                                       'regex', 'advanced', 'adblock_other']:
+                        if rule_type in ['whitelist', 'domain_block', 'element_hiding', 'modifier', 'regex']:
                             adblock_rules.append(line)
                         else:
                             all_rules.append(line)
@@ -128,23 +122,20 @@ class RuleMerger:
         
         return merged_rules, stats
     
-    def optimize_rules(self, rules):
-        """优化规则集合"""
-        print("\n⚡ 优化规则...")
+    def optimize_adblock_rules(self, rules):
+        """优化Adblock规则集合"""
+        print("\n⚡ 优化Adblock规则...")
         
         # 按域名分组，合并相似规则
         domain_rules = defaultdict(list)
         other_rules = []
         
         for rule in rules:
-            # 提取域名阻断规则中的域名
-            if rule.startswith('||'):
-                match = re.match(r'^\|\|([^\/\^\$\s]+)\^', rule)
-                if match:
-                    domain = match.group(1)
-                    domain_rules[domain].append(rule)
-                else:
-                    other_rules.append(rule)
+            # 提取域名
+            match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
+            if match:
+                domain = match.group(1)
+                domain_rules[domain].append(rule)
             else:
                 other_rules.append(rule)
         
@@ -153,7 +144,7 @@ class RuleMerger:
         
         for domain, domain_rule_list in domain_rules.items():
             if len(domain_rule_list) > 1:
-                # 合并为通配符规则
+                # 合并为通用规则
                 optimized_rules.append(f"||{domain}^")
             else:
                 optimized_rules.extend(domain_rule_list)
@@ -173,7 +164,7 @@ class RuleMerger:
     def run(self):
         """运行合并 - Adblock语法版"""
         print("=" * 60)
-        print("🔄 Adblock规则合并工具")
+        print("🔄 Adblock规则合并工具 - Adblock语法版")
         print("=" * 60)
         
         # 合并自定义规则
@@ -185,7 +176,7 @@ class RuleMerger:
             
             # 优化规则
             print("\n📄 步骤2: 优化规则")
-            optimized_rules = self.optimize_rules(custom_rules)
+            optimized_rules = self.optimize_adblock_rules(custom_rules)
             
             # 保存到文件
             print("\n📄 步骤3: 保存结果")
@@ -200,7 +191,7 @@ class RuleMerger:
 ! 原始规则: {len(custom_rules)} 条
 ! 优化比例: {((len(custom_rules) - len(optimized_rules)) / len(custom_rules) * 100):.1f}%
 ! 
-! 规则类型统计:
+! Adblock语法规则类型统计:
 """
             
             for rule_type, count in sorted(stats.items(), key=lambda x: x[1], reverse=True):
@@ -221,12 +212,12 @@ class RuleMerger:
         print("\n" + "=" * 60)
         print("✅ 合并完成!")
         print("🎯 Adblock语法支持:")
-        print("  • 域名阻断规则: ||example.com^")
-        print("  • 白名单规则: @@||example.com^")
-        print("  • 元素隐藏规则: ##.ad-banner")
-        print("  • 脚本注入规则: #$#alert('Blocked!')")
-        print("  • 正则表达式规则: /ads.*\\.com/")
-        print("  • 高级修饰符规则: ||example.com^$domain=example.com")
+        print("  • 白名单规则 (@@||example.com^)")
+        print("  • 域名阻断规则 (||example.com^)")
+        print("  • 元素隐藏规则 (##selector)")
+        print("  • 修饰符规则 ($script,third-party)")
+        print("  • Hosts规则 (0.0.0.0 example.com)")
+        print("  • 正则表达式规则 (/advertisement/)")
         print("=" * 60)
         
         return custom_rules
