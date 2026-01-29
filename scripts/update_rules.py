@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 广告拦截规则更新脚本 - Adblock语法版
-支持完整Adblock语法，包含ping检查功能
+生成三层规则文件：DNS、Hosts、浏览器规则
+支持Adblock语法，增加Ping检测
 """
 
 import json
@@ -11,13 +12,11 @@ import datetime
 import re
 import sys
 import traceback
-import socket
+import subprocess
 import time
-import concurrent.futures
+import socket
 from pathlib import Path
 from typing import Tuple, List, Dict, Any, Set
-from urllib.parse import urlparse
-import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -25,33 +24,19 @@ class RuleUpdater:
     def __init__(self, config_path="sources/sources.json"):
         self.config_path = config_path
         self.base_dir = Path(__file__).parent.parent
+        self.valid_domains = set()
+        self.failed_domains = set()
         
         # Adblock语法模式
         self.adblock_patterns = {
-            'comment': re.compile(r'^[!\[#]'),
-            'whitelist': re.compile(r'^@@'),
-            'domain_block': re.compile(r'^\|\|([^\/\^\$\s]+)\^'),
+            'comment': re.compile(r'^[!|#].*'),
+            'whitelist': re.compile(r'^@@\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^'),
+            'domain_block': re.compile(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^'),
             'element_hiding': re.compile(r'^##'),
-            'element_hiding_exception': re.compile(r'^#@#'),
-            'scriptlet_injection': re.compile(r'^#\$#'),
-            'html_filtering': re.compile(r'^#\$?#'),
-            'regex_rule': re.compile(r'^/(.*)/$'),
-            'hosts_rule': re.compile(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([^#\s]+)'),
-            'cname_rule': re.compile(r'\$dnstype=CNAME'),
-            'advanced_rule': re.compile(r'\$[a-z]+=')
-        }
-        
-        # 域名验证缓存
-        self.domain_cache = {}
-        self.domain_lock = threading.Lock()
-        
-        # Ping统计
-        self.ping_stats = {
-            'total_domains': 0,
-            'resolved_domains': 0,
-            'failed_domains': 0,
-            'valid_domains': 0,
-            'invalid_domains': 0
+            'hosts_rule': re.compile(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$'),
+            'regex_rule': re.compile(r'^/.*/$'),
+            'modifier_rule': re.compile(r'.*\$.+'),
+            'simple_domain': re.compile(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
         }
     
     def load_gz_sources(self) -> List[Dict[str, Any]]:
@@ -82,7 +67,7 @@ class RuleUpdater:
                         'enabled': True,
                         'priority': 999 + idx,
                         'type': 'gz_txt',
-                        'category': 'mixed'
+                        'format': 'adblock'
                     }
                     gz_sources.append(source)
                     print(f"  ├── [{idx+1:03d}] 额外规则源: {url[:80]}...")
@@ -140,14 +125,13 @@ class RuleUpdater:
             response.encoding = response.apparent_encoding or 'utf-8'
             content = response.text
             
-            # 保存原始文件（仅供调试）
-            if 'type' not in source or source.get('type') != 'gz_txt':
-                source_name = re.sub(r'[^\w\-_]', '_', source['name'].lower())
-                raw_file = self.base_dir / f"rules/raw/{source_name}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-                raw_file.parent.mkdir(parents=True, exist_ok=True)
-                
-                with open(raw_file, 'w', encoding='utf-8') as f:
-                    f.write(content)
+            # 保存原始文件
+            source_name = re.sub(r'[^\w\-_]', '_', source['name'].lower())
+            raw_file = self.base_dir / f"rules/raw/{source_name}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            raw_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(raw_file, 'w', encoding='utf-8') as f:
+                f.write(content)
             
             return True, content
             
@@ -164,267 +148,196 @@ class RuleUpdater:
             print(f"❌ 获取失败 {source['name']}: {str(e)}")
             return False, ""
     
-    def is_valid_domain_format(self, domain: str) -> bool:
-        """验证域名格式"""
-        if not domain or len(domain) > 253:
-            return False
-        
-        # 允许通配符
-        if '*' in domain:
-            # 通配符必须在开头
-            if not domain.startswith('*.'):
-                return False
-            # 移除通配符部分后验证
-            domain = domain[2:]
-        
-        # 基本域名格式验证
-        if not re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', domain):
-            return False
-        
-        # 检查标签长度
-        labels = domain.split('.')
-        for label in labels:
-            if len(label) > 63 or not label:
-                return False
-        
-        return True
-    
-    def ping_domain(self, domain: str) -> Tuple[bool, str]:
-        """Ping检查域名是否存在"""
-        if not domain:
-            return False, "空域名"
-        
-        # 检查缓存
-        with self.domain_lock:
-            if domain in self.domain_cache:
-                return self.domain_cache[domain]
-        
-        # 如果是通配符域名，不进行ping检查
-        if domain.startswith('*.'):
-            with self.domain_lock:
-                self.domain_cache[domain] = (True, "通配符域名")
-            return True, "通配符域名"
-        
-        # 移除可能的路径和参数
-        clean_domain = domain.split('/')[0].split('?')[0].split(':')[0]
-        
-        try:
-            # 方法1: 尝试DNS解析
-            start_time = time.time()
-            socket.setdefaulttimeout(5)
-            ip_address = socket.gethostbyname(clean_domain)
-            resolve_time = time.time() - start_time
-            
-            if ip_address:
-                result = (True, f"DNS解析成功: {ip_address} ({resolve_time:.2f}s)")
-            else:
-                result = (False, "DNS解析失败")
-                
-        except socket.gaierror:
-            # DNS解析失败，尝试HTTP请求
-            try:
-                test_url = f"http://{clean_domain}"
-                start_time = time.time()
-                response = requests.head(test_url, timeout=5, allow_redirects=True)
-                http_time = time.time() - start_time
-                
-                if response.status_code < 500:
-                    result = (True, f"HTTP可达: {response.status_code} ({http_time:.2f}s)")
-                else:
-                    result = (False, f"HTTP错误: {response.status_code}")
-            except Exception as e:
-                result = (False, f"连接失败: {str(e)}")
-        except Exception as e:
-            result = (False, f"检查失败: {str(e)}")
-        
-        # 更新缓存
-        with self.domain_lock:
-            self.domain_cache[domain] = result
-        
-        return result
-    
     def extract_domain_from_rule(self, rule: str) -> str:
         """从Adblock规则中提取域名"""
         rule = rule.strip()
         
-        if not rule or rule.startswith(('!', '#', '[')):
+        # 跳过注释
+        if not rule or rule.startswith(('!', '#')):
             return ""
         
-        # 1. 域名阻断规则: ||example.com^
-        match = re.match(r'^\|\|([^\/\^\$\s]+)\^', rule)
+        # 1. 白名单规则: @@||example.com^
+        match = re.match(r'^@@\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
         if match:
             return match.group(1)
         
-        # 2. 白名单规则: @@||example.com^
-        match = re.match(r'^@@\|\|([^\/\^\$\s]+)\^', rule)
+        # 2. 域名阻断规则: ||example.com^
+        match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule)
         if match:
             return match.group(1)
         
         # 3. Hosts规则: 0.0.0.0 example.com
-        match = re.match(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+([^#\s]+)', rule)
+        match = re.match(r'^(0\.0\.0\.0|127\.0\.0\.1)\s+([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$', rule)
         if match:
             return match.group(2)
         
-        # 4. 简单域名规则: example.com
-        if re.match(r'^[a-zA-Z0-9.*-]+\.[a-zA-Z]{2,}$', rule) and '/' not in rule and '$' not in rule:
+        # 4. 简单域名
+        if re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', rule):
             return rule
         
-        # 5. 带修饰符的规则: ||example.com^$domain=example.com
+        # 5. 带修饰符的规则: ||example.com^$... 
         if '$' in rule:
             base_part = rule.split('$')[0]
-            match = re.match(r'^\|\|([^\/\^\$\s]+)\^', base_part)
+            match = re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', base_part)
             if match:
                 return match.group(1)
         
         return ""
     
-    def classify_rule_type(self, rule: str) -> Dict[str, Any]:
-        """分类规则类型"""
+    def ping_domain(self, domain: str) -> bool:
+        """Ping检测域名是否可达"""
+        try:
+            # 移除通配符
+            domain = domain.replace('*', '')
+            
+            # 检查域名格式
+            if not re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', domain):
+                return False
+            
+            # 使用socket进行DNS解析测试
+            try:
+                socket.gethostbyname(domain)
+                return True
+            except socket.gaierror:
+                # DNS解析失败，尝试ping
+                pass
+            
+            # 尝试ping（只发送1个包，超时2秒）
+            if sys.platform == "win32":
+                # Windows
+                result = subprocess.run(
+                    ['ping', '-n', '1', '-w', '2000', domain],
+                    capture_output=True,
+                    text=True,
+                    timeout=3
+                )
+            else:
+                # Linux/Mac
+                result = subprocess.run(
+                    ['ping', '-c', '1', '-W', '2', domain],
+                    capture_output=True,
+                    text=True,
+                    timeout=3
+                )
+            
+            return result.returncode == 0
+            
+        except subprocess.TimeoutExpired:
+            return False
+        except Exception:
+            return False
+    
+    def ping_domains_batch(self, domains: List[str]) -> Dict[str, bool]:
+        """批量Ping检测域名"""
+        print(f"🔍 开始Ping检测 {len(domains)} 个域名...")
+        
+        results = {}
+        batch_size = 50  # 每批50个域名
+        total_batches = (len(domains) + batch_size - 1) // batch_size
+        
+        for batch_num in range(total_batches):
+            start_idx = batch_num * batch_size
+            end_idx = min((batch_num + 1) * batch_size, len(domains))
+            batch_domains = domains[start_idx:end_idx]
+            
+            print(f"  批次 {batch_num + 1}/{total_batches}: 检测 {len(batch_domains)} 个域名")
+            
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                future_to_domain = {executor.submit(self.ping_domain, domain): domain for domain in batch_domains}
+                
+                for future in as_completed(future_to_domain):
+                    domain = future_to_domain[future]
+                    try:
+                        is_reachable = future.result(timeout=3)
+                        results[domain] = is_reachable
+                        
+                        if is_reachable:
+                            self.valid_domains.add(domain)
+                        else:
+                            self.failed_domains.add(domain)
+                        
+                        # 显示进度
+                        processed = len(results)
+                        total = len(batch_domains)
+                        if processed % 10 == 0:
+                            print(f"    ...已检测 {processed}/{total}")
+                    
+                    except Exception:
+                        results[domain] = False
+                        self.failed_domains.add(domain)
+            
+            # 批次间延迟，避免过多请求
+            if batch_num < total_batches - 1:
+                time.sleep(1)
+        
+        print(f"✅ Ping检测完成: {len(self.valid_domains)} 个可达，{len(self.failed_domains)} 个不可达")
+        return results
+    
+    def process_rule(self, rule: str, valid_domains: Set[str]) -> Tuple[str, str, str]:
+        """处理单条Adblock规则，返回三层规则"""
         rule = rule.strip()
         
-        if not rule:
-            return {'type': 'empty', 'valid': False}
-        
-        if rule.startswith('!'):
-            return {'type': 'comment', 'valid': True}
-        
-        if rule.startswith('#'):
-            if rule.startswith('##'):
-                return {'type': 'element_hiding', 'valid': True}
-            elif rule.startswith('#@#'):
-                return {'type': 'element_hiding_exception', 'valid': True}
-            elif rule.startswith('#$#'):
-                return {'type': 'scriptlet_injection', 'valid': True}
-            else:
-                return {'type': 'comment', 'valid': True}
-        
-        result = {
-            'type': 'unknown',
-            'valid': False,
-            'domain': '',
-            'is_adblock': False,
-            'raw_rule': rule
-        }
-        
-        # 检查Adblock语法
-        if rule.startswith('||') and '^' in rule:
-            result['type'] = 'domain_block'
-            result['is_adblock'] = True
-            domain = self.extract_domain_from_rule(rule)
-            if domain and self.is_valid_domain_format(domain):
-                result['domain'] = domain
-                result['valid'] = True
-        
-        elif rule.startswith('@@'):
-            result['type'] = 'whitelist'
-            result['is_adblock'] = True
-            domain = self.extract_domain_from_rule(rule)
-            if domain and self.is_valid_domain_format(domain):
-                result['domain'] = domain
-                result['valid'] = True
-            else:
-                result['valid'] = True  # 白名单规则可能没有域名
-        
-        elif rule.startswith('/') and rule.endswith('/'):
-            result['type'] = 'regex'
-            result['is_adblock'] = True
-            result['valid'] = True
-        
-        elif '$' in rule and ('||' in rule or '@@' in rule):
-            result['type'] = 'advanced'
-            result['is_adblock'] = True
-            domain = self.extract_domain_from_rule(rule)
-            if domain and self.is_valid_domain_format(domain):
-                result['domain'] = domain
-                result['valid'] = True
-            else:
-                result['valid'] = True  # 高级规则可能没有域名
-        
-        elif re.match(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+', rule):
-            result['type'] = 'hosts'
-            domain = self.extract_domain_from_rule(rule)
-            if domain and self.is_valid_domain_format(domain):
-                result['domain'] = domain
-                result['valid'] = True
-        
-        elif re.match(r'^[a-zA-Z0-9.*-]+\.[a-zA-Z]{2,}$', rule):
-            result['type'] = 'simple_domain'
-            if self.is_valid_domain_format(rule):
-                result['domain'] = rule
-                result['valid'] = True
-        
-        return result
-    
-    def process_rule_with_ping(self, rule: str) -> Tuple[str, str, str, bool]:
-        """处理单条规则，包含ping检查"""
-        rule_info = self.classify_rule_type(rule)
-        
-        if not rule_info['valid']:
-            return "", "", "", False
+        # 跳过注释
+        if not rule or rule.startswith(('!', '#')):
+            return "", "", ""
         
         dns_rule = ""
         hosts_rule = ""
         browser_rule = ""
-        is_valid = True
         
-        # 如果是域名规则，进行ping检查
-        if rule_info.get('domain'):
-            domain = rule_info['domain']
-            self.ping_stats['total_domains'] += 1
-            
-            # 检查域名格式
-            if not self.is_valid_domain_format(domain):
-                self.ping_stats['invalid_domains'] += 1
-                is_valid = False
-            else:
-                # 执行ping检查
-                ping_result, ping_message = self.ping_domain(domain)
-                if ping_result:
-                    self.ping_stats['resolved_domains'] += 1
-                    self.ping_stats['valid_domains'] += 1
-                else:
-                    self.ping_stats['failed_domains'] += 1
-                    # 如果ping失败，标记为无效但可能仍然保留（根据规则类型）
-                    if rule_info['type'] in ['domain_block', 'hosts', 'simple_domain']:
-                        is_valid = False
+        # 提取域名
+        domain = self.extract_domain_from_rule(rule)
         
-        # 根据规则类型生成三层规则
-        if is_valid:
-            rule_type = rule_info['type']
-            domain = rule_info.get('domain', '')
-            
-            if rule_type == 'simple_domain' and domain:
+        # 如果是域名规则，检查是否在有效域名列表中
+        if domain and domain not in valid_domains:
+            # 域名不可达，跳过
+            return "", "", ""
+        
+        # 1. 如果是白名单规则 (@@开头)
+        if rule.startswith('@@'):
+            # 白名单规则只放在浏览器规则中
+            browser_rule = rule
+            return "", "", browser_rule
+        
+        # 2. 如果是域名阻断规则 (||开头 ^结尾)
+        if re.match(r'^\|\|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\^', rule):
+            browser_rule = rule
+            if domain:
                 dns_rule = domain
                 hosts_rule = f"0.0.0.0 {domain}"
-                browser_rule = f"||{domain}^"
-            
-            elif rule_type == 'domain_block':
-                browser_rule = rule_info['raw_rule']
-                if domain:
-                    dns_rule = domain
-                    hosts_rule = f"0.0.0.0 {domain}"
-            
-            elif rule_type == 'whitelist':
-                browser_rule = rule_info['raw_rule']
-                # 白名单规则不加入DNS和Hosts
-            
-            elif rule_type == 'hosts':
-                hosts_rule = rule_info['raw_rule']
-                if domain:
-                    dns_rule = domain
-                    # 转换为主机规则格式
-                    if not hosts_rule.startswith('0.0.0.0'):
-                        parts = hosts_rule.split()
-                        if len(parts) >= 2:
-                            hosts_rule = f"0.0.0.0 {parts[1]}"
-            
-            elif rule_type in ['element_hiding', 'element_hiding_exception', 'scriptlet_injection', 'regex', 'advanced']:
-                browser_rule = rule_info['raw_rule']
-            
-            elif rule_info['is_adblock']:
-                browser_rule = rule_info['raw_rule']
+            return dns_rule, hosts_rule, browser_rule
         
-        return dns_rule, hosts_rule, browser_rule, is_valid
+        # 3. 如果是Hosts规则
+        if re.match(r'^(0\.0\.0\.0|127\.0\.0\.1|::1)\s+', rule):
+            hosts_rule = rule
+            if domain:
+                dns_rule = domain
+                browser_rule = f"||{domain}^"
+            return dns_rule, hosts_rule, browser_rule
+        
+        # 4. 如果是元素隐藏规则
+        if rule.startswith('##'):
+            browser_rule = rule
+            return "", "", browser_rule
+        
+        # 5. 如果是带修饰符的规则
+        if '$' in rule:
+            browser_rule = rule
+            if domain and rule.startswith('||'):
+                dns_rule = domain
+                hosts_rule = f"0.0.0.0 {domain}"
+            return dns_rule, hosts_rule, browser_rule
+        
+        # 6. 如果是简单域名
+        if domain and re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', rule):
+            dns_rule = domain
+            hosts_rule = f"0.0.0.0 {domain}"
+            browser_rule = f"||{domain}^"
+            return dns_rule, hosts_rule, browser_rule
+        
+        # 7. 其他规则（正则表达式等）
+        browser_rule = rule
+        return "", "", browser_rule
     
     def process_content(self, content: str) -> Tuple[List[str], List[str], List[str]]:
         """处理整个内容，返回三层规则列表"""
@@ -432,31 +345,32 @@ class RuleUpdater:
         hosts_rules = []
         browser_rules = []
         
+        # 提取所有域名用于Ping检测
+        all_domains = set()
         lines = content.split('\n')
-        total_lines = len(lines)
         
-        print(f"  📄 处理 {total_lines} 行...")
+        for line in lines:
+            domain = self.extract_domain_from_rule(line)
+            if domain:
+                all_domains.add(domain)
         
-        # 使用线程池并发处理ping检查
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = []
-            for line in lines:
-                futures.append(executor.submit(self.process_rule_with_ping, line))
+        # Ping检测域名
+        if all_domains:
+            ping_results = self.ping_domains_batch(list(all_domains))
+            valid_domains = {domain for domain, reachable in ping_results.items() if reachable}
+        else:
+            valid_domains = set()
+        
+        # 处理规则
+        for line in lines:
+            dns_rule, hosts_rule, browser_rule = self.process_rule(line, valid_domains)
             
-            for i, future in enumerate(as_completed(futures)):
-                dns_rule, hosts_rule, browser_rule, is_valid = future.result()
-                
-                if is_valid:
-                    if dns_rule:
-                        dns_rules.append(dns_rule)
-                    if hosts_rule:
-                        hosts_rules.append(hosts_rule)
-                    if browser_rule:
-                        browser_rules.append(browser_rule)
-                
-                # 显示进度
-                if (i + 1) % 1000 == 0 or (i + 1) == total_lines:
-                    print(f"    └── 进度: {i + 1}/{total_lines} 行")
+            if dns_rule:
+                dns_rules.append(dns_rule)
+            if hosts_rule:
+                hosts_rules.append(hosts_rule)
+            if browser_rule:
+                browser_rules.append(browser_rule)
         
         return dns_rules, hosts_rules, browser_rules
     
@@ -475,15 +389,13 @@ class RuleUpdater:
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(header)
             f.write('\n'.join(unique_rules))
-            if unique_rules and not unique_rules[-1].endswith('\n'):
-                f.write('\n')
         
         return len(unique_rules)
     
     def run(self) -> bool:
         """执行更新流程"""
         print("=" * 60)
-        print("🚀 Adblock规则更新器 - 支持Ping检查")
+        print("🚀 广告拦截规则更新器 - Adblock语法版 (含Ping检测)")
         print("=" * 60)
         
         if not self.load_config():
@@ -492,15 +404,6 @@ class RuleUpdater:
         # 确保目录存在
         (self.base_dir / 'dist').mkdir(exist_ok=True)
         (self.base_dir / 'rules/raw').mkdir(parents=True, exist_ok=True)
-        
-        # 重置ping统计
-        self.ping_stats = {
-            'total_domains': 0,
-            'resolved_domains': 0,
-            'failed_domains': 0,
-            'valid_domains': 0,
-            'invalid_domains': 0
-        }
         
         all_dns_rules = []
         all_hosts_rules = []
@@ -530,9 +433,9 @@ class RuleUpdater:
                     
                     source_type = source.get('type', 'main')
                     if source_type == 'gz_txt':
-                        print(f"  📄 {source['name']}: {len(dns_rules)} DNS, {len(hosts_rules)} Hosts, {len(browser_rules)} 浏览器规则")
+                        print(f"  📄 {source['name']}: {len(dns_rules)} DNS, {len(hosts_rules)} Hosts, {len(browser_rules)} 浏览器规则 (Ping检测后)")
                     else:
-                        print(f"  ✅ {source['name']}: {len(dns_rules)} DNS, {len(hosts_rules)} Hosts, {len(browser_rules)} 浏览器规则")
+                        print(f"  ✅ {source['name']}: {len(dns_rules)} DNS, {len(hosts_rules)} Hosts, {len(browser_rules)} 浏览器规则 (Ping检测后)")
                     
                     successful_sources += 1
                 except Exception as e:
@@ -545,18 +448,11 @@ class RuleUpdater:
         
         print(f"\n📊 规则获取完成:")
         print(f"  ✅ 成功: {successful_sources}/{len(sorted_sources)}")
+        print(f"  ✅ Ping检测: {len(self.valid_domains)} 个域名可达，{len(self.failed_domains)} 个域名不可达")
         if failed_sources:
             print(f"  ❌ 失败: {len(failed_sources)}")
             for name in failed_sources[:5]:
                 print(f"    • {name}")
-        
-        # 显示ping统计
-        print(f"\n📡 Ping检查统计:")
-        print(f"  ├── 总域名数: {self.ping_stats['total_domains']}")
-        print(f"  ├── 解析成功: {self.ping_stats['resolved_domains']}")
-        print(f"  ├── 解析失败: {self.ping_stats['failed_domains']}")
-        print(f"  ├── 有效域名: {self.ping_stats['valid_domains']}")
-        print(f"  └── 无效域名: {self.ping_stats['invalid_domains']}")
         
         # 生成时间
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
@@ -567,8 +463,10 @@ class RuleUpdater:
 # 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 # 规则数量: {len(all_dns_rules)} 条
 # 规则来源: sources/sources.json + sources/gz.txt
-# 语法: 纯域名 (example.com)
-# Ping检查: 已执行域名验证
+# 语法: Adblock语法提取的纯域名
+# 说明: 所有域名已通过Ping检测
+# Ping统计: {len(self.valid_domains)} 可达, {len(self.failed_domains)} 不可达
+# 用法: 导入到DNS过滤服务中
 # ==================================================
 
 """
@@ -580,8 +478,10 @@ class RuleUpdater:
 # 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 # 规则数量: {len(all_hosts_rules)} 条
 # 规则来源: sources/sources.json + sources/gz.txt
-# 语法: 0.0.0.0 example.com
-# Ping检查: 已执行域名验证
+# 语法: 0.0.0.0 + 域名
+# 说明: 所有域名已通过Ping检测
+# Ping统计: {len(self.valid_domains)} 可达, {len(self.failed_domains)} 不可达
+# 用法: 复制到系统 hosts 文件中
 # ==================================================
 
 """
@@ -593,8 +493,14 @@ class RuleUpdater:
 ! 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 ! 规则数量: {len(all_browser_rules)} 条
 ! 规则来源: sources/sources.json + sources/gz.txt
-! 语法: 完整Adblock语法
-! Ping检查: 已执行域名验证
+! 语法: Adblock完整语法
+! 说明: 所有域名已通过Ping检测
+! Ping统计: {len(self.valid_domains)} 可达, {len(self.failed_domains)} 不可达
+! 支持语法:
+!   • 域名阻断: ||example.com^
+!   • 白名单: @@||example.com^
+!   • 元素隐藏: ##.ad-banner
+!   • 高级规则: ||example.com^$script,third-party
 ! ==================================================
 
 """
@@ -609,23 +515,37 @@ class RuleUpdater:
                 "browser_rules": browser_count,
                 "total_rules": dns_count + hosts_count + browser_count
             },
-            "ping_statistics": self.ping_stats,
+            "ping_statistics": {
+                "valid_domains": len(self.valid_domains),
+                "failed_domains": len(self.failed_domains),
+                "ping_success_rate": len(self.valid_domains) / max(1, len(self.valid_domains) + len(self.failed_domains))
+            },
             "sources_used": successful_sources,
             "sources_total": len(sorted_sources),
             "sources_failed": len(failed_sources),
-            "syntax_version": "adblock_2.0",
-            "features": [
-                "adblock_syntax",
-                "domain_validation",
-                "ping_check",
-                "concurrent_processing"
-            ],
-            "notes": "Adblock语法规则，包含域名ping检查功能",
+            "syntax_version": "adblock_1.0",
+            "notes": "Adblock语法规则，所有域名已通过Ping检测",
             "includes_gz_txt": any(s.get('type') == 'gz_txt' for s in sorted_sources)
         }
         
         with open(self.base_dir / 'dist/metadata.json', 'w', encoding='utf-8') as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
+        
+        # 保存Ping检测结果
+        ping_results = {
+            "timestamp": now.isoformat(),
+            "valid_domains": sorted(list(self.valid_domains)),
+            "failed_domains": sorted(list(self.failed_domains)),
+            "statistics": {
+                "total_tested": len(self.valid_domains) + len(self.failed_domains),
+                "valid_count": len(self.valid_domains),
+                "failed_count": len(self.failed_domains),
+                "success_rate": len(self.valid_domains) / max(1, len(self.valid_domains) + len(self.failed_domains))
+            }
+        }
+        
+        with open(self.base_dir / 'dist/ping_results.json', 'w', encoding='utf-8') as f:
+            json.dump(ping_results, f, indent=2, ensure_ascii=False)
         
         print("\n" + "=" * 60)
         print("✅ 更新完成!")
@@ -634,14 +554,14 @@ class RuleUpdater:
         print(f"📊 浏览器规则: {browser_count} 条 (filter.txt)")
         print(f"📊 总计: {dns_count + hosts_count + browser_count} 条")
         print(f"📋 规则源: {successful_sources} 成功, {len(failed_sources)} 失败")
-        print(f"📡 域名验证: {self.ping_stats['valid_domains']}/{self.ping_stats['total_domains']} 个域名有效")
-        print("\n🎯 Adblock语法特性:")
-        print("  • 域名阻断: ||example.com^")
-        print("  • 白名单: @@||example.com^")
-        print("  • 元素隐藏: ##.ad-banner")
-        print("  • 脚本注入: #$#alert('Blocked!')")
-        print("  • 正则表达式: /ads.*\\.com/")
-        print("  • 高级修饰符: ||example.com^$domain=example.com")
+        print(f"🔍 Ping检测: {len(self.valid_domains)} 个域名可达, {len(self.failed_domains)} 个域名不可达")
+        print(f"📁 额外规则源: sources/gz.txt 已包含")
+        print(f"⏰ 下次更新: {(now + datetime.timedelta(hours=8)).strftime('%Y-%m-%d %H:%M')}")
+        print("\n🎯 Adblock语法规则:")
+        print("  • DNS: 纯域名 (example.com)")
+        print("  • Hosts: 0.0.0.0 example.com")
+        print("  • 浏览器: ||example.com^  ##.ad-banner  @@||example.com^")
+        print("  • 所有域名已通过Ping检测")
         print("=" * 60)
         
         return successful_sources > 0
