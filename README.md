@@ -15,15 +15,15 @@
 | **白名单规则** | 排除误拦域名 | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/white.txt` | `https://cdn.jsdelivr.net/gh/wansheng8/adblock@main/rules/outputs/white.txt` |
 
 **版本 20260201 统计：**
-- 原始黑名单：341,638 个
-- 最终黑名单：340,342 个
+- 原始黑名单：1,249,914 个
+- 最终黑名单：1,249,024 个
 - 白名单域名：10 个
 
 ---
 
 ## 最新更新时间
 
-**2026-02-01 01:34:47**
+**2026-02-01 01:37:19**
 
 *规则每天自动更新*
 
