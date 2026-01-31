@@ -17,6 +17,7 @@ from typing import Set, Dict, List, Optional, Tuple
 import requests
 import urllib.parse
 from collections import defaultdict
+import sys
 
 # ========== 配置 ==========
 CONFIG = {
@@ -1095,12 +1096,23 @@ def main():
         print("请运行：pip install requests")
         return
     
-    # 显示模式选择
-    print("请选择生成模式：")
-    print("1. 基础模式（快速，标准规则）")
-    print("2. 增强模式（推荐，高命中率）")
-    
-    choice = input("请输入选择 (1/2, 默认2): ").strip() or "2"
+    # 自动检测运行环境，非交互式环境直接使用增强模式
+    if sys.stdin and sys.stdin.isatty():
+        # 交互式环境，可以询问用户
+        print("请选择生成模式：")
+        print("1. 基础模式（快速，标准规则）")
+        print("2. 增强模式（推荐，高命中率）")
+        
+        try:
+            choice = input("请输入选择 (1/2, 默认2): ").strip() or "2"
+        except EOFError:
+            # 非交互式环境但被当作交互式，默认使用增强模式
+            print("检测到非交互式环境，自动选择增强模式")
+            choice = "2"
+    else:
+        # 非交互式环境，直接使用增强模式
+        print("非交互式环境，自动选择增强模式")
+        choice = "2"
     
     if choice == "1":
         print("\n🚀 使用基础模式...")
