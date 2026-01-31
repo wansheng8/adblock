@@ -1,6 +1,6 @@
 # 广告过滤规则
 
-一个自动更新的广告过滤规则集合，适用于AdGuard、uBlock Origin、AdBlock Plus、AdGuard Home、Pi-hole等。
+简洁高效的广告过滤规则，专注于拦截广告域名。
 
 ---
 
@@ -13,17 +13,15 @@
 | **Hosts规则** | 适用于系统hosts文件 | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/hosts.txt` | `https://cdn.jsdelivr.net/gh/wansheng8/adblock@main/rules/outputs/hosts.txt` |
 | **黑名单规则** | 纯黑名单域名 | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/black.txt` | `https://cdn.jsdelivr.net/gh/wansheng8/adblock@main/rules/outputs/black.txt` |
 | **白名单规则** | 排除误拦域名 | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/white.txt` | `https://cdn.jsdelivr.net/gh/wansheng8/adblock@main/rules/outputs/white.txt` |
-| **轻量DNS规则** | 适用于内存有限的设备 | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/dns_light.txt` | `https://cdn.jsdelivr.net/gh/wansheng8/adblock@main/rules/outputs/dns_light.txt` |
 
 **版本 20260201 统计：**
-- 黑名单域名：75,805 个
-- 白名单规则：23,437 条
-- 元素隐藏规则：238,703 条
+- 黑名单域名：354,841 个
+- 白名单域名：10,249 个
 
 ---
 
 ## 最新更新时间
 
-**2026-02-01 00:27:29** (北京时间)
+**2026-02-01 00:43:21**
 
-*规则每天自动更新，更新时间：北京时间 02:00*
+*规则每天自动更新*

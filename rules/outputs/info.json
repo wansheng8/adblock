@@ -1,22 +1,11 @@
 {
   "version": "20260201",
-  "updated_at": "2026-02-01 00:27:29",
-  "timezone": "Asia/Shanghai (UTC+8)",
+  "updated_at": "2026-02-01 00:43:21",
   "statistics": {
-    "total_lines_processed": 1827494,
-    "blacklist_domains": 198259,
-    "whitelist_domains": 88317,
-    "complex_rules": 49179,
-    "element_hiding_rules": 238703,
-    "url_pattern_rules": 1030749,
-    "final_blacklist_domains": 75805,
-    "final_whitelist_rules": 23437
-  },
-  "files": {
-    "ad.txt": "AdBlock完整规则",
-    "dns.txt": "DNS过滤规则",
-    "hosts.txt": "Hosts格式规则",
-    "black.txt": "纯黑名单",
-    "white.txt": "纯白名单"
+    "lines_processed": 1827494,
+    "final_blacklist_domains": 354841,
+    "whitelist_domains": 10249,
+    "critical_domains_added": 3,
+    "whitelist_ignored": 43639
   }
 }
