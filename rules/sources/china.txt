@@ -1,0 +1,3 @@
+# 中文广告规则源
+https://easylist-downloads.adblockplus.org/easylistchina.txt
+https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt
