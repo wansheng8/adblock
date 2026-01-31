@@ -69,8 +69,6 @@ class SimpleAdBlockGenerator:
                 f.write("https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt\n\n")
                 f.write("# EasyList规则（主要源）\n")
                 f.write("https://easylist.to/easylist/easylist.txt\n\n")
-                f.write("# 中文规则（可选）\n")
-                f.write("# https://raw.githubusercontent.com/AdguardTeam/ChineseFilter/master/ADGUARD_FILTER.txt\n")
         
         # 白名单源 - 只放行真正需要的
         if not os.path.exists(CONFIG['WHITE_SOURCE']):
@@ -78,11 +76,11 @@ class SimpleAdBlockGenerator:
                 f.write("# 白名单规则源\n")
                 f.write("# 只放行真正需要的域名\n\n")
                 f.write("# 重要网站主域名\n")
-                f.write("google.com\n")
-                f.write("github.com\n")
-                f.write("baidu.com\n")
-                f.write("qq.com\n")
-                f.write("zhihu.com\n")
+                for domain in CONFIG['TRUE_WHITELIST_DOMAINS']:
+                    f.write(f"{domain}\n")
+                f.write("\n")
+                f.write("# 注意：这里只写域名，不要写URL\n")
+                f.write("# 每行一个域名，例如：example.com\n")
     
     def download_content(self, url: str) -> Optional[str]:
         """下载规则内容"""
@@ -178,68 +176,65 @@ class SimpleAdBlockGenerator:
             
             domain = self.extract_domain_from_line(line)
             if domain:
-                # 如果这个域名在我们的白名单中，跳过
-                if domain in CONFIG['TRUE_WHITELIST_DOMAINS']:
-                    continue
-                
-                # 检查是否是白名单域名的子域名
-                is_whitelist_subdomain = False
-                for white_domain in CONFIG['TRUE_WHITELIST_DOMAINS']:
-                    if domain == white_domain or domain.endswith(f".{white_domain}"):
-                        is_whitelist_subdomain = True
-                        break
-                
-                if not is_whitelist_subdomain:
-                    self.black_domains.add(domain)
-                    domains_found += 1
+                self.black_domains.add(domain)
+                domains_found += 1
         
         print(f"  ✓ 找到 {domains_found} 个域名")
     
-    def load_whitelist(self):
-        """加载白名单"""
+    def load_whitelist(self) -> Set[str]:
+        """加载白名单 - 简化版，只使用配置的白名单"""
         print("✅ 加载白名单...")
         
+        # 从配置中获取基础白名单
         whitelist_domains = set(CONFIG['TRUE_WHITELIST_DOMAINS'])
         
+        # 从文件读取附加的白名单
         if os.path.exists(CONFIG['WHITE_SOURCE']):
             with open(CONFIG['WHITE_SOURCE'], 'r', encoding='utf-8') as f:
                 for line in f:
                     line = line.strip()
-                    if line and not line.startswith('#'):
-                        # 如果是URL，下载并处理
-                        if line.startswith('http'):
-                            print(f"  📥 下载白名单源: {line}")
-                            content = self.download_content(line)
-                            if content:
-                                for content_line in content.split('\n'):
-                                    domain = self.extract_domain_from_line(content_line)
-                                    if domain:
-                                        whitelist_domains.add(domain)
-                        else:
-                            # 直接添加域名
-                            domain = self.extract_domain_from_line(line)
-                            if domain:
-                                whitelist_domains.add(domain)
+                    # 跳过注释和空行
+                    if not line or line.startswith('#'):
+                        continue
+                    # 跳过URL，只处理纯域名
+                    if line.startswith('http'):
+                        print(f"  ⚠️  警告: 跳过URL {line}，白名单文件只应包含域名")
+                        continue
+                    
+                    # 提取域名
+                    domain = self.extract_domain_from_line(line)
+                    if domain:
+                        whitelist_domains.add(domain)
+                    else:
+                        # 尝试直接作为域名处理
+                        if self.is_valid_domain(line):
+                            whitelist_domains.add(line.lower())
         
         print(f"  白名单域名: {len(whitelist_domains)} 个")
         if whitelist_domains:
-            print("  白名单示例:", list(whitelist_domains)[:5])
+            print("  白名单示例:", list(whitelist_domains)[:10])
         
         return whitelist_domains
     
     def apply_whitelist(self, whitelist_domains: Set[str]):
-        """应用白名单"""
+        """应用白名单 - 移除白名单域名及其子域名"""
         print("🔄 应用白名单...")
         
         original_count = len(self.black_domains)
         
-        # 移除完全匹配的白名单域名
-        domains_to_remove = set()
-        for domain in self.black_domains:
-            if domain in whitelist_domains:
-                domains_to_remove.add(domain)
+        # 创建最终黑名单
+        self.final_blacklist = set()
         
-        self.final_blacklist = self.black_domains - domains_to_remove
+        for domain in self.black_domains:
+            # 检查是否是白名单域名或其子域名
+            is_whitelisted = False
+            for white_domain in whitelist_domains:
+                if domain == white_domain or domain.endswith(f".{white_domain}"):
+                    is_whitelisted = True
+                    break
+            
+            if not is_whitelisted:
+                self.final_blacklist.add(domain)
         
         removed = original_count - len(self.final_blacklist)
         print(f"  移除 {removed} 个白名单域名")
@@ -254,6 +249,7 @@ class SimpleAdBlockGenerator:
         
         # 排序域名
         sorted_blacklist = sorted(self.final_blacklist)
+        sorted_whitelist = sorted(whitelist_domains)
         
         # 1. AdBlock规则 (ad.txt)
         with open('rules/outputs/ad.txt', 'w', encoding='utf-8') as f:
@@ -263,8 +259,13 @@ class SimpleAdBlockGenerator:
             f.write(f"! 白名单域名: {len(whitelist_domains)} 个\n")
             f.write("!\n\n")
             
-            # 黑名单规则
-            f.write("! ====== 黑名单 ======\n")
+            # 白名单规则（放在前面）
+            f.write("! ====== 白名单 ======\n")
+            for domain in sorted_whitelist:
+                f.write(f"@@||{domain}^$important\n")
+                f.write(f"@@||*.{domain}^$important\n")
+            
+            f.write("\n! ====== 黑名单 ======\n")
             for domain in sorted_blacklist:
                 f.write(f"||{domain}^\n")
         
@@ -276,7 +277,7 @@ class SimpleAdBlockGenerator:
             f.write("#\n\n")
             
             for domain in sorted_blacklist:
-                f.write(f"{domain}\n")
+                f.write(f"0.0.0.0 {domain}\n")
         
         # 3. Hosts规则 (hosts.txt)
         with open('rules/outputs/hosts.txt', 'w', encoding='utf-8') as f:
@@ -298,7 +299,7 @@ class SimpleAdBlockGenerator:
         # 4. 纯黑名单 (black.txt)
         with open('rules/outputs/black.txt', 'w', encoding='utf-8') as f:
             for domain in sorted_blacklist:
-                f.write(f"||{domain}^\n")
+                f.write(f"{domain}\n")
         
         # 5. 纯白名单 (white.txt)
         with open('rules/outputs/white.txt', 'w', encoding='utf-8') as f:
@@ -307,8 +308,8 @@ class SimpleAdBlockGenerator:
             f.write(f"# 域名数量: {len(whitelist_domains)} 个\n")
             f.write("#\n\n")
             
-            for domain in sorted(whitelist_domains):
-                f.write(f"@@||{domain}^\n")
+            for domain in sorted_whitelist:
+                f.write(f"{domain}\n")
         
         # 6. 规则信息 (info.json)
         info = {
@@ -316,6 +317,7 @@ class SimpleAdBlockGenerator:
             'updated_at': timestamp,
             'statistics': {
                 'lines_processed': self.stats['lines_processed'],
+                'blacklist_domains_raw': len(self.black_domains),
                 'final_blacklist_domains': len(self.final_blacklist),
                 'whitelist_domains': len(whitelist_domains),
                 'whitelist_ignored': self.stats['whitelist_ignored']
@@ -326,7 +328,8 @@ class SimpleAdBlockGenerator:
             json.dump(info, f, indent=2, ensure_ascii=False)
         
         print(f"📄 文件生成完成:")
-        print(f"   黑名单域名: {len(self.final_blacklist):,} 个")
+        print(f"   原始黑名单: {len(self.black_domains):,} 个")
+        print(f"   最终黑名单: {len(self.final_blacklist):,} 个")
         print(f"   白名单域名: {len(whitelist_domains)} 个")
     
     def run(self):
@@ -374,6 +377,8 @@ class SimpleAdBlockGenerator:
                     except Exception as e:
                         print(f"  ❌ 处理失败: {e}")
             
+            print(f"\n📊 原始黑名单域名: {len(self.black_domains):,} 个")
+            
             # 3. 应用白名单
             self.apply_whitelist(whitelist_domains)
             
@@ -391,7 +396,8 @@ class SimpleAdBlockGenerator:
             print("\n" + "=" * 60)
             print("🎉 规则生成完成！")
             print(f"⏱️  耗时: {elapsed:.1f}秒")
-            print(f"📊 黑名单域名: {len(self.final_blacklist):,}个")
+            print(f"📊 原始黑名单: {len(self.black_domains):,}个")
+            print(f"📊 最终黑名单: {len(self.final_blacklist):,}个")
             print(f"📊 白名单域名: {len(whitelist_domains)}个")
             print("📁 规则文件: rules/outputs/")
             print("=" * 60)
@@ -431,7 +437,8 @@ class SimpleAdBlockGenerator:
 | **白名单规则** | 排除误拦域名 | `{base_url}/white.txt` | `{cdn_url}/white.txt` |
 
 **版本 {info['version']} 统计：**
-- 黑名单域名：{info['statistics']['final_blacklist_domains']:,} 个
+- 原始黑名单：{info['statistics']['blacklist_domains_raw']:,} 个
+- 最终黑名单：{info['statistics']['final_blacklist_domains']:,} 个
 - 白名单域名：{info['statistics']['whitelist_domains']} 个
 
 ---
@@ -441,6 +448,18 @@ class SimpleAdBlockGenerator:
 **{info['updated_at']}**
 
 *规则每天自动更新*
+
+## 白名单说明
+
+本规则集采用极简白名单策略，只放行少数重要网站：
+
+1. Google相关服务
+2. GitHub开发者平台
+3. 微软、苹果官方服务
+4. 百度、QQ等国内主要服务
+5. 知乎、B站、微博、淘宝等常用网站
+
+如需添加更多白名单，请编辑 `rules/sources/white.txt` 文件。
 """
         
         with open('README.md', 'w', encoding='utf-8') as f:
@@ -473,10 +492,20 @@ class SimpleAdBlockGenerator:
         
         # 检查白名单数量
         white_count = len(whitelist_domains)
-        if white_count > 100:
+        if white_count > 50:
             print(f"⚠️  警告: 白名单过多 ({white_count} 个)")
+            print(f"  建议保持白名单在20个以内以确保过滤效果")
+            print(f"  当前白名单示例:", list(whitelist_domains)[:15])
         else:
             print(f"✅ 白名单数量合理 ({white_count} 个)")
+        
+        # 检查是否有白名单域名在黑名单中
+        conflicting = whitelist_domains.intersection(self.final_blacklist)
+        if conflicting:
+            print(f"⚠️  冲突: {len(conflicting)} 个白名单域名仍在黑名单中")
+            for domain in sorted(conflicting)[:10]:
+                print(f"   - {domain}")
+            print("  这些域名将被白名单规则覆盖")
 
 def main():
     """主函数"""
