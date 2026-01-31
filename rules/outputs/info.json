@@ -1,0 +1,10 @@
+{
+  "version": "20260131",
+  "updated": "2026-01-31 14:48:35",
+  "stats": {
+    "black_domains": 389762,
+    "white_domains": 7218,
+    "black_rules": 239262,
+    "white_rules": 22258
+  }
+}
