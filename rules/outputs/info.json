@@ -1,9 +1,9 @@
 {
   "version": "20260131",
-  "updated_at": "2026-01-31 23:48:59",
+  "updated_at": "2026-01-31 23:58:08",
   "statistics": {
     "total_processed_rules": 1827461,
-    "domains_extracted": 1296875,
+    "domains_extracted": 1286056,
     "complex_rules_saved": 323741,
     "final_blacklist_domains": 358862,
     "whitelist_domains": 18373,
