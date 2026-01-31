@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-广告过滤规则生成器 - 性能优化版
+广告过滤规则生成器 - 轻量优化版
+不使用tqdm依赖
 """
 
 import os
@@ -17,7 +18,6 @@ import requests
 import urllib.parse
 from collections import defaultdict
 import sys
-from tqdm import tqdm  # 进度条库
 
 # ========== 配置 ==========
 CONFIG = {
@@ -27,8 +27,8 @@ CONFIG = {
     'GITHUB_BRANCH': 'main',
     
     # 性能设置
-    'MAX_WORKERS': 3,  # 减少并发，避免被限速
-    'TIMEOUT': 60,     # 增加超时时间
+    'MAX_WORKERS': 3,
+    'TIMEOUT': 60,
     'RETRY_TIMES': 3,
     
     # 规则源文件
@@ -51,11 +51,9 @@ CONFIG = {
     
     # 性能优化配置
     'PERFORMANCE': {
-        'max_total_domains': 300000,  # 最大域名总数
+        'max_total_domains': 200000,  # 最大域名总数
         'skip_some_sources': True,    # 跳过部分大文件源
-        'batch_size': 10000,          # 批量处理大小
-        'enable_progress_bar': True,  # 启用进度条
-        'use_bloom_filter': False,    # 使用布隆过滤器去重（需要安装pybloom-live）
+        'batch_size': 5000,           # 批量处理大小
     },
     
     # 排除的域名
@@ -72,97 +70,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class ProgressTracker:
-    """进度跟踪器"""
-    
-    def __init__(self):
-        self.start_time = time.time()
-        self.stages = {}
-        self.current_stage = None
-    
-    def start_stage(self, name: str):
-        """开始一个阶段"""
-        self.current_stage = name
-        self.stages[name] = {'start': time.time(), 'items_processed': 0}
-        logger.info(f"开始阶段: {name}")
-    
-    def update_progress(self, items: int = 1):
-        """更新进度"""
-        if self.current_stage and self.current_stage in self.stages:
-            self.stages[self.current_stage]['items_processed'] += items
-    
-    def end_stage(self):
-        """结束当前阶段"""
-        if self.current_stage and self.current_stage in self.stages:
-            end_time = time.time()
-            stage_info = self.stages[self.current_stage]
-            elapsed = end_time - stage_info['start']
-            items = stage_info['items_processed']
-            logger.info(f"完成阶段 {self.current_stage}: 处理 {items} 个项目，耗时 {elapsed:.2f}秒")
-            self.current_stage = None
-
-class OptimizedDomainFilter:
-    """优化版域名过滤器"""
+class SimpleProgressBar:
+    """简单的进度条（不使用tqdm）"""
     
     @staticmethod
-    def optimize_domains(domains: Set[str]) -> Set[str]:
-        """优化域名集合，移除重复和低质量域名"""
-        logger.info(f"开始优化域名集合: {len(domains):,} 个")
-        
-        # 1. 去重
-        unique_domains = set(domains)
-        logger.info(f"去重后: {len(unique_domains):,} 个")
-        
-        # 2. 移除无效域名
-        valid_domains = set()
-        for domain in unique_domains:
-            if OptimizedDomainFilter.is_valid_domain(domain):
-                valid_domains.add(domain)
-        
-        logger.info(f"有效域名: {len(valid_domains):,} 个")
-        
-        # 3. 按域名质量排序并截取
-        if len(valid_domains) > CONFIG['PERFORMANCE']['max_total_domains']:
-            logger.info(f"域名过多，截取前 {CONFIG['PERFORMANCE']['max_total_domains']:,} 个")
-            # 按域名长度和质量排序
-            sorted_domains = sorted(valid_domains, 
-                                   key=lambda x: (len(x.split('.')), -len(x)))
-            valid_domains = set(sorted_domains[:CONFIG['PERFORMANCE']['max_total_domains']])
-        
-        return valid_domains
+    def progress_bar(iteration, total, prefix='', suffix='', length=50, fill='█'):
+        """创建文本进度条"""
+        percent = ("{0:.1f}").format(100 * (iteration / float(total)))
+        filled_length = int(length * iteration // total)
+        bar = fill * filled_length + '-' * (length - filled_length)
+        return f'\r{prefix} |{bar}| {percent}% {suffix}'
     
     @staticmethod
-    def is_valid_domain(domain: str) -> bool:
-        """检查域名有效性"""
-        if not domain or domain in CONFIG['EXCLUDE_DOMAINS']:
-            return False
-        
-        # 基本长度检查
-        if len(domain) < 3 or len(domain) > 253:
-            return False
-        
-        # 必须包含点号
-        if '.' not in domain:
-            return False
-        
-        # 检查每个部分
-        parts = domain.split('.')
-        for part in parts:
-            if not part:  # 不能有空的段
-                return False
-            if len(part) > 63:
-                return False
-            if not re.match(r'^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$', part):
-                return False
-        
-        # 顶级域名至少2个字符
-        if len(parts[-1]) < 2:
-            return False
-        
-        return True
+    def print_progress(iteration, total, prefix='', suffix=''):
+        """打印进度条"""
+        print(SimpleProgressBar.progress_bar(iteration, total, prefix, suffix), end='\r')
+        if iteration == total:
+            print()
 
-class OptimizedAdBlockGenerator:
-    """优化版广告过滤规则生成器"""
+class LightweightAdBlockGenerator:
+    """轻量版广告过滤规则生成器"""
     
     def __init__(self):
         self.black_urls = []
@@ -171,7 +98,6 @@ class OptimizedAdBlockGenerator:
         self.white_domains = set()
         self.black_rules = set()
         self.white_rules = set()
-        self.progress = ProgressTracker()
         
         # 创建必要目录
         self.setup_directories()
@@ -184,21 +110,30 @@ class OptimizedAdBlockGenerator:
         # 创建精简的源文件
         if not os.path.exists(CONFIG['BLACK_SOURCE']):
             with open(CONFIG['BLACK_SOURCE'], 'w', encoding='utf-8') as f:
-                f.write("# 黑名单规则源（精简版）\n")
+                f.write("# 黑名单规则源（精简高效版）\n")
+                f.write("# 核心广告过滤规则\n")
                 f.write("https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt\n")
                 f.write("https://easylist.to/easylist/easylist.txt\n")
                 f.write("https://easylist.to/easylist/easyprivacy.txt\n")
                 f.write("https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/filters.txt\n")
                 f.write("https://raw.githubusercontent.com/AdguardTeam/ChineseFilter/master/ChineseFilter.txt\n")
+                f.write("# 仅保留高质量源，避免过多域名\n")
         
         if not os.path.exists(CONFIG['WHITE_SOURCE']):
             with open(CONFIG['WHITE_SOURCE'], 'w', encoding='utf-8') as f:
                 f.write("# 白名单规则源\n")
                 f.write("https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist.txt\n")
+        
+        # 创建中文源文件
+        if not os.path.exists(CONFIG['CHINA_SOURCE']):
+            with open(CONFIG['CHINA_SOURCE'], 'w', encoding='utf-8') as f:
+                f.write("# 中文广告规则源\n")
+                f.write("https://easylist-downloads.adblockplus.org/easylistchina.txt\n")
+                f.write("https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt\n")
     
     def load_sources(self):
         """加载规则源URL"""
-        self.progress.start_stage("加载规则源")
+        logger.info("加载规则源...")
         
         # 黑名单源
         with open(CONFIG['BLACK_SOURCE'], 'r', encoding='utf-8') as f:
@@ -210,7 +145,9 @@ class OptimizedAdBlockGenerator:
                         if any(skip in line for skip in [
                             'blocklistproject',
                             'hblock',
-                            'big.oisd.nl'
+                            'big.oisd.nl',
+                            'oisd.nl',
+                            'hagezi'
                         ]):
                             logger.info(f"跳过可能的大文件源: {line}")
                             continue
@@ -223,7 +160,16 @@ class OptimizedAdBlockGenerator:
                 if line and not line.startswith('#'):
                     self.white_urls.append(line)
         
-        self.progress.end_stage()
+        # 中文源
+        try:
+            with open(CONFIG['CHINA_SOURCE'], 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        self.black_urls.append(line)
+        except FileNotFoundError:
+            pass
+        
         logger.info(f"加载 {len(self.black_urls)} 个黑名单源")
         logger.info(f"加载 {len(self.white_urls)} 个白名单源")
     
@@ -237,26 +183,50 @@ class OptimizedAdBlockGenerator:
                 }
                 response = requests.get(url, headers=headers, timeout=CONFIG['TIMEOUT'])
                 response.raise_for_status()
-                
-                # 检查内容大小
-                content_length = len(response.content)
-                if content_length > 10 * 1024 * 1024:  # 10MB
-                    logger.warning(f"内容过大 ({content_length/1024/1024:.1f}MB): {url}")
-                
                 return response.text
             except Exception as e:
                 if attempt < CONFIG['RETRY_TIMES'] - 1:
-                    time.sleep(3)
+                    time.sleep(2)
                 else:
                     logger.warning(f"下载失败 {url}: {e}")
                     return None
     
-    def extract_domain_simple(self, line: str) -> Optional[str]:
-        """简单高效的域名提取"""
+    def is_valid_domain(self, domain: str) -> bool:
+        """检查域名有效性"""
+        if not domain or domain in CONFIG['EXCLUDE_DOMAINS']:
+            return False
+        
+        # 基本长度检查
+        if len(domain) < 4 or len(domain) > 253:
+            return False
+        
+        # 必须包含点号
+        if '.' not in domain:
+            return False
+        
+        # 检查每个部分
+        parts = domain.split('.')
+        for part in parts:
+            if not part:  # 不能有空的段
+                return False
+            if len(part) > 63:
+                return False
+            # 允许字母、数字、连字符
+            if not re.match(r'^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$', part):
+                return False
+        
+        # 顶级域名至少2个字符
+        if len(parts[-1]) < 2:
+            return False
+        
+        return True
+    
+    def extract_domain_fast(self, line: str) -> Optional[str]:
+        """快速域名提取"""
         line = line.strip()
         
         # 快速跳过
-        if not line or len(line) < 3:
+        if not line or len(line) < 4:
             return None
         
         # 跳过注释
@@ -264,29 +234,30 @@ class OptimizedAdBlockGenerator:
             return None
         
         # 常见模式匹配
-        patterns = [
-            (r'^\|\|([a-zA-Z0-9.-]+)\^', 1),  # ||domain.com^
-            (r'^@@\|\|([a-zA-Z0-9.-]+)\^', 1), # @@||domain.com^
-            (r'^([a-zA-Z0-9.-]+)$', 1),       # domain.com
-            (r'^0\.0\.0\.0\s+([a-zA-Z0-9.-]+)', 1), # 0.0.0.0 domain.com
-            (r'^127\.0\.0\.1\s+([a-zA-Z0-9.-]+)', 1), # 127.0.0.1 domain.com
-            (r'^\*\.([a-zA-Z0-9.-]+)', 1),    # *.domain.com
-        ]
-        
-        for pattern, group in patterns:
-            match = re.match(pattern, line)
+        if '||' in line and '^' in line:
+            # 处理 ||domain.com^ 格式
+            match = re.match(r'^\|\|([a-zA-Z0-9.-]+)\^', line)
             if match:
-                domain = match.group(group).lower().strip()
-                # 简单清理
-                domain = re.sub(r'^www\.', '', domain)
-                domain = re.sub(r'^m\.', '', domain)
-                domain = re.sub(r'^static\.', '', domain)
-                
-                # 快速验证
-                if (domain and '.' in domain and 
-                    len(domain) >= 4 and len(domain) <= 253 and
-                    domain not in CONFIG['EXCLUDE_DOMAINS']):
+                domain = match.group(1).lower()
+                domain = domain.replace('www.', '').replace('*.', '')
+                if self.is_valid_domain(domain):
                     return domain
+        
+        elif line.startswith('0.0.0.0 ') or line.startswith('127.0.0.1 '):
+            # 处理 hosts 格式
+            parts = line.split()
+            if len(parts) >= 2:
+                domain = parts[1].lower()
+                domain = domain.replace('www.', '').replace('*.', '')
+                if self.is_valid_domain(domain):
+                    return domain
+        
+        elif re.match(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', line):
+            # 纯域名格式
+            domain = line.lower()
+            domain = domain.replace('www.', '').replace('*.', '')
+            if self.is_valid_domain(domain):
+                return domain
         
         return None
     
@@ -296,174 +267,231 @@ class OptimizedAdBlockGenerator:
         white_domains = set()
         
         lines = content.split('\n')
-        batch_size = CONFIG['PERFORMANCE']['batch_size']
+        total_lines = len(lines)
         
-        for i in range(0, len(lines), batch_size):
-            batch = lines[i:i+batch_size]
-            for line in batch:
-                domain = self.extract_domain_simple(line)
-                if domain:
-                    if line.startswith('@@'):
-                        white_domains.add(domain)
-                    else:
-                        black_domains.add(domain)
+        # 显示进度
+        for i, line in enumerate(lines):
+            if i % 10000 == 0 and i > 0:
+                logger.debug(f"解析进度: {i}/{total_lines} 行")
             
-            self.progress.update_progress(len(batch))
+            domain = self.extract_domain_fast(line)
+            if domain:
+                if line.startswith('@@'):
+                    white_domains.add(domain)
+                else:
+                    black_domains.add(domain)
         
         return black_domains, white_domains
     
     def download_and_parse_all(self):
         """下载并解析所有规则"""
         logger.info("开始下载和解析规则...")
-        self.progress.start_stage("下载解析规则")
         
         all_urls = self.black_urls + self.white_urls
         total_urls = len(all_urls)
         
         results = []
+        failed_urls = []
+        
+        # 显示进度
+        print(f"总共有 {total_urls} 个URL需要处理")
+        
         with concurrent.futures.ThreadPoolExecutor(max_workers=CONFIG['MAX_WORKERS']) as executor:
             # 提交下载任务
             future_to_url = {executor.submit(self.download_url, url): url for url in all_urls}
             
             # 处理结果
-            for i, future in enumerate(concurrent.futures.as_completed(future_to_url), 1):
+            completed = 0
+            for future in concurrent.futures.as_completed(future_to_url):
                 url = future_to_url[future]
+                completed += 1
+                
+                # 显示进度
+                if completed % 5 == 0 or completed == total_urls:
+                    SimpleProgressBar.print_progress(completed, total_urls, prefix='下载进度:', suffix='完成')
+                
                 try:
                     content = future.result()
                     if content:
                         black_domains, white_domains = self.parse_content_fast(content)
                         results.append((black_domains, white_domains))
-                    
-                    # 显示进度
-                    if i % 5 == 0 or i == total_urls:
-                        logger.info(f"处理进度: {i}/{total_urls}")
-                    
-                    self.progress.update_progress()
+                        logger.debug(f"处理完成: {url} ({len(black_domains)} 域名)")
+                    else:
+                        failed_urls.append(url)
                         
                 except Exception as e:
                     logger.error(f"处理失败 {url}: {e}")
+                    failed_urls.append(url)
+        
+        print()  # 换行
         
         # 合并结果
         for black_domains, white_domains in results:
             self.black_domains.update(black_domains)
             self.white_domains.update(white_domains)
         
-        self.progress.end_stage()
+        if failed_urls:
+            logger.warning(f"有 {len(failed_urls)} 个URL处理失败")
+        
         logger.info(f"解析完成: 黑名单域名 {len(self.black_domains):,} 个")
         logger.info(f"白名单域名 {len(self.white_domains):,} 个")
     
-    def apply_whitelist_fast(self):
-        """快速应用白名单"""
+    def apply_whitelist_simple(self):
+        """简单应用白名单"""
         if not self.white_domains:
             logger.warning("没有白名单域名")
             return
         
-        self.progress.start_stage("应用白名单")
+        logger.info("应用白名单...")
         
         original_count = len(self.black_domains)
         
         # 直接匹配移除
         self.black_domains -= self.white_domains
         
-        # 简单的子域名匹配（只检查一级子域名）
-        white_suffixes = set()
-        for white_domain in self.white_domains:
-            white_suffixes.add(f".{white_domain}")
+        # 只检查直接子域名（性能更好）
+        white_suffixes = {f".{domain}" for domain in self.white_domains}
         
         to_remove = set()
-        batch_size = CONFIG['PERFORMANCE']['batch_size']
-        black_list = list(self.black_domains)
-        
-        for i in range(0, len(black_list), batch_size):
-            batch = black_list[i:i+batch_size]
-            for black_domain in batch:
-                # 检查是否以任何白名单后缀结尾
-                for suffix in white_suffixes:
-                    if black_domain.endswith(suffix):
-                        to_remove.add(black_domain)
-                        break
-            
-            self.progress.update_progress(len(batch))
+        for black_domain in self.black_domains:
+            for suffix in white_suffixes:
+                if black_domain.endswith(suffix):
+                    to_remove.add(black_domain)
+                    break
         
         self.black_domains -= to_remove
         
         removed = original_count - len(self.black_domains)
-        self.progress.end_stage()
         logger.info(f"白名单应用完成: 移除 {removed} 个域名，剩余 {len(self.black_domains):,} 个")
     
-    def optimize_domains(self):
-        """优化域名集合"""
-        self.progress.start_stage("优化域名")
+    def filter_domains(self):
+        """过滤域名，保留高质量域名"""
+        logger.info("过滤域名...")
         
-        # 使用优化过滤器
-        self.black_domains = OptimizedDomainFilter.optimize_domains(self.black_domains)
+        original_count = len(self.black_domains)
         
-        self.progress.end_stage()
+        # 如果域名太多，进行筛选
+        if len(self.black_domains) > CONFIG['PERFORMANCE']['max_total_domains']:
+            logger.info(f"域名过多 ({len(self.black_domains):,})，进行筛选...")
+            
+            # 将域名转换为列表以便排序
+            domains_list = list(self.black_domains)
+            
+            # 按域名质量排序（较短的域名通常更重要）
+            domains_list.sort(key=lambda x: (len(x.split('.')), len(x)))
+            
+            # 取前N个
+            domains_list = domains_list[:CONFIG['PERFORMANCE']['max_total_domains']]
+            self.black_domains = set(domains_list)
+            
+            logger.info(f"筛选后域名: {len(self.black_domains):,} 个")
+        
+        # 移除一些明显不是广告的域名
+        good_domains = set()
+        ad_keywords = ['ad', 'ads', 'adv', 'track', 'analytics', 'pixel', 'beacon', 'doubleclick', 'googlead']
+        
+        for domain in self.black_domains:
+            # 包含广告关键词的域名优先保留
+            has_ad_keyword = any(keyword in domain for keyword in ad_keywords)
+            
+            # 域名长度适中（太长的可能是路径）
+            is_reasonable_length = 4 <= len(domain) <= 50
+            
+            # 不是纯数字域名
+            not_all_numbers = not all(c.isdigit() or c == '.' for c in domain)
+            
+            if has_ad_keyword or (is_reasonable_length and not_all_numbers):
+                good_domains.add(domain)
+        
+        self.black_domains = good_domains
+        logger.info(f"最终域名数: {len(self.black_domains):,} 个")
     
-    def generate_files(self):
-        """生成规则文件"""
+    def generate_files_efficient(self):
+        """高效生成规则文件"""
         logger.info("生成规则文件...")
-        self.progress.start_stage("生成文件")
         
-        # 优化域名
-        self.optimize_domains()
+        # 先过滤域名
+        self.filter_domains()
         
-        # 1. Adblock规则 (ad.txt)
+        # 排序域名
+        sorted_domains = sorted(self.black_domains)
+        sorted_white_domains = sorted(self.white_domains)
+        
+        # 1. Adblock规则 (ad.txt) - 最常用
+        logger.info("生成 ad.txt...")
         with open(CONFIG['OUTPUT_FILES']['ad'], 'w', encoding='utf-8') as f:
             f.write(f"! 广告过滤规则 - 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"! 黑名单域名: {len(self.black_domains):,} 个\n")
-            f.write(f"! 白名单域名: {len(self.white_domains):,} 个\n")
+            f.write(f"! 黑名单域名: {len(sorted_domains):,} 个\n")
+            f.write(f"! 白名单域名: {len(sorted_white_domains):,} 个\n")
             f.write(f"! 版本: {datetime.now().strftime('%Y%m%d')}\n")
             f.write("! 来源: https://github.com/wansheng8/adblock\n\n")
             
-            # 黑名单域名规则（批量写入提高性能）
-            domains = sorted(self.black_domains)
-            for i in range(0, len(domains), CONFIG['PERFORMANCE']['batch_size']):
-                batch = domains[i:i+CONFIG['PERFORMANCE']['batch_size']]
+            # 批量写入提高性能
+            batch_size = CONFIG['PERFORMANCE']['batch_size']
+            total_batches = (len(sorted_domains) + batch_size - 1) // batch_size
+            
+            for i in range(total_batches):
+                start_idx = i * batch_size
+                end_idx = min((i + 1) * batch_size, len(sorted_domains))
+                batch = sorted_domains[start_idx:end_idx]
+                
                 for domain in batch:
                     f.write(f"||{domain}^\n")
                 
-                self.progress.update_progress(len(batch))
+                # 显示进度
+                if i % 10 == 0 or i == total_batches - 1:
+                    SimpleProgressBar.print_progress(i + 1, total_batches, prefix='生成ad.txt:', suffix='完成')
         
-        # 2. DNS规则 (dns.txt)
+        print()  # 换行
+        
+        # 2. DNS规则 (dns.txt) - 第二常用
+        logger.info("生成 dns.txt...")
         with open(CONFIG['OUTPUT_FILES']['dns'], 'w', encoding='utf-8') as f:
             f.write(f"# DNS过滤规则\n")
             f.write(f"# 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"# 域名数量: {len(self.black_domains):,}\n")
+            f.write(f"# 域名数量: {len(sorted_domains):,}\n")
             f.write(f"# 版本: {datetime.now().strftime('%Y%m%d')}\n\n")
             
-            domains = sorted(self.black_domains)
-            for i in range(0, len(domains), CONFIG['PERFORMANCE']['batch_size']):
-                batch = domains[i:i+CONFIG['PERFORMANCE']['batch_size']]
+            batch_size = CONFIG['PERFORMANCE']['batch_size']
+            total_batches = (len(sorted_domains) + batch_size - 1) // batch_size
+            
+            for i in range(total_batches):
+                start_idx = i * batch_size
+                end_idx = min((i + 1) * batch_size, len(sorted_domains))
+                batch = sorted_domains[start_idx:end_idx]
+                
                 for domain in batch:
                     f.write(f"{domain}\n")
         
-        # 3. Hosts规则 (hosts.txt)
+        # 3. Hosts规则 (hosts.txt) - 可选，可以跳过以减少时间
+        logger.info("生成 hosts.txt...")
         with open(CONFIG['OUTPUT_FILES']['hosts'], 'w', encoding='utf-8') as f:
             f.write(f"# Hosts格式广告过滤规则\n")
             f.write(f"# 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"# 域名数量: {len(self.black_domains):,}\n")
+            f.write(f"# 域名数量: {len(sorted_domains):,}\n")
             f.write(f"# 版本: {datetime.now().strftime('%Y%m%d')}\n\n")
             f.write("127.0.0.1 localhost\n")
             f.write("::1 localhost\n\n")
             
-            domains = sorted(self.black_domains)
-            for i in range(0, len(domains), CONFIG['PERFORMANCE']['batch_size']):
-                batch = domains[i:i+CONFIG['PERFORMANCE']['batch_size']]
-                for domain in batch:
-                    f.write(f"0.0.0.0 {domain}\n")
+            # 只写前10万条，避免文件过大
+            max_hosts = min(100000, len(sorted_domains))
+            for i, domain in enumerate(sorted_domains[:max_hosts]):
+                f.write(f"0.0.0.0 {domain}\n")
+                if i % 10000 == 0 and i > 0:
+                    logger.debug(f"hosts.txt 进度: {i}/{max_hosts}")
         
-        # 4. 黑名单规则 (black.txt) - 简化的adblock格式
+        # 4. 黑名单规则 (black.txt)
+        logger.info("生成 black.txt...")
         with open(CONFIG['OUTPUT_FILES']['black'], 'w', encoding='utf-8') as f:
-            domains = sorted(self.black_domains)
-            for domain in domains:
+            for domain in sorted_domains[:100000]:  # 限制数量
                 f.write(f"||{domain}^\n")
         
         # 5. 白名单规则 (white.txt)
+        logger.info("生成 white.txt...")
         with open(CONFIG['OUTPUT_FILES']['white'], 'w', encoding='utf-8') as f:
             f.write("# 白名单规则\n")
             f.write("# 这些域名不会被拦截\n\n")
-            for domain in sorted(self.white_domains):
+            for domain in sorted_white_domains:
                 f.write(f"@@||{domain}^\n")
         
         # 6. 规则信息 (info.json)
@@ -477,18 +505,18 @@ class OptimizedAdBlockGenerator:
             },
             'performance': {
                 'max_domains': CONFIG['PERFORMANCE']['max_total_domains'],
-                'optimized': True
+                'optimized': True,
+                'source_count': len(self.black_urls) + len(self.white_urls)
             }
         }
         
         with open(CONFIG['OUTPUT_FILES']['info'], 'w', encoding='utf-8') as f:
             json.dump(info, f, indent=2, ensure_ascii=False)
         
-        self.progress.end_stage()
         logger.info("规则文件生成完成")
     
-    def generate_readme(self):
-        """生成README.md文件"""
+    def generate_readme_simple(self):
+        """生成简单的README.md文件"""
         logger.info("生成README.md...")
         
         with open(CONFIG['OUTPUT_FILES']['info'], 'r', encoding='utf-8') as f:
@@ -505,18 +533,19 @@ class OptimizedAdBlockGenerator:
 
 ## 订阅地址
 
-| 规则名称 | 规则类型 | 原始链接 | 加速链接 |
-|----------|----------|----------|----------|
-| 综合广告过滤规则 | Adblock | `{base_url}/ad.txt` | `{cdn_url}/ad.txt` |
-| DNS过滤规则 | DNS | `{base_url}/dns.txt` | `{cdn_url}/dns.txt` |
-| Hosts格式规则 | Hosts | `{base_url}/hosts.txt` | `{cdn_url}/hosts.txt` |
-| 黑名单规则 | 黑名单 | `{base_url}/black.txt` | `{cdn_url}/black.txt` |
-| 白名单规则 | 白名单 | `{base_url}/white.txt` | `{cdn_url}/white.txt` |
+| 规则名称 | 规则类型 | 原始链接 | 加速链接 | 说明 |
+|----------|----------|----------|----------|------|
+| 广告过滤规则 | Adblock | `{base_url}/ad.txt` | `{cdn_url}/ad.txt` | 主规则，推荐使用 |
+| DNS过滤规则 | DNS | `{base_url}/dns.txt` | `{cdn_url}/dns.txt` | Pi-hole/AdGuard Home |
+| Hosts格式规则 | Hosts | `{base_url}/hosts.txt` | `{cdn_url}/hosts.txt` | 系统Hosts文件 |
+| 黑名单规则 | 黑名单 | `{base_url}/black.txt` | `{cdn_url}/black.txt` | 纯黑名单域名 |
+| 白名单规则 | 白名单 | `{base_url}/white.txt` | `{cdn_url}/white.txt` | 排除误杀 |
 
 **版本 {version} 规则统计：**
 - 黑名单域名：{info['rules']['blacklist_domains']:,} 个
 - 白名单域名：{info['rules']['whitelist_domains']:,} 个
 - 总域名数：{info['rules']['total_domains']:,} 个
+- 规则源：{info['performance']['source_count']} 个
 
 ## 最新更新时间
 
@@ -524,21 +553,19 @@ class OptimizedAdBlockGenerator:
 
 *规则每天自动更新，更新时间：北京时间 02:00*
 
-## 性能优化说明
-
-为确保生成速度和规则质量，本规则集进行了以下优化：
-
-1. **域名数量限制**：限制在 {info['performance']['max_domains']:,} 个高质量域名内
-2. **智能过滤**：自动移除无效和低质量域名
-3. **批量处理**：使用批量处理提高性能
-4. **资源优化**：优化内存使用和CPU占用
-
 ## 使用建议
 
 1. **AdGuard/uBlock Origin**：使用 `ad.txt` 文件
 2. **Pi-hole/AdGuard Home**：使用 `dns.txt` 文件
-3. **系统Hosts**：使用 `hosts.txt` 文件
+3. **系统Hosts**：使用 `hosts.txt` 文件（前10万条）
 4. **误报处理**：查看 `white.txt` 或提交Issue
+
+## 特点
+
+- **轻量高效**：经过优化，生成速度快
+- **质量优先**：筛选高质量广告域名
+- **自动更新**：每日自动更新
+- **多格式支持**：支持Adblock、DNS、Hosts格式
 
 ---
 *生成器代码：https://github.com/wansheng8/adblock*
@@ -551,9 +578,9 @@ class OptimizedAdBlockGenerator:
     
     def run(self):
         """运行主流程"""
-        print("=" * 50)
-        print("广告过滤规则生成器 - 性能优化版")
-        print("=" * 50)
+        print("=" * 60)
+        print("广告过滤规则生成器 - 轻量优化版")
+        print("=" * 60)
         
         start_time = time.time()
         
@@ -565,24 +592,24 @@ class OptimizedAdBlockGenerator:
             self.download_and_parse_all()
             
             # 3. 应用白名单
-            self.apply_whitelist_fast()
+            self.apply_whitelist_simple()
             
             # 4. 生成规则文件
-            self.generate_files()
+            self.generate_files_efficient()
             
             # 5. 生成README.md
-            self.generate_readme()
+            self.generate_readme_simple()
             
             elapsed_time = time.time() - start_time
             
-            print("\n" + "=" * 50)
+            print("\n" + "=" * 60)
             print("✅ 处理完成！")
             print(f"⏱️  总耗时: {elapsed_time:.2f}秒")
             print(f"📊 黑名单域名: {len(self.black_domains):,}个")
             print(f"✅ 白名单域名: {len(self.white_domains):,}个")
             print(f"📁 规则文件: rules/outputs/")
             print("📖 文档更新: README.md")
-            print("=" * 50)
+            print("=" * 60)
             
             return True
             
@@ -602,9 +629,8 @@ def main():
         print("请运行：pip install requests")
         return
     
-    # 在GitHub Actions中自动使用优化版
-    print("\n⚡ 使用性能优化版...")
-    generator = OptimizedAdBlockGenerator()
+    print("\n🚀 启动轻量版广告过滤规则生成器...")
+    generator = LightweightAdBlockGenerator()
     
     # 运行生成器
     success = generator.run()
