@@ -1,6 +1,6 @@
 # 白名单规则 - 版本 20260131
-# 更新时间 (北京时间): 2026-01-31 23:22:27
-# 规则数量: 15,054 条
+# 更新时间 (北京时间): 2026-01-31 23:31:33
+# 规则数量: 15,063 条
 #
 
 @@#.banner%20ad.$image,domain=dokuo666.blog98.fc2.com
@@ -124,6 +124,7 @@
 @@/:\/\/.*[.]wp[.]pl\/[a-z0-9_]+[.][a-z]+[/:&?]?/
 @@/?url=$subdocument,stealth=referrer,domain=agedm.vip
 @@/?utm_data=*&_=$xmlhttprequest,domain=sterham.net|casthill.net
+@@/AdDefender/adwordstracking.js$script
 @@/Advertisement.css$stylesheet,domain=openload.co|openload.io|openload.tv
 @@/BTVQRA6OS11SO6ARQVTB/*.php$script,domain=up2stream.com
 @@/BTVQRA6OS11SO6ARQVTB/*.php$script,domain=videomega.tv
@@ -173,6 +174,7 @@
 @@/^https?:\/\/[^/]+/[^/]+/[^/]+\/-\/refs\/switch[^?]*\?.*?&?ref_?=./$removeparam
 @@/^https?:\/\/bugtracker\.[^/]*\/[^?]+\?.*?&?ref_?=[^/?&]*/$removeparam
 @@/^https?:\/\/git(lab)?\.[^/]*\/[^?]+\?.*?&?ref_?=[^/?&]*/$removeparam
+@@/_js/pubfig.min.js$~third-party,domain=svethardware.cz|relaxuj.cz|svetmobilne.cz|digimanie.cz
 @@/ad-close.png$domain=ch.com
 @@/ad-inserter*/*/*.js$domain=bi-girl.net|itbusiness.com.ua|wikirise.com|mejoresmodsminecraft.site|freewebcart.com|wristreview.com|pasend.cam|javnow.net|gcertificationcourse.com|pinayvids.com|secondlifetranslations.com|mettablog.com|freebulksmsonline.com|victor-mochere.com
 @@/ad-inserter*/images/ads.png$domain=bi-girl.net|itbusiness.com.ua|wikirise.com|mejoresmodsminecraft.site|freewebcart.com|wristreview.com|pasend.cam|javnow.net|gcertificationcourse.com|pinayvids.com|secondlifetranslations.com|mettablog.com|freebulksmsonline.com|victor-mochere.com
@@ -180,6 +182,7 @@
 @@/ad.aspx|$domain=biqudao.com|ldzw.com|xdingdiann.com
 @@/ad.js$domain=starkroboticsfrc.com|cryptednews.space|seoliv.com|blackwoodacademy.org|crypto-radio.eu|tiktokcounter.net
 @@/ad.js$~third-party,domain=giveaway.su
+@@/ad.sense/ad-m.js$~third-party
 @@/ad/banner/_adsense_/_adserver/_adview_.ad.json
 @@/ad/images/*$domain=37-express.com|vnnox.com
 @@/ad/top/popunder.js$~third-party,domain=porntoday.ws|netuplayer.top|netu.ac|hqq.to|hqq.ac|speedporn.net|meucdn.vip|yandexcdn.com|waaw1.tv|waaw.tv|hqq.tv|video.q34r.org|younetu.*
@@ -195,7 +198,9 @@
 @@/adbanner/*$domain=bsgroup.com.hk|fjt2.net
 @@/adbanner/*$image,domain=books.com.tw
 @@/adbar/*$domain=outlook.live.com
+@@/adblock-detection/prebid.js|
 @@/adblock.js^$domain=cbs.com
+@@/adblock/adblock.js$script,domain=javso.com
 @@/adblockDetector.$domain=softwarebrother.com
 @@/adblock_$domain=xingk.cc
 @@/adfile/*$domain=cidianwang.com
@@ -222,7 +227,10 @@
 @@/ads.js$domain=iyf.tv
 @@/ads.js$script,~third-party,domain=abcbourse.com|action-sociale.org|anime-vf.fr|impactmangas.fr|presse-algerie.net|primfx.com|undernews.fr
 @@/ads/*$domain=189.cn|95516.com
+@@/ads/ads.js|$domain=nltimes.nl
+@@/ads/ads.js|$script,domain=solidfiles.com|userscloud.com|uplod.it|hulkload.com
 @@/ads/adv/*$script,domain=video.virgilio.it
+@@/ads/wp-banners.js$domain=ibomma.*
 @@/ads_new/*$domain=morefood.com
 @@/adsanity-adblock-detection^$domain=~github.com|~gitlab.*
 @@/adsbox.$domain=long7.qq.com
@@ -314,6 +322,7 @@
 @@/common/templates/dfp/dfp-component-template.html$~third-party,domain=usrowing.org|bigten.org|gousfbulls.com
 @@/complianz-gdpr-premium/cookiebanner/$script,~third-party
 @@/content/*.html$xmlhttprequest,stealth=referrer,domain=tvids.icu
+@@/content/aoAdDetect.js
 @@/content/tour/banner/*$domain=digitalplayground.com
 @@/cookie-banner.js$domain=fruugo.ae|fruugo.at|fruugo.be|fruugo.ca|fruugo.ch|fruugo.co.il|fruugo.co.nz|fruugo.co.uk|fruugo.co.za|fruugo.com.tr|fruugo.cz|fruugo.de|fruugo.eg|fruugo.dk|fruugo.es|fruugo.fi|fruugo.fr|fruugo.gr|fruugo.hu|fruugo.it|fruugo.ie|fruugo.jp|fruugo.kr|fruugo.lu|fruugo.my|fruugo.nl|fruugo.no|fruugo.ph|fruugo.pl|fruugo.pt|fruugo.qa|fruugo.ro|fruugo.se|fruugo.sg|fruugo.sk|fruugo.us|fruugoaustralia.com|fruugobahrain.com|fruugochina.com|fruugoindia.com|fruugosaudiarabia.com
 @@/cookie-consent.$domain=cunardcruceros.com
@@ -321,6 +330,7 @@
 @@/cookie-popup.$domain=4588888.ru
 @@/cookie_consent.css$domain=beli.pl
 @@/cookie_law/*$script,domain=club.ad.nl
+@@/cookie_law/plugin.js$script,~third-party
 @@/cpc_cpm_$domain=ygo-sem.cn
 @@/crossdomain.xml$domain=channel4.com
 @@/crossdomain.xml$domain=phonearena.com
@@ -409,16 +419,31 @@
 @@/js/*.js?ad*=popup&ads=DisplayAd$~third-party,script,domain=streamwish.to|streamxxx.online|mwish.pro|embedwish.com|awish.pro|wishfast.top|sfastwish.com|vidhidevip.com|rubystm.com
 @@/js/*.js?ads*1&AdType=1&$~third-party,script,domain=streamwish.to|streamxxx.online|mwish.pro|embedwish.com|awish.pro|wishfast.top|sfastwish.com|vidhidevip.com|rubystm.com
 @@/js/*/*.js?_v=$~third-party,domain=cracking.org
+@@/js/adblock-advertisement.js$script,domain=imged.pl
+@@/js/adblock.js$script,domain=20minutes.fr|20min.fr
+@@/js/ads.js|$script,~third-party,domain=~internethaber.com|~knaqu.tv
+@@/js/advert.js$~third-party
+@@/js/advert.js$~third-party,domain=seo-fast.ru|newauto46.ru|remont-shvejnyh-mashin.com|whoer.net|btrans.by|spravkaru.info
 @@/js/advertisement.$domain=blogs.sapib.ca
+@@/js/advertisement.js$~third-party,domain=lingust.ru
 @@/js/adview_*.adsbygoogle.js$~third-party,domain=letv8.cc|zhibo1.cc
 @@/js/adview_pic_cpc_cpm_cpa_guanggao_gg_ads_300x250.js
+@@/js/countd.js?rand=$script,stealth=referrer,domain=financemonk.net
+@@/js/detect-blocked-ads.js$script,domain=prod.static.cardinals.clubs.nfl.com
+@@/js/fuckadb.js$~third-party,domain=megaurl.in
+@@/js/jquery.smartbanner.js$domain=fiyatseyir.com|greyhound.com|amalgama-lab.com|m.halkbank.com.tr|intime.ua|avic.ua|mirage.ru|speedtest.net|energy.de|hermesworld.com|lekvapteke.ru|yalispor.com.tr|metroturizm.com.tr|anadolu.edu.tr|whatpub.com
 @@/js/lib/controllers/Leitor/Leitor.min.js$script,domain=mangasproject.com.br|mangasproject.net.br|mangas.zlx.com.br
 @@/js/prebid-$domain=huruwo.top
+@@/js/prebid-ads.js$domain=files.fm|file.fm
+@@/js/prebid-ads.js$~third-party,domain=sharetext.me|getpaste.link
 @@/js/prebid/*/others.$script,domain=gentside.com|gentside.de|gentside.co.uk|gentside.com.br|maxisciences.com|ohmymag.com|ohmymag.de
 @@/js/prebid/*/others/*$script,domain=gentside.com|gentside.de|gentside.co.uk|gentside.com.br|maxisciences.com|ohmymag.com|ohmymag.de
 @@/js/prebid/others.$script,domain=gentside.com|gentside.de|gentside.co.uk|gentside.com.br|maxisciences.com|ohmymag.com|ohmymag.de
 @@/js/prebid/others/*$script,domain=gentside.com|gentside.de|gentside.co.uk|gentside.com.br|maxisciences.com|ohmymag.com|ohmymag.de
+@@/js/wp-banners.js$domain=articlerewritertool.com|spinbot.com|free-article-spinner.com
 @@/kcarting-tally?&random=$domain=coveryourtracks.eff.org
+@@/libs/advertisement.js$domain=getfreebit.xyz|getfree.co.in|bagi.co.in|starfaucet.net|aztecafaucet.space|multifaucet.org|dogestar.website|claimbits.io|i-bits.io|gobits.io|faucet.shorterall.com|simplyfaucet.xyz|tv3.lv
+@@/libs/advertisement1.js$domain=faucet.shorterall.com
 @@/live/*.m3u8$xmlhttprequest,stealth=referrer,domain=weakspell.to|weakspell.org|streamocean.online|weakspell.to
 @@/live/*.ts|$xmlhttprequest,stealth=referrer,domain=weakspell.org|streamocean.online
 @@/live/*/*jpeg|$xmlhttprequest,stealth=referrer,domain=weakspell.org|weakspell.to
@@ -437,10 +462,12 @@
 @@/noadblock-nice-message/assets/js/ads.js?$script,~third-party
 @@/otBannerSdk.js$domain=1001games.com|1001hry.cz|1001jeux.fr|1001jocuri.ro|1001jogos.com.br|1001jogos.pt|1001pelit.com|1001spiele.de|10play.com.au|20min.ch|24kitchen.pt|3sat.de|a1.ro|aachener-zeitung.de|abc.com|abola.pt|account.t-mobile.com|acmemarkets.com|albertsons.com|aljazeera.com|all.accor.com|antena3.ro|automobiles.honda.com|avon.uk.com|beko.com|beobachter.ch|bergfreunde.de|bet.com|bigbearmountainresort.com|biletix.com|bk.com|blaklader.be|blaklader.ca|blaklader.ch|blaklader.com|blaklader.cz|blaklader.de|blaklader.dk|blaklader.ee|blaklader.es|blaklader.fi|blaklader.fr|blaklader.ie|blaklader.nl|blaklader.pl|blaklader.se|blaklader.uk|blick.ch|bongo.be|booking.com|boomerang-tv.pl|breitbart.com|canadiantire.ca|cbs.com|cbslocal.com|cbsnews.com|cbssports.com|cc.com|channel5.com|chvnoticias.cl|ci.ford.com|cmore.fi|cnet.com|comicbook.com|computerbase.de|cookielaw.org|costco.ca|costco.com|costcobusinessdelivery.com|costcopharmacy.ca|crunchyroll.com|cwtv.com|darkreading.com|de.hgtv.com|delta.com|developer.confluent.io|dhl.de|digi24.ro|digitaltrends.com|disney.co.uk|disney.de|disney.dk|disney.es|disney.fi|disney.fr|disney.it|disney.nl|disney.no|disney.pl|disney.pt|disney.se|dmax.de|docs.vmware.com|drafthouse.com|e-ladestation.aldi-sued.de|elisa.fi|elkspel.nl|elle.se|elsevier.support|embed.sportsline.com|epicgames.com|eu.usatoday.com|eurogamer.cz|eurogamer.de|eurogamer.es|eurogamer.it|eurogamer.net|eurogamer.nl|eurogamer.pl|eurogamer.pt|eurosport.de|filiale.kaufland.de|financemagnates.com|foodandwine.com|fordblueadvantage.com|foxchannels.com.tr|ga.de|games.miamiherald.com|gamescom.global|gamespot.com|geappliances.com|geizhals.at|giantbomb.com|giochixl.it|glamour.de|glovoapp.com|gmx.co.uk|gmx.com|gmx.fr|gq-magazine.co.uk|gqmagazine.fr|grajteraz.pl|heute.at|homedepot.ca|id.trimble.com|ikea.com|ikonpass.com|indiewire.com|informationweek.com|insideevs.com|isladejuegos.com|itau.com.br|jatekokxl.hu|jetztspielen.ws|juegosjuegos.ws|kanald.ro|karriere.mcdonalds.de|kawasaki.com|khanacademy.org|kijk.nl|kizi.com|kralmuzik.com.tr|larousse.fr|lippu.fi|listen.tidal.com|locator.dhl.com|louvrehotels.com|mail.com|mcdelivery.de|mensjournal.com|mesta.net|metabomb.net|metacritic.com|metrobyt-mobile.com|midomi.com|milwaukeetool.eu|motorsport-total.com|movistar.es|mtv.com|mtvuutiset.fi|muscleandfitness.com|nachrichten.at|nascar.com|natgeotv.com|nationalgeographic.de|nbcolympics.com|nbcsports.com|netzwelt.de|new.cappex.com|newegg.com|newyorkcityfc.com|newyorker.com|next.co.uk|nhl.com|nintendo.at|nintendo.be|nintendo.ch|nintendo.co.uk|nintendo.co.za|nintendo.com|nintendo.de|nintendo.es|nintendo.fr|nintendo.it|nintendo.pt|nintendo.ru|npr.org|ns.nl|ntv.com.tr|nutmeg.com|observatornews.ro|oe24.at|olx.pl|olympics.com|omnipod.com|onlinebanking.natwest.com|paixnidiaxl.gr|palisadestahoe.com|papajohns.com|paramountplus.com|parkside-diy.com|patagonia.com|payback.at|peacocktv.com|pearson.com|peta.de|pitchfork.com|player.pl|pluto.tv|popculture.com|popeyes.com|popeyeschicken.ca|popsugar.co.uk|porn300.com|pricerunner.com|pricerunner.dk|pricerunner.se|proximus.be|proximus.com|pumpkin.care|questdiagnostics.com|quora.com|rackroomshoes.com|randalls.com|rd.com|redbull.com|redbullracing.com|reuters.com|roastmarket.de|rockpapershotgun.com|rp-online.de|rte.ie|rtl.nl|rtlplay.be|rtlxl.nl|rts.ch|ryobitools.eu|saal-digital.at|saal-digital.bg|saal-digital.ch|saal-digital.com|saal-digital.cz|saal-digital.de|saal-digital.dk|saal-digital.ee|saal-digital.es|saal-digital.eu|saal-digital.fi|saal-digital.fr|saal-digital.gr|saal-digital.hu|saal-digital.lt|saal-digital.lv|saal-digital.nl|saal-digital.pl|saal-digital.pt|saal-digital.ro|saal-digital.se|saal-digital.si|saal-digital.sk|saarbruecker-zeitung.de|safeway.com|salesforce.com|scopely.com|sebrae.com.br|shop.mango.com|skateboarding.transworld.net|sony.pl|soundcloud.com|southpark.de|southpark.lat|southparkstudios.co.uk|southparkstudios.com|southparkstudios.com.br|southparkstudios.nu|spektrum.de|spel.nl|spelletjes.nl|spelo.se|spiele.bild.de|spiele.stern.de|spillespill.no|spilxl.dk|sportiva.shueisha.co.jp|squareup.com|start.gg|starwarscelebration.com|steamboat.com|subway.com|superporn.com|surfer.com|syfy.com|ted.com|teenvogue.com|telenet.be|thejournal.ie|thetrainline.com|tickethour.com|ticketmaster.ae|ticketmaster.at|ticketmaster.be|ticketmaster.ca|ticketmaster.ch|ticketmaster.cl|ticketmaster.co.il|ticketmaster.co.nz|ticketmaster.co.uk|ticketmaster.co.za|ticketmaster.com|ticketmaster.com.au|ticketmaster.com.br|ticketmaster.com.mx|ticketmaster.cz|ticketmaster.de|ticketmaster.dk|ticketmaster.es|ticketmaster.fi|ticketmaster.fr|ticketmaster.gr|ticketmaster.ie|ticketmaster.it|ticketmaster.nl|ticketmaster.no|ticketmaster.pe|ticketmaster.pl|ticketmaster.se|ticketmaster.sg|tio.ch|tips.at|tixcraft.com|tntsports.co.uk|tokfm.pl|toteraz.pl|travelandleisure.com|tredz.co.uk|tripadvisor.at|tripadvisor.be|tripadvisor.ca|tripadvisor.ch|tripadvisor.cl|tripadvisor.cn|tripadvisor.co|tripadvisor.co.id|tripadvisor.co.il|tripadvisor.co.kr|tripadvisor.co.nz|tripadvisor.co.uk|tripadvisor.co.za|tripadvisor.com|tripadvisor.com.ar|tripadvisor.com.au|tripadvisor.com.br|tripadvisor.com.eg|tripadvisor.com.gr|tripadvisor.com.hk|tripadvisor.com.mx|tripadvisor.com.my|tripadvisor.com.pe|tripadvisor.com.ph|tripadvisor.com.sg|tripadvisor.com.tr|tripadvisor.com.tw|tripadvisor.com.ve|tripadvisor.com.vn|tripadvisor.de|tripadvisor.dk|tripadvisor.es|tripadvisor.fr|tripadvisor.ie|tripadvisor.in|tripadvisor.it|tripadvisor.jp|tripadvisor.nl|tripadvisor.pt|tripadvisor.ru|tripadvisor.se|trustpilot.com|trustradius.com|tt.com|tunein.com|tvguide.com|tvn.pl|tvn24.pl|uber-platz.de|udemy.com|uefa.com|unity.com|upc.pl|uphold.com|usanetwork.com|usmagazine.com|uw.co.uk|vanityfair.com|vg247.com|victorinox.com|videoland.com|vimeo.com|vinted.*|vizio.com|vkmag.com|vogue.co.jp|vogue.co.uk|vogue.com|vogue.com.tw|vogue.de|vogue.es|vogue.fr|vogue.in|vogue.it|vogue.mx|vogue.ph|vol.at|volksfreund.de|wallapop.com|wargaming.net|watson.ch|webuyanycar.com|westernunion.com|wetter.at|wired.com|wizzair.com|worldmarathonmajors.com|worldoftanks.ru|worldsurfleague.com|wpb.shueisha.co.jp|wrangler.com|wrc.com|wz.de|yallo.tv|yvesrocher.com.tr|zdf.de|zdnet.com|zoom.us
 @@/otSDKStub.js$domain=homedepot.ca
+@@/owa/service.svc$document
 @@/pdc_s_code.js$domain=adobe.com
 @@/pic/ad/*$domain=ybjk.com
 @@/piwik-$domain=github.com
 @@/player/*$stealth=referrer,domain=ibomma.*
+@@/player/stats.php$domain=yesporn.vip|85po.com|85po.net|85xo.com|85xo.com|watchporn.to|viralpornhub.com|watchmdh.to|porn4fans.com
 @@/player_ads.html$domain=yesporn.vip|85po.com|85po.net|85xo.com|85xo.com|watchporn.to|viralpornhub.com|camwhoresbay.porn|watchmdh.to|ebalovo.porn|ebalovo.adult|camwhores.*|camlovers.tv|camhub.tv|pornissimo.org|porntn.com|femdomtb.com|pornoham.me|tubsexer.com|homegrownfreaks.net|pornfd.com|sexcams-24.com|watchmdh.to
 @@/playlist.m3u8$stealth=referrer|ip
 @@/playlist/*caxi.m3u8$xmlhttprequest,stealth=referrer,domain=crackstreamer.net|streameast.app|1stream.eu|buffstreams.app
@@ -463,8 +490,11 @@
 @@/remote_control.php?file=$stealth=referrer|ip
 @@/rwd_cap.js$domain=ibf.tw
 @@/s_code_acdc.js$domain=adobe.com
+@@/script/advert.js$domain=weatherx.co.in
 @@/scripts/*js|$xmlhttprequest,stealth=referrer,domain=crackstreamer.net|1stream.eu|streameast.app|thecrackstreams.live|buffstreams.app
 @@/scripts/*m3u8$xmlhttprequest,stealth=referrer,domain=1stream.eu|streameast.app|thecrackstreams.live
+@@/scripts/ads.js|$script,~third-party,domain=fijitimes.com.fj|fijitimes.com
+@@/scripts/adv.js$domain=securenetsystems.net
 @@/sd0embed/*$subdocument,stealth=referrer
 @@/sensorsdata-$domain=aixiaoyuan.cn|zkh.com
 @@/sensorsdata-$domain=zkh.com
@@ -482,6 +512,7 @@
 @@/sites/default/files/*$image,domain=mangamint.com|mangabird.me
 @@/smarttag.js$~third-party,domain=rte.ie
 @@/social-share.$domain=patentguru.com
+@@/speedtest/upload.php$domain=speedtest.net
 @@/static/ad/main.$domain=bbmei.top|bbmen.top
 @@/static/image/ad*.png$image,domain=adf.ly|j.gs|q.gs|ay.gy
 @@/static/js/video/videojs-contrib-ads.min.js$domain=telegraf.rs|telegraf.tv
@@ -2269,7 +2300,6 @@
 @@||ad-gone.com^
 @@||ad-ipd.sxp.smartclip.net^
 @@||ad-log-upload.mihoyo.com^
-@@||ad-m.js^
 @@||ad-maven.com^
 @@||ad-putting.gw.zt-express.com^
 @@||ad.*.ch^$xmlhttprequest,other,script,domain=tio.ch
@@ -2335,10 +2365,8 @@
 @@||adashx.ut.dingtalk.com^
 @@||adb.arcadeitalia.net^
 @@||adbeat.com^
-@@||adblock-advertisement.js^
 @@||adblock.adguard.com^
 @@||adblock.ee^
-@@||adblock.js^
 @@||adblockanalytics.com^
 @@||adblockdetect.xyz^
 @@||adblockplus.org^
@@ -2463,7 +2491,6 @@
 @@||ads.helisimmer.com^
 @@||ads.host-cdn.net^
 @@||ads.imprezzer.com^
-@@||ads.js^
 @@||ads.juicyads.com^
 @@||ads.julephosting.de^
 @@||ads.kbmax.com^
@@ -2571,7 +2598,6 @@
 @@||adv.clickadu.com^
 @@||adv.gg^
 @@||adv.gpm-digital.com^
-@@||adv.js^
 @@||adv.lack-girl.com^
 @@||adv.sec.miui.com^
 @@||adv.svo.aero^
@@ -2580,14 +2606,11 @@
 @@||adv.yomiuri.co.jp^
 @@||advert-serv.johnmorris.me^
 @@||advert.com^
-@@||advert.js^
 @@||advert.kf5.com^
 @@||advert.popunder.ru^
 @@||advert.vg.no^
-@@||advertisement.js^
 @@||advertisement.taobao.com^
 @@||advertisement.vg.no^
-@@||advertisement1.js^
 @@||advertiser.cyberghostvpn.com^
 @@||advertising.aol.com^
 @@||advertising.yahoo.com^
@@ -2597,7 +2620,6 @@
 @@||adverts.ie^
 @@||advertserve.com^
 @@||adwords.google.com^
-@@||adwordstracking.js^
 @@||adworkmedia.com^
 @@||adx.adform.net^
 @@||adx.yiche.com^
@@ -2953,7 +2975,6 @@
 @@||anyporn.com^
 @@||anythinktech.com^
 @@||anzplus-web.app.link^
-@@||aoaddetect.js^
 @@||aobi.100bt.com^
 @@||aod-cn-lb.itunes-apple.com.akadns.net^
 @@||aod.cos.tx.xmcdn.com^
@@ -5153,7 +5174,6 @@
 @@||count.mail.163.com^
 @@||count.taobao.com^
 @@||count.video.sina.com.cn^
-@@||countd.js^
 @@||counter-strike.net^
 @@||countrygarden.com.cn^
 @@||countrytabs.com^
@@ -5546,7 +5566,6 @@
 @@||destyy.com^
 @@||desu.shikimori.one^
 @@||detail.meizu.com^
-@@||detect-blocked-ads.js^
 @@||detectadblock.com^
 @@||detectportal.firefox.com^
 @@||deteql.net^
@@ -6727,7 +6746,6 @@
 @@||ftp.bmp.ovh^
 @@||ftuapps.dev^
 @@||ftuapps.io^
-@@||fuckadb.js^
 @@||fuckadblock.sitexw.fr^
 @@||fullanimes.net^
 @@||fullhdfilm.*/_video_onu_yeni.php$domain=fullhdfilm.*
@@ -8237,7 +8255,6 @@
 @@||jpopsingles.eu^
 @@||jpost.com^
 @@||jpush.cn^
-@@||jquery.smartbanner.js^
 @@||jr.jd.com^
 @@||jra.webcdn.stream.ne.jp^
 @@||js-agent.newrelic.com^
@@ -10919,7 +10936,6 @@
 @@||plibcdn.com^
 @@||plplayer.online^
 @@||plugin.intuitcdn.net^
-@@||plugin.js^
 @@||plugincrack.com^
 @@||plugins.matomo.org^
 @@||plus.google.com^
@@ -11069,10 +11085,8 @@
 @@||praxis-jugendarbeit.de^
 @@||prd.jwpltx.com^
 @@||prdnews.com^
-@@||prebid-ads.js^
 @@||prebid-asia.creativecdn.com^
 @@||prebid.adnxs.com^
-@@||prebid.js^
 @@||prebid.revbid.net^
 @@||premium-link.ninja^
 @@||premiumvideo.click^
@@ -11193,7 +11207,6 @@
 @@||pub.pixels.ai^
 @@||pubads.g.doubleclick.net^
 @@||pubdirecte.com^
-@@||pubfig.min.js^
 @@||public-api.reviews.2gis.com^
 @@||public-cis.exponea.com^
 @@||public-image-upload.s3.amazonaws.com^
@@ -12013,7 +12026,6 @@
 @@||service.force.com^
 @@||service.hotstar.com^
 @@||service.maxymiser.net^
-@@||service.svc^
 @@||service.thecloud.eu^
 @@||service.videoplaza.tv^
 @@||services.bilsyndication.com^
@@ -12755,7 +12767,6 @@
 @@||stats.gov.cn^
 @@||stats.hprofits.com^
 @@||stats.jtvnw.net^
-@@||stats.php^
 @@||stats.pusher.com^
 @@||stats.sports.bellmedia.ca^
 @@||stats.statbroadcast.com^
@@ -13893,7 +13904,6 @@
 @@||upload.cc
 @@||upload.far7net.com^
 @@||upload.forumfree.net^
-@@||upload.php^
 @@||upload.wikimedia.org^
 @@||uploadbox.io^
 @@||uploadboy.com^
@@ -14605,7 +14615,6 @@
 @@||wouterplanet.com^
 @@||wowclassicbis.com^
 @@||wowsai.com^
-@@||wp-banners.js^
 @@||wp.com^
 @@||wp.hit.gemius.pl^
 @@||wp.pl^
