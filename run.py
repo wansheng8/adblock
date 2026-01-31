@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-广告过滤规则生成器 - 增强拦截效果版
+广告过滤规则生成器 - 确保黑白名单生成
 """
 
 import os
@@ -10,7 +10,7 @@ import json
 import time
 import concurrent.futures
 from datetime import datetime, timedelta
-from typing import Set, List, Tuple, Optional
+from typing import Set, List, Tuple, Optional, Dict
 import requests
 
 # 配置信息
@@ -18,32 +18,37 @@ CONFIG = {
     'GITHUB_USER': 'wansheng8',
     'GITHUB_REPO': 'adblock',
     'GITHUB_BRANCH': 'main',
-    'MAX_WORKERS': 8,
-    'TIMEOUT': 20,
-    'RETRY': 3,
+    'MAX_WORKERS': 5,
+    'TIMEOUT': 30,
+    'RETRY': 2,
     'BLACK_SOURCE': 'rules/sources/black.txt',
     'WHITE_SOURCE': 'rules/sources/white.txt',
-    'STRONG_AD_DOMAINS': {  # 强化拦截的广告域名
-        'doubleclick.net', 'google-analytics.com', 'googlesyndication.com',
-        'googleadservices.com', 'adservice.google.com', 'ads.google.com',
-        'adzerk.net', 'amazon-adsystem.com', 'scorecardresearch.com',
-        'outbrain.com', 'taboola.com', 'criteo.com', 'adsrvr.org',
-        'adnxs.com', 'casalemedia.com', 'rlcdn.com'
+    'PROTECTED_DOMAINS': {
+        'google.com', 'github.com', 'microsoft.com', 'apple.com',
+        'baidu.com', 'qq.com', 'taobao.com', 'jd.com', 'weibo.com',
+        'zhihu.com', 'bilibili.com', '163.com', '126.com'
     }
 }
 
-class EnhancedAdBlockGenerator:
+class AdBlockGenerator:
     def __init__(self):
-        self.black_domains = set()      # 最终黑名单域名
-        self.white_domains = set()      # 白名单域名
-        self.black_rules = set()        # 复杂黑名单规则
-        self.white_rules = set()        # 复杂白名单规则
+        # 核心数据集合
+        self.all_black_domains = set()       # 所有黑名单域名
+        self.all_white_domains = set()       # 所有白名单域名
+        self.all_black_rules = []            # 所有黑名单规则（保持顺序）
+        self.all_white_rules = []            # 所有白名单规则（保持顺序）
         
-        # 统计信息
+        # 最终输出集合
+        self.final_black_domains = set()     # 最终黑名单域名（应用白名单后）
+        self.final_white_rules = []          # 最终白名单规则
+        
+        # 统计
         self.stats = {
-            'total_rules_processed': 0,
-            'domains_extracted': 0,
-            'complex_rules_saved': 0
+            'total_lines_processed': 0,
+            'black_domains_found': 0,
+            'white_domains_found': 0,
+            'black_rules_found': 0,
+            'white_rules_found': 0
         }
         
         # 创建目录
@@ -55,38 +60,32 @@ class EnhancedAdBlockGenerator:
     
     def create_default_sources(self):
         """创建默认规则源文件"""
-        # 黑名单源 - 使用更多有效的规则源
+        # 黑名单源
         if not os.path.exists(CONFIG['BLACK_SOURCE']):
             with open(CONFIG['BLACK_SOURCE'], 'w', encoding='utf-8') as f:
-                f.write("# 广告过滤规则源 - 增强版\n")
+                f.write("# 广告过滤规则源\n")
                 f.write("# 每行一个URL\n\n")
-                f.write("# 1. AdGuard基础广告规则（核心）\n")
+                f.write("# 1. AdGuard基础广告规则\n")
                 f.write("https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt\n\n")
-                f.write("# 2. EasyList规则（主要规则）\n")
+                f.write("# 2. EasyList规则\n")
                 f.write("https://easylist.to/easylist/easylist.txt\n\n")
-                f.write("# 3. EasyPrivacy规则（隐私保护）\n")
-                f.write("https://easylist.to/easylist/easyprivacy.txt\n\n")
-                f.write("# 4. 中文广告规则\n")
+                f.write("# 3. 中文规则\n")
                 f.write("https://raw.githubusercontent.com/AdguardTeam/ChineseFilter/master/ADGUARD_FILTER.txt\n\n")
-                f.write("# 5. Fanboy's Annoyance List（烦人内容）\n")
-                f.write("https://secure.fanboy.co.nz/fanboy-annoyance.txt\n\n")
-                f.write("# 6. NoCoin List（挖矿脚本）\n")
-                f.write("https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/master/nocoin.txt\n\n")
-                f.write("# 7. 恶意软件过滤\n")
-                f.write("https://raw.githubusercontent.com/DandelionSprout/adfilt/master/Alternate%20versions%20Anti-Malware%20List/AntiMalwareAdGuardHome.txt\n\n")
-                f.write("# 8. AdGuard Tracking Protection\n")
-                f.write("https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/tracking.txt\n")
+                f.write("# 4. EasyPrivacy规则\n")
+                f.write("https://easylist.to/easylist/easyprivacy.txt\n")
         
-        # 白名单源 - 保持简洁
+        # 白名单源
         if not os.path.exists(CONFIG['WHITE_SOURCE']):
             with open(CONFIG['WHITE_SOURCE'], 'w', encoding='utf-8') as f:
                 f.write("# 白名单规则源\n")
-                f.write("# 只包含以@@开头的规则\n\n")
+                f.write("# 只包含白名单规则\n\n")
                 f.write("# AdGuard白名单\n")
                 f.write("https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist.txt\n\n")
                 f.write("# 重要网站白名单\n")
-                f.write("# @@||google.com^\n")
-                f.write("# @@||github.com^\n")
+                f.write("@@||google.com^\n")
+                f.write("@@||github.com^\n")
+                f.write("@@||baidu.com^\n")
+                f.write("@@||qq.com^\n")
     
     def download_content(self, url: str) -> Optional[str]:
         """下载规则内容"""
@@ -95,106 +94,19 @@ class EnhancedAdBlockGenerator:
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                     'Accept': 'text/plain, */*',
-                    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-                    'Connection': 'keep-alive'
+                    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
                 }
                 response = requests.get(url, headers=headers, timeout=CONFIG['TIMEOUT'])
                 response.raise_for_status()
                 return response.text
             except Exception as e:
+                print(f"  ⚠️ 下载失败 {url} (尝试 {i+1}/{CONFIG['RETRY']}): {str(e)[:100]}")
                 if i < CONFIG['RETRY'] - 1:
-                    time.sleep(1)
-                else:
-                    print(f"  ❌ 下载失败 {url}: {str(e)[:100]}")
+                    time.sleep(2)
         return None
-    
-    def extract_domains_from_line(self, line: str) -> Tuple[List[str], bool, Optional[str]]:
-        """从规则行中提取域名（支持多种格式）"""
-        line = line.strip()
-        if not line:
-            return [], False, None
-        
-        # 跳过注释
-        if line.startswith('!') or line.startswith('#'):
-            return [], False, None
-        
-        # 判断是否是白名单
-        is_whitelist = line.startswith('@@')
-        original_line = line
-        
-        # 如果是白名单规则，移除@@前缀
-        if is_whitelist:
-            line = line[2:]
-        
-        # 尝试匹配常见格式
-        patterns = [
-            # AdBlock格式
-            (r'^\|\|([a-zA-Z0-9.-]+)\^', 1),          # ||domain.com^
-            (r'^\|\|([a-zA-Z0-9.-]+)\/', 1),          # ||domain.com/
-            (r'^([a-zA-Z0-9.-]+)\^$', 1),             # domain.com^
-            (r'^\|\|([a-zA-Z0-9.-]+)\$', 1),          # ||domain.com$
-            
-            # 域名格式
-            (r'^([a-zA-Z0-9.-]+)$', 1),               # domain.com
-            
-            # Hosts格式
-            (r'^\d+\.\d+\.\d+\.\d+\s+([a-zA-Z0-9.-]+)', 1),  # 0.0.0.0 domain.com
-            
-            # 通配符格式
-            (r'^\*\.([a-zA-Z0-9.-]+)', 1),            # *.domain.com
-            
-            # URL格式
-            (r'^https?://([^/\$\^]+)', 1),            # http://domain.com
-            (r'^//([^/\$\^]+)', 1),                   # //domain.com
-            
-            # 复杂规则中的域名
-            (r'domain=([a-zA-Z0-9.-]+)', 1),          # $domain=domain.com
-            (r'([a-zA-Z0-9.-]+)\^?\$', 1),            # domain.com^$...
-        ]
-        
-        domains = []
-        for pattern, group in patterns:
-            matches = re.findall(pattern, line)
-            for match in matches:
-                if isinstance(match, tuple):
-                    domain = match[group-1]
-                else:
-                    domain = match
-                
-                domain = self.normalize_domain(domain)
-                if self.is_valid_domain(domain):
-                    domains.append(domain)
-        
-        # 去重
-        domains = list(set(domains))
-        
-        return domains, is_whitelist, original_line if not domains else None
-    
-    def normalize_domain(self, domain: str) -> str:
-        """标准化域名"""
-        if not domain:
-            return ""
-        
-        domain = domain.lower().strip()
-        
-        # 移除常见前缀
-        prefixes = ['www.', '*.', 'm.']
-        for prefix in prefixes:
-            if domain.startswith(prefix):
-                domain = domain[len(prefix):]
-        
-        # 移除常见后缀
-        suffixes = ['.', '^', '$', '|', '~']
-        for suffix in suffixes:
-            if domain.endswith(suffix):
-                domain = domain[:-len(suffix)]
-        
-        return domain
     
     def is_valid_domain(self, domain: str) -> bool:
         """检查域名是否有效"""
-        domain = self.normalize_domain(domain)
-        
         if not domain or len(domain) > 253:
             return False
         
@@ -225,84 +137,173 @@ class EnhancedAdBlockGenerator:
         
         return True
     
-    def process_rule_content(self, content: str, url: str):
-        """处理规则内容"""
+    def extract_domain_from_rule(self, rule: str) -> Tuple[Optional[str], bool]:
+        """从规则中提取域名并判断是否为白名单"""
+        rule = rule.strip()
+        if not rule:
+            return None, False
+        
+        # 判断是否是白名单规则
+        is_whitelist = rule.startswith('@@')
+        
+        # 尝试匹配域名模式
+        patterns = [
+            # AdBlock格式
+            (r'^@@\|\|([a-zA-Z0-9.-]+)\^', True),   # @@||domain.com^
+            (r'^\|\|([a-zA-Z0-9.-]+)\^', False),    # ||domain.com^
+            
+            # 简单域名格式
+            (r'^@@([a-zA-Z0-9.-]+)$', True),        # @@domain.com
+            (r'^([a-zA-Z0-9.-]+)$', False),         # domain.com
+            
+            # Hosts格式
+            (r'^\d+\.\d+\.\d+\.\d+\s+([a-zA-Z0-9.-]+)', False),  # 0.0.0.0 domain.com
+            
+            # 通配符格式
+            (r'^@@\*\.([a-zA-Z0-9.-]+)', True),     # @@*.domain.com
+            (r'^\*\.([a-zA-Z0-9.-]+)', False),      # *.domain.com
+        ]
+        
+        for pattern, is_wl in patterns:
+            match = re.match(pattern, rule)
+            if match:
+                domain = match.group(1).lower().strip()
+                
+                # 标准化域名
+                if domain.startswith('www.'):
+                    domain = domain[4:]
+                
+                if self.is_valid_domain(domain):
+                    return domain, is_whitelist
+        
+        return None, False
+    
+    def is_whitelist_rule(self, rule: str) -> bool:
+        """判断是否是白名单规则"""
+        rule = rule.strip()
+        
+        # 简单判断：以@@开头的规则通常是白名单
+        if rule.startswith('@@'):
+            return True
+        
+        # 特殊白名单格式
+        whitelist_patterns = [
+            r'^@@\|\|',
+            r'^@@\*\.',
+            r'^@@http',
+            r'^@@https',
+            r'^@@/.*/$'  # CSS白名单规则
+        ]
+        
+        for pattern in whitelist_patterns:
+            if re.match(pattern, rule):
+                return True
+        
+        return False
+    
+    def process_rule(self, rule: str, source_url: str = "") -> Tuple[bool, Optional[str]]:
+        """处理单条规则"""
+        self.stats['total_lines_processed'] += 1
+        
+        rule = rule.strip()
+        if not rule:
+            return False, None
+        
+        # 跳过注释
+        if rule.startswith('!') or rule.startswith('#'):
+            return False, None
+        
+        # 判断是否是白名单规则
+        is_whitelist = self.is_whitelist_rule(rule)
+        
+        # 尝试提取域名
+        domain, extracted_is_whitelist = self.extract_domain_from_rule(rule)
+        
+        # 如果提取成功
+        if domain:
+            if is_whitelist or extracted_is_whitelist:
+                # 白名单域名
+                self.all_white_domains.add(domain)
+                self.all_white_rules.append(rule)
+                self.stats['white_domains_found'] += 1
+                return True, domain
+            else:
+                # 黑名单域名
+                self.all_black_domains.add(domain)
+                self.stats['black_domains_found'] += 1
+                return False, domain
+        else:
+            # 无法提取域名的规则
+            if is_whitelist:
+                # 复杂白名单规则
+                self.all_white_rules.append(rule)
+                self.stats['white_rules_found'] += 1
+                return True, None
+            else:
+                # 复杂黑名单规则
+                if len(rule) > 3:
+                    self.all_black_rules.append(rule)
+                    self.stats['black_rules_found'] += 1
+                return False, None
+        
+        return False, None
+    
+    def process_url(self, url: str, is_whitelist_source: bool = False):
+        """处理单个规则源URL"""
+        print(f"  📥 处理: {url}")
+        content = self.download_content(url)
+        if not content:
+            print(f"  ❌ 下载失败: {url}")
+            return
+        
         lines_processed = 0
         domains_found = 0
         
         for line in content.split('\n'):
             lines_processed += 1
-            self.stats['total_rules_processed'] += 1
-            
-            domains, is_whitelist, original_line = self.extract_domains_from_line(line)
-            
-            if domains:
-                domains_found += len(domains)
-                self.stats['domains_extracted'] += len(domains)
-                
-                if is_whitelist:
-                    self.white_domains.update(domains)
-                    # 保存白名单规则
-                    for domain in domains:
-                        self.white_rules.add(f"@@||{domain}^")
-                else:
-                    self.black_domains.update(domains)
-            
-            # 保存无法提取域名的复杂规则
-            elif original_line and len(original_line.strip()) > 3:
-                self.stats['complex_rules_saved'] += 1
-                if is_whitelist:
-                    self.white_rules.add(original_line)
-                else:
-                    # 保存有效的复杂规则
-                    if re.search(r'[a-zA-Z0-9\/\$\^\|\*]', original_line):
-                        self.black_rules.add(original_line)
+            processed, domain = self.process_rule(line, url)
+            if processed and domain:
+                domains_found += 1
         
-        print(f"  ✓ 处理完成: {lines_processed} 行, 提取 {domains_found} 个域名")
-    
-    def process_url(self, url: str):
-        """处理单个规则源URL"""
-        print(f"  📥 处理: {url}")
-        content = self.download_content(url)
-        if not content:
-            return
-        
-        self.process_rule_content(content, url)
+        print(f"  ✓ 完成: {lines_processed} 行, 提取 {domains_found} 个域名")
     
     def load_and_process_sources(self):
         """加载并处理所有规则源"""
         print("🔍 加载规则源...")
         
-        # 读取所有规则源URL
-        urls = []
-        
         # 读取黑名单源
+        blacklist_urls = []
         if os.path.exists(CONFIG['BLACK_SOURCE']):
             with open(CONFIG['BLACK_SOURCE'], 'r', encoding='utf-8') as f:
                 for line in f:
                     line = line.strip()
                     if line and not line.startswith('#'):
-                        urls.append(line)
+                        blacklist_urls.append(line)
         
         # 读取白名单源
+        whitelist_urls = []
         if os.path.exists(CONFIG['WHITE_SOURCE']):
             with open(CONFIG['WHITE_SOURCE'], 'r', encoding='utf-8') as f:
                 for line in f:
                     line = line.strip()
                     if line and not line.startswith('#'):
-                        urls.append(line)
+                        # 如果是URL，则下载
+                        if line.startswith('http'):
+                            whitelist_urls.append(line)
+                        else:
+                            # 直接处理白名单规则
+                            self.process_rule(line, "local_whitelist")
         
-        if not urls:
-            print("  ⚠️ 未找到规则源URL")
-            return
+        print(f"  黑名单源: {len(blacklist_urls)} 个")
+        print(f"  白名单源: {len(whitelist_urls)} 个")
         
-        print(f"  找到 {len(urls)} 个规则源")
+        # 并行处理所有URL
+        all_urls = [(url, False) for url in blacklist_urls] + [(url, True) for url in whitelist_urls]
         
-        # 并行处理所有规则源
         with concurrent.futures.ThreadPoolExecutor(max_workers=CONFIG['MAX_WORKERS']) as executor:
             futures = []
-            for url in urls:
-                future = executor.submit(self.process_url, url)
+            for url, is_whitelist in all_urls:
+                future = executor.submit(self.process_url, url, is_whitelist)
                 futures.append(future)
             
             # 等待所有任务完成
@@ -311,158 +312,271 @@ class EnhancedAdBlockGenerator:
                 try:
                     future.result(timeout=30)
                     completed += 1
-                    print(f"  ✅ [{completed}/{len(urls)}] 完成")
+                    print(f"  ✅ [{completed}/{len(all_urls)}] 处理完成")
                 except Exception as e:
                     print(f"  ❌ 处理失败: {e}")
         
         print(f"✅ 解析完成:")
-        print(f"   黑名单域名: {len(self.black_domains):,} 个")
-        print(f"   白名单域名: {len(self.white_domains):,} 个")
-        print(f"   复杂规则: 黑名单 {len(self.black_rules):,} 条, 白名单 {len(self.white_rules):,} 条")
+        print(f"   黑名单域名: {len(self.all_black_domains):,} 个")
+        print(f"   白名单域名: {len(self.all_white_domains):,} 个")
+        print(f"   黑名单规则: {len(self.all_black_rules):,} 条")
+        print(f"   白名单规则: {len(self.all_white_rules):,} 条")
     
-    def enhance_ad_domains(self):
-        """强化广告域名拦截"""
-        print("🛡️  强化广告域名拦截...")
+    def apply_whitelist(self):
+        """应用白名单"""
+        print("🔄 应用白名单...")
         
-        original_count = len(self.black_domains)
+        # 最终黑名单 = 所有黑名单 - 所有白名单
+        self.final_black_domains = self.all_black_domains.copy()
+        self.final_white_rules = self.all_white_rules.copy()
         
-        # 添加强化的广告域名
-        for domain in CONFIG['STRONG_AD_DOMAINS']:
-            if domain not in self.white_domains:
-                self.black_domains.add(domain)
+        original_count = len(self.final_black_domains)
         
-        added = len(self.black_domains) - original_count
-        if added > 0:
-            print(f"  添加 {added} 个强化广告域名")
-    
-    def apply_intelligent_whitelist(self):
-        """智能白名单处理"""
-        print("🤔 应用智能白名单...")
-        
-        original_count = len(self.black_domains)
-        
-        # 只移除完全匹配的白名单域名（安全操作）
+        # 移除完全匹配的白名单域名
         domains_to_remove = set()
-        for white_domain in self.white_domains:
-            if white_domain in self.black_domains:
-                domains_to_remove.add(white_domain)
+        for domain in self.final_black_domains:
+            if domain in self.all_white_domains:
+                domains_to_remove.add(domain)
         
-        self.black_domains -= domains_to_remove
+        self.final_black_domains -= domains_to_remove
         
-        removed = original_count - len(self.black_domains)
-        if removed > 0:
-            print(f"  安全移除 {removed} 个白名单域名")
+        # 保护重要域名（不会被白名单移除）
+        for protected in CONFIG['PROTECTED_DOMAINS']:
+            if protected in self.all_white_domains and protected in domains_to_remove:
+                domains_to_remove.remove(protected)
+                self.final_black_domains.add(protected)
+                print(f"  🛡️  保护重要域名: {protected}")
+        
+        removed = original_count - len(self.final_black_domains)
+        print(f"  移除 {removed} 个白名单域名")
+        print(f"  最终黑名单域名: {len(self.final_black_domains):,} 个")
     
-    def generate_optimized_files(self):
-        """生成优化的规则文件"""
-        print("📁 生成规则文件...")
+    def generate_adblock_file(self):
+        """生成AdBlock格式规则文件"""
+        print("📄 生成AdBlock规则 (ad.txt)...")
         
-        # 获取时间
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        version = datetime.now().strftime('%Y%m%d')
+        beijing_time = self.get_beijing_time()
+        version = beijing_time.strftime('%Y%m%d')
+        timestamp = beijing_time.strftime('%Y-%m-%d %H:%M:%S')
         
-        # 对域名排序
-        sorted_black_domains = sorted(self.black_domains)
-        
-        # 1. 生成优化的ad.txt
         with open('rules/outputs/ad.txt', 'w', encoding='utf-8') as f:
-            f.write(f"! 广告过滤规则 - 增强版 v{version}\n")
-            f.write(f"! 更新时间: {timestamp}\n")
-            f.write(f"! 域名数量: {len(self.black_domains):,} 个\n")
-            f.write(f"! 规则数量: {len(self.black_rules):,} 条\n")
-            f.write(f"! 强化广告域名: {len(CONFIG['STRONG_AD_DOMAINS'])} 个\n")
+            # 头部信息
+            f.write(f"! 广告过滤规则 - 版本 {version}\n")
+            f.write(f"! 更新时间: {timestamp} (北京时间)\n")
+            f.write(f"! 黑名单域名: {len(self.final_black_domains):,} 个\n")
+            f.write(f"! 白名单域名: {len(self.all_white_domains):,} 个\n")
+            f.write(f"! 项目地址: https://github.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}\n")
             f.write("!\n\n")
             
             # 白名单规则
-            if self.white_rules:
+            if self.final_white_rules:
                 f.write("! ====== 白名单规则 ======\n")
-                for rule in sorted(self.white_rules):
-                    if rule.startswith('@@'):
-                        f.write(f"{rule}\n")
+                # 去重并排序
+                unique_white_rules = sorted(set(self.final_white_rules))
+                for rule in unique_white_rules:
+                    f.write(f"{rule}\n")
                 f.write("\n")
             
-            # 核心广告域名（强化拦截的）
-            f.write("! ====== 核心广告域名 ======\n")
-            for domain in sorted(CONFIG['STRONG_AD_DOMAINS']):
-                if domain in self.black_domains:
-                    f.write(f"||{domain}^\n")
+            # 黑名单域名规则
+            f.write("! ====== 域名黑名单 ======\n")
+            for domain in sorted(self.final_black_domains):
+                f.write(f"||{domain}^\n")
             
-            # 其他广告域名
-            f.write("\n! ====== 其他广告域名 ======\n")
-            for domain in sorted_black_domains:
-                if domain not in CONFIG['STRONG_AD_DOMAINS']:
-                    f.write(f"||{domain}^\n")
-            
-            # 复杂规则
-            if self.black_rules:
-                f.write("\n! ====== 复杂拦截规则 ======\n")
-                for rule in sorted(self.black_rules):
-                    if not rule.startswith('@@'):
-                        f.write(f"{rule}\n")
+            # 复杂黑名单规则
+            if self.all_black_rules:
+                f.write("\n! ====== 复杂规则 ======\n")
+                # 去重并排序
+                unique_black_rules = sorted(set(self.all_black_rules))
+                for rule in unique_black_rules:
+                    f.write(f"{rule}\n")
+    
+    def generate_dns_file(self):
+        """生成DNS格式规则文件"""
+        print("📄 生成DNS规则 (dns.txt)...")
         
-        # 2. 生成dns.txt（只包含域名）
+        beijing_time = self.get_beijing_time()
+        version = beijing_time.strftime('%Y%m%d')
+        timestamp = beijing_time.strftime('%Y-%m-%d %H:%M:%S')
+        
         with open('rules/outputs/dns.txt', 'w', encoding='utf-8') as f:
-            f.write(f"# DNS广告过滤规则 v{version}\n")
-            f.write(f"# 更新时间: {timestamp}\n")
-            f.write(f"# 域名数量: {len(self.black_domains):,} 个\n")
+            f.write(f"# DNS广告过滤规则 - 版本 {version}\n")
+            f.write(f"# 更新时间: {timestamp} (北京时间)\n")
+            f.write(f"# 域名数量: {len(self.final_black_domains):,} 个\n")
+            f.write(f"# 项目地址: https://github.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}\n")
             f.write("#\n\n")
             
-            # 分组写入，提高可读性
-            batch_size = 1000
-            for i in range(0, len(sorted_black_domains), batch_size):
-                batch = sorted_black_domains[i:i+batch_size]
-                if i > 0:
-                    f.write("\n")
-                for domain in batch:
-                    f.write(f"{domain}\n")
+            for domain in sorted(self.final_black_domains):
+                f.write(f"{domain}\n")
+    
+    def generate_hosts_file(self):
+        """生成Hosts格式规则文件"""
+        print("📄 生成Hosts规则 (hosts.txt)...")
         
-        # 3. 生成hosts.txt
+        beijing_time = self.get_beijing_time()
+        version = beijing_time.strftime('%Y%m%d')
+        timestamp = beijing_time.strftime('%Y-%m-%d %H:%M:%S')
+        
         with open('rules/outputs/hosts.txt', 'w', encoding='utf-8') as f:
-            f.write(f"# Hosts广告过滤规则 v{version}\n")
-            f.write(f"# 更新时间: {timestamp}\n")
-            f.write(f"# 域名数量: {len(self.black_domains):,} 个\n")
+            f.write(f"# Hosts广告过滤规则 - 版本 {version}\n")
+            f.write(f"# 更新时间: {timestamp} (北京时间)\n")
+            f.write(f"# 域名数量: {len(self.final_black_domains):,} 个\n")
+            f.write(f"# 项目地址: https://github.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}\n")
             f.write("#\n\n")
+            f.write("# 本地域名\n")
             f.write("127.0.0.1 localhost\n")
             f.write("::1 localhost\n")
             f.write("#\n")
             f.write("# 广告域名\n\n")
             
             # 分批写入
-            batch_size = 500
-            for i in range(0, len(sorted_black_domains), batch_size):
-                batch = sorted_black_domains[i:i+batch_size]
-                f.write(f"# 域名 {i+1}-{i+len(batch)}\n")
+            batch_size = 1000
+            domains = sorted(self.final_black_domains)
+            for i in range(0, len(domains), batch_size):
+                batch = domains[i:i+batch_size]
+                f.write(f"# 第 {i//batch_size + 1} 组 ({len(batch)}个域名)\n")
                 for domain in batch:
                     f.write(f"0.0.0.0 {domain}\n")
                 f.write("\n")
+    
+    def generate_blacklist_file(self):
+        """生成纯黑名单文件"""
+        print("📄 生成黑名单规则 (black.txt)...")
         
-        # 4. 生成规则信息
+        beijing_time = self.get_beijing_time()
+        version = beijing_time.strftime('%Y%m%d')
+        timestamp = beijing_time.strftime('%Y-%m-%d %H:%M:%S')
+        
+        with open('rules/outputs/black.txt', 'w', encoding='utf-8') as f:
+            f.write(f"# 黑名单规则 - 版本 {version}\n")
+            f.write(f"# 更新时间: {timestamp} (北京时间)\n")
+            f.write(f"# 域名数量: {len(self.final_black_domains):,} 个\n")
+            f.write("#\n\n")
+            
+            for domain in sorted(self.final_black_domains):
+                f.write(f"||{domain}^\n")
+    
+    def generate_whitelist_file(self):
+        """生成纯白名单文件"""
+        print("📄 生成白名单规则 (white.txt)...")
+        
+        beijing_time = self.get_beijing_time()
+        version = beijing_time.strftime('%Y%m%d')
+        timestamp = beijing_time.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # 去重并排序白名单规则
+        unique_white_rules = sorted(set(self.final_white_rules))
+        
+        with open('rules/outputs/white.txt', 'w', encoding='utf-8') as f:
+            f.write(f"# 白名单规则 - 版本 {version}\n")
+            f.write(f"# 更新时间: {timestamp} (北京时间)\n")
+            f.write(f"# 规则数量: {len(unique_white_rules):,} 条\n")
+            f.write("#\n\n")
+            
+            # 先写域名白名单
+            domain_whitelist = [r for r in unique_white_rules if r.startswith('@@||') and r.endswith('^')]
+            other_whitelist = [r for r in unique_white_rules if r not in domain_whitelist]
+            
+            if domain_whitelist:
+                f.write("# 域名白名单\n")
+                for rule in domain_whitelist:
+                    f.write(f"{rule}\n")
+                f.write("\n")
+            
+            if other_whitelist:
+                f.write("# 其他白名单规则\n")
+                for rule in other_whitelist:
+                    f.write(f"{rule}\n")
+    
+    def generate_info_file(self):
+        """生成信息文件"""
+        print("📄 生成规则信息 (info.json)...")
+        
+        beijing_time = self.get_beijing_time()
+        
         info = {
-            'version': version,
-            'updated_at': timestamp,
+            'version': beijing_time.strftime('%Y%m%d'),
+            'updated_at': beijing_time.strftime('%Y-%m-%d %H:%M:%S'),
+            'timezone': 'Asia/Shanghai (UTC+8)',
             'statistics': {
-                'total_processed_rules': self.stats['total_rules_processed'],
-                'domains_extracted': self.stats['domains_extracted'],
-                'complex_rules_saved': self.stats['complex_rules_saved'],
-                'final_blacklist_domains': len(self.black_domains),
-                'whitelist_domains': len(self.white_domains),
-                'strong_ad_domains': len(CONFIG['STRONG_AD_DOMAINS'])
+                'total_lines_processed': self.stats['total_lines_processed'],
+                'blacklist_domains_found': self.stats['black_domains_found'],
+                'whitelist_domains_found': self.stats['white_domains_found'],
+                'blacklist_rules_found': self.stats['black_rules_found'],
+                'whitelist_rules_found': self.stats['white_rules_found'],
+                'final_blacklist_domains': len(self.final_black_domains),
+                'final_whitelist_rules': len(set(self.final_white_rules))
+            },
+            'files': {
+                'ad.txt': 'AdBlock格式规则',
+                'dns.txt': 'DNS过滤规则',
+                'hosts.txt': 'Hosts格式规则',
+                'black.txt': '纯黑名单规则',
+                'white.txt': '纯白名单规则'
             }
         }
         
         with open('rules/outputs/info.json', 'w', encoding='utf-8') as f:
             json.dump(info, f, indent=2, ensure_ascii=False)
+    
+    def generate_readme(self):
+        """生成README.md文件"""
+        print("📖 生成README.md...")
         
-        print("📄 规则文件生成完成:")
-        print(f"   ad.txt - AdBlock规则 ({len(self.black_domains):,}个域名)")
-        print(f"   dns.txt - DNS规则 ({len(self.black_domains):,}个域名)")
-        print(f"   hosts.txt - Hosts规则 ({len(self.black_domains):,}个域名)")
-        print(f"   info.json - 统计信息")
+        # 读取规则信息
+        with open('rules/outputs/info.json', 'r', encoding='utf-8') as f:
+            info = json.load(f)
+        
+        # 生成订阅链接
+        base_url = f"https://raw.githubusercontent.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}/{CONFIG['GITHUB_BRANCH']}/rules/outputs"
+        cdn_url = f"https://cdn.jsdelivr.net/gh/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}@{CONFIG['GITHUB_BRANCH']}/rules/outputs"
+        
+        # 生成README内容
+        readme = f"""# 广告过滤规则
+
+一个自动更新的广告过滤规则集合，适用于AdGuard、uBlock Origin、AdBlock Plus、AdGuard Home、Pi-hole等。
+
+---
+
+## 订阅地址
+
+| 规则类型 | 规则说明 | 原始链接 | 加速链接 |
+|:---------|:---------|:---------|:---------|
+| **AdBlock规则** | 适用于浏览器广告插件 | `{base_url}/ad.txt` | `{cdn_url}/ad.txt` |
+| **DNS过滤规则** | 适用于DNS过滤软件 | `{base_url}/dns.txt` | `{cdn_url}/dns.txt` |
+| **Hosts规则** | 适用于系统hosts文件 | `{base_url}/hosts.txt` | `{cdn_url}/hosts.txt` |
+| **黑名单规则** | 纯黑名单域名 | `{base_url}/black.txt` | `{cdn_url}/black.txt` |
+| **白名单规则** | 排除误拦域名 | `{base_url}/white.txt` | `{cdn_url}/white.txt` |
+
+**版本 {info['version']} 统计：**
+- 黑名单域名：{info['statistics']['final_blacklist_domains']:,} 个
+- 白名单规则：{info['statistics']['final_whitelist_rules']:,} 条
+
+---
+
+## 最新更新时间
+
+**{info['updated_at']}** (北京时间)
+
+*规则每天自动更新，更新时间：北京时间 02:00*
+"""
+        
+        with open('README.md', 'w', encoding='utf-8') as f:
+            f.write(readme)
+    
+    def get_beijing_time(self) -> datetime:
+        """获取北京时间"""
+        try:
+            from datetime import timezone
+            utc_now = datetime.now(timezone.utc)
+            beijing_time = utc_now + timedelta(hours=8)
+            return beijing_time
+        except:
+            return datetime.now()
     
     def run(self):
         """运行主流程"""
         print("=" * 60)
-        print("🚀 增强版广告过滤规则生成器")
+        print("🚀 广告过滤规则生成器")
         print("=" * 60)
         
         start_time = time.time()
@@ -471,17 +585,19 @@ class EnhancedAdBlockGenerator:
             # 1. 加载并处理规则源
             self.load_and_process_sources()
             
-            # 2. 强化广告域名拦截
-            self.enhance_ad_domains()
+            # 2. 应用白名单
+            self.apply_whitelist()
             
-            # 3. 应用智能白名单
-            self.apply_intelligent_whitelist()
+            # 3. 生成所有规则文件
+            self.generate_adblock_file()
+            self.generate_dns_file()
+            self.generate_hosts_file()
+            self.generate_blacklist_file()
+            self.generate_whitelist_file()
+            self.generate_info_file()
             
-            # 4. 生成优化的规则文件
-            self.generate_optimized_files()
-            
-            # 5. 运行测试
-            self.run_tests()
+            # 4. 生成README
+            self.generate_readme()
             
             # 统计信息
             end_time = time.time()
@@ -490,9 +606,16 @@ class EnhancedAdBlockGenerator:
             print("\n" + "=" * 60)
             print("🎉 规则生成完成！")
             print(f"⏱️  耗时: {elapsed:.1f}秒")
-            print(f"📊 黑名单域名: {len(self.black_domains):,}个")
-            print(f"📊 白名单域名: {len(self.white_domains):,}个")
-            print("📁 规则文件: rules/outputs/")
+            print(f"📊 最终黑名单域名: {len(self.final_black_domains):,}个")
+            print(f"📊 白名单规则: {len(set(self.final_white_rules)):,}条")
+            print("📁 生成的规则文件:")
+            print("  - rules/outputs/ad.txt")
+            print("  - rules/outputs/dns.txt")
+            print("  - rules/outputs/hosts.txt")
+            print("  - rules/outputs/black.txt")
+            print("  - rules/outputs/white.txt")
+            print("  - rules/outputs/info.json")
+            print("📖 使用说明: README.md")
             print("=" * 60)
             
             return True
@@ -502,26 +625,6 @@ class EnhancedAdBlockGenerator:
             import traceback
             traceback.print_exc()
             return False
-    
-    def run_tests(self):
-        """运行快速测试"""
-        print("🔬 运行快速测试...")
-        
-        # 检查常见广告域名是否被包含
-        test_domains = CONFIG['STRONG_AD_DOMAINS']
-        missing = []
-        
-        for domain in test_domains:
-            if domain not in self.black_domains:
-                missing.append(domain)
-        
-        if missing:
-            print(f"⚠️  警告: 以下强化广告域名缺失:")
-            for domain in missing[:5]:  # 只显示前5个
-                print(f"   - {domain}")
-            print(f"  总计缺失: {len(missing)} 个")
-        else:
-            print("✅ 所有强化广告域名均已包含")
 
 def main():
     """主函数"""
@@ -534,13 +637,12 @@ def main():
         return
     
     # 运行生成器
-    generator = EnhancedAdBlockGenerator()
+    generator = AdBlockGenerator()
     success = generator.run()
     
     if success:
         print("\n✨ 规则生成成功！")
-        print("🔬 建议运行测试脚本: python test_rules.py")
-        print("🔄 将在 GitHub Actions 自动更新")
+        print("🔗 查看README.md获取订阅链接")
     else:
         print("\n💥 规则生成失败！")
 
