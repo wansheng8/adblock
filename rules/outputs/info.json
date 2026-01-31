@@ -1,15 +1,10 @@
 {
   "version": "20260201",
-  "updated_at": "2026-02-01 01:00:31",
-  "timezone": "Asia/Shanghai (UTC+8)",
+  "updated_at": "2026-02-01 01:13:31",
   "statistics": {
-    "total_urls": 129,
-    "total_lines": 1576519,
-    "black_domains_found": 975477,
-    "white_domains_found": 158570,
-    "complex_rules_found": 442472,
-    "duplicates_removed": 188251,
-    "final_blacklist_domains": 257582,
-    "final_whitelist_rules": 111913
+    "lines_processed": 1709668,
+    "final_blacklist_domains": 243265,
+    "whitelist_domains": 97681,
+    "whitelist_ignored": 65865
   }
 }

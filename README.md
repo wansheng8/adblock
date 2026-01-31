@@ -1,6 +1,6 @@
 # 广告过滤规则
 
-一个结构化生成的广告过滤规则集合，适用于AdGuard、uBlock Origin、AdBlock Plus等。
+简洁高效的广告过滤规则，专注于拦截广告域名。
 
 ---
 
@@ -15,13 +15,13 @@
 | **白名单规则** | 排除误拦域名 | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/white.txt` | `https://cdn.jsdelivr.net/gh/wansheng8/adblock@main/rules/outputs/white.txt` |
 
 **版本 20260201 统计：**
-- 黑名单域名：257,582 个
-- 白名单规则：111,913 条
+- 黑名单域名：243,265 个
+- 白名单域名：97681 个
 
 ---
 
 ## 最新更新时间
 
-**2026-02-01 01:00:31** (北京时间)
+**2026-02-01 01:13:31**
 
 *规则每天自动更新*
