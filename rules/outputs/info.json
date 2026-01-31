@@ -1,17 +1,12 @@
 {
   "version": "20260131",
-  "updated_at": "2026-01-31 23:31:33",
-  "timezone": "Asia/Shanghai (UTC+8)",
+  "updated_at": "2026-01-31 23:48:59",
   "statistics": {
-    "final_blacklist_domains": 354747,
-    "original_blacklist_domains": 358050,
-    "whitelist_domains": 12519,
-    "whitelist_rules": 15063,
-    "sources_processed": 129,
-    "domains_removed_by_whitelist": 3303
-  },
-  "sources": {
-    "blacklist": 118,
-    "whitelist": 11
+    "total_processed_rules": 1827461,
+    "domains_extracted": 1296875,
+    "complex_rules_saved": 323741,
+    "final_blacklist_domains": 358862,
+    "whitelist_domains": 18373,
+    "strong_ad_domains": 16
   }
 }
