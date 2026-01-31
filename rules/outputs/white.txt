@@ -1,15 +1,20 @@
 # 白名单规则 v20260201
-# 更新时间: 2026-02-01 01:37:19
-# 域名数量: 10 个
+# 更新时间: 2026-02-01 01:57:03
+# 域名数量: 15 个
 #
 
+apple-dns.net
 apple.com
 baidu.com
 bilibili.com
 github.com
 google.com
+icloud.com
 microsoft.com
+msftncsi.com
+mzstatic.com
 qq.com
 taobao.com
 weibo.com
+windowsupdate.com
 zhihu.com

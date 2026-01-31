@@ -1,11 +1,12 @@
 {
   "version": "20260201",
-  "updated_at": "2026-02-01 01:37:19",
+  "updated_at": "2026-02-01 01:57:03",
   "statistics": {
-    "lines_processed": 9844773,
-    "blacklist_domains_raw": 1249914,
-    "final_blacklist_domains": 1249024,
-    "whitelist_domains": 10,
+    "urls_processed": 382,
+    "lines_processed": 9845105,
+    "domains_found": 5578170,
+    "final_blacklist_domains": 1249915,
+    "whitelist_domains": 15,
     "whitelist_ignored": 151477
   }
 }
