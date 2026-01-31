@@ -1,37 +1,39 @@
 {
   "version": "20260131",
-  "updated_at": "2026-01-31 15:07:27",
+  "updated_at": "2026-01-31 23:21:33",
+  "updated_at_utc": "2026-01-31 15:21:33",
+  "timezone": "Asia/Shanghai (UTC+8)",
   "statistics": {
-    "blacklist_domains": 411469,
-    "whitelist_domains": 13309,
-    "blacklist_rules": 34740,
-    "whitelist_rules": 1439
+    "blacklist_domains": 355186,
+    "whitelist_domains": 12541,
+    "blacklist_rules": 244192,
+    "whitelist_rules": 15054
   },
   "generated_files": [
     {
       "name": "ad.txt",
       "description": "AdBlock格式规则",
-      "domains": 411469
+      "domains": 355186
     },
     {
       "name": "dns.txt",
       "description": "DNS过滤规则",
-      "domains": 411469
+      "domains": 355186
     },
     {
       "name": "hosts.txt",
       "description": "Hosts格式规则",
-      "domains": 411469
+      "domains": 355186
     },
     {
       "name": "black.txt",
       "description": "纯黑名单规则",
-      "domains": 411469
+      "domains": 355186
     },
     {
       "name": "white.txt",
       "description": "白名单规则",
-      "rules": 1439
+      "rules": 15054
     }
   ]
 }

@@ -15,13 +15,13 @@
 | **白名单规则** | 排除误拦域名 | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/white.txt` | `https://cdn.jsdelivr.net/gh/wansheng8/adblock@main/rules/outputs/white.txt` |
 
 **版本 20260131 统计：**
-- 黑名单域名：411,469 个
-- 白名单域名：13,309 个
+- 黑名单域名：355,186 个
+- 白名单域名：12,541 个
 
 ---
 
 ## 最新更新时间
 
-**2026-01-31 15:07:27**
+**2026-01-31 23:21:33** (北京时间)
 
 *规则每天自动更新，更新时间：北京时间 02:00*
