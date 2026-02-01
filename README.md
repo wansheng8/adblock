@@ -13,11 +13,11 @@
 | 白名单规则 | 白名单 | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/white.txt` | `https://cdn.jsdelivr.net/gh/wansheng8/adblock@main/rules/outputs/white.txt` |
 
 **版本 20260201 更新内容：**
-- 黑名单域名：1,359,845 个
+- 黑名单域名：0 个
 - 白名单域名：0 个
 
 ## 最新更新时间
 
-**2026-02-01 11:07:29.457735**
+**2026-02-01 11:10:45.489260**
 
 *规则每天自动更新，更新时间：北京时间 02:00*
