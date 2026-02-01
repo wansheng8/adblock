@@ -1,0 +1,118 @@
+# 广告过滤规则生成器配置文件
+# 版本: 2.0
+
+# GitHub配置
+github:
+  user: "wansheng8"
+  repo: "adblock-enhanced"
+  branch: "main"
+
+# 性能配置
+performance:
+  max_workers: 10
+  timeout: 25
+  retry_times: 3
+  batch_size: 5000
+  memory_limit_mb: 1024
+  use_cache: true
+  cache_expiry_hours: 24
+  compress_cache: true
+
+# 规则处理配置
+rules:
+  # 排除的域名
+  exclude_domains:
+    - "localhost"
+    - "local"
+    - "broadcasthost"
+    - "127.0.0.1"
+    - "0.0.0.0"
+    - "::1"
+    - "0.0.0.0.0"
+  
+  # 白名单处理
+  whitelist:
+    enable_advanced_matching: true
+    match_subdomains: true
+    max_whitelist_size: 10000
+  
+  # 优化设置
+  optimization:
+    remove_duplicate_subdomains: true
+    validate_domains: true
+    remove_invalid_domains: true
+    compress_rules: false
+    max_rule_length: 500
+    
+  # 域名验证
+  validation:
+    min_domain_length: 3
+    max_domain_length: 253
+    min_tld_length: 2
+    allow_idn: false
+    allow_underscores: false
+
+# 文件路径
+paths:
+  sources_dir: "rules/sources"
+  outputs_dir: "rules/outputs"
+  cache_dir: "cache"
+  logs_dir: "logs"
+  reports_dir: "reports"
+  
+  # 源文件
+  black_source: "rules/sources/black.txt"
+  white_source: "rules/sources/white.txt"
+  
+  # 输出文件
+  output_files:
+    ad: "rules/outputs/ad.txt"
+    dns: "rules/outputs/dns.txt"
+    hosts: "rules/outputs/hosts.txt"
+    black: "rules/outputs/black.txt"
+    white: "rules/outputs/white.txt"
+    info: "rules/outputs/info.json"
+  
+  # 缓存文件
+  cache_file: "cache/rules_cache.db"
+  
+  # 日志文件
+  error_log: "logs/error_log.json"
+  access_log: "logs/access_log.json"
+  
+  # 报告文件
+  detailed_report: "reports/detailed_report.json"
+  validation_report: "reports/validation_report.json"
+  performance_report: "reports/performance_report.json"
+
+# 监控配置
+monitoring:
+  enable_error_tracking: true
+  enable_performance_monitoring: true
+  enable_memory_monitoring: true
+  log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  max_log_size_mb: 10
+  log_retention_days: 7
+  
+# 报告配置
+reports:
+  generate_detailed_report: true
+  generate_validation_report: true
+  generate_performance_report: true
+  include_tld_stats: true
+  include_length_stats: true
+  include_top_domains: 100
+  
+# 网络配置
+network:
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 AdBlockGenerator/2.0"
+  accept_encoding: "gzip, deflate"
+  rate_limit_requests_per_second: 5
+  max_redirects: 5
+  verify_ssl: true
+  
+# 自动更新配置
+auto_update:
+  check_for_updates: true
+  update_frequency_hours: 24
+  notify_on_update: false
