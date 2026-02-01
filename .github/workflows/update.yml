@@ -5,6 +5,11 @@ on:
     # 每天北京时间 02:00 运行（UTC 18:00）
     - cron: '0 18 * * *'
   workflow_dispatch:  # 手动触发
+    inputs:
+      force_update:
+        description: '强制更新（忽略缓存）'
+        required: false
+        default: 'false'
   push:
     branches: [ main ]
     paths:
@@ -17,6 +22,7 @@ env:
 jobs:
   update-rules:
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # 设置超时时间
     
     steps:
     - name: 检出代码
@@ -32,14 +38,87 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
     
+    - name: 检查源文件
+      run: |
+        echo "检查源文件..."
+        if [ -f "rules/sources/black.txt" ]; then
+          echo "✅ 黑名单源文件存在"
+          echo "内容预览:"
+          head -20 rules/sources/black.txt
+        else
+          echo "❌ 黑名单源文件不存在"
+          exit 1
+        fi
+        
+        if [ -f "rules/sources/white.txt" ]; then
+          echo "✅ 白名单源文件存在"
+          echo "内容预览:"
+          head -20 rules/sources/white.txt
+        else
+          echo "⚠️  白名单源文件不存在（可选）"
+        fi
+    
     - name: 运行规则生成器
       run: python run.py
+      continue-on-error: true  # 即使失败也继续，为了保存错误日志
+    
+    - name: 检查输出文件
+      run: |
+        echo "检查生成的规则文件..."
+        if [ -f "rules/outputs/ad.txt" ]; then
+          echo "✅ ad.txt 生成成功"
+          echo "文件大小: $(wc -l < rules/outputs/ad.txt) 行"
+        else
+          echo "❌ ad.txt 未生成"
+        fi
+        
+        if [ -f "rules/outputs/info.json" ]; then
+          echo "✅ info.json 生成成功"
+          echo "内容:"
+          cat rules/outputs/info.json
+        else
+          echo "❌ info.json 未生成"
+        fi
     
     - name: 提交更新
+      if: success()
       run: |
+        # 配置Git
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+        
+        # 添加所有更改
         git add -A
-        timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-        git commit -m "规则更新: $timestamp" || echo "没有变化需要提交"
-        git push origin main || echo "推送失败或无变化"
+        
+        # 检查是否有更改需要提交
+        if git diff --cached --quiet; then
+          echo "没有更改需要提交"
+        else
+          # 提交更改
+          timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          
+          # 获取版本信息
+          if [ -f "rules/outputs/info.json" ]; then
+            version=$(jq -r '.version' rules/outputs/info.json 2>/dev/null || echo "$(date +%Y%m%d)")
+            commit_msg="规则更新 $version: $timestamp"
+          else
+            commit_msg="规则更新: $timestamp"
+          fi
+          
+          git commit -m "$commit_msg"
+          
+          # 推送更改
+          echo "推送更改到仓库..."
+          git push origin main
+          echo "✅ 更新已提交"
+        fi
+    
+    - name: 发送失败通知（可选）
+      if: failure()
+      run: |
+        echo "工作流失败，请检查以下可能的问题："
+        echo "1. 网络连接问题"
+        echo "2. 规则源URL失效"
+        echo "3. 源文件格式错误"
+        echo ""
+        echo "请查看运行日志获取详细错误信息"
