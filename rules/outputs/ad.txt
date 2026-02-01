@@ -1,7 +1,7 @@
 ! 精准广告过滤规则
-! 生成时间: 2026-02-01 12:11:59
-! 版本: 20260201_1211
-! 黑名单域名: 162,209 个
+! 生成时间: 2026-02-02 02:40:40
+! 版本: 20260202_0240
+! 黑名单域名: 162,212 个
 ! 白名单域名: 6,569 个
 ! 智能过滤统计:
 !   - 必要域名保护: 1637 个
@@ -58396,6 +58396,7 @@
 ||foysal.desishad.com^
 ||fozhu.rrsdl.com^
 ||fp-cdn.azureedge.net^
+||fp-flame.vercel.app^
 ||fp-it.fengkongcloud.comhgzs.uunat.com^
 ||fp-it.portal101.cn^
 ||fp-sa-it.fengkongcloud.com^
@@ -96114,6 +96115,7 @@
 ||metricsinfoqac.edc.ca^
 ||metricsishare.rediff.com^
 ||metricskey.com^
+||metricslinks.com^
 ||metricsnadtc.haworth.com^
 ||metricss.bibliotheek.nl^
 ||metricssecure.empiretoday.com^
@@ -150096,6 +150098,7 @@
 ||tracker.gpcdn.pl^
 ||tracker.grupanya.com^
 ||tracker.hdtvcloud.com^
+||tracker.hollandandbarrett.com^
 ||tracker.icerocket.com^
 ||tracker.idocdn.com^
 ||tracker.iltrovatore.it^
