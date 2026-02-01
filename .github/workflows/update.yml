@@ -7,7 +7,7 @@ on:
   workflow_dispatch:  # 手动触发
     inputs:
       force_update:
-        description: '强制更新（忽略缓存）'
+        description: '强制更新'
         required: false
         default: 'false'
   push:
@@ -18,15 +18,22 @@ on:
 
 env:
   TZ: Asia/Shanghai
+  FORCE_UPDATE: ${{ github.event.inputs.force_update }}
+
+permissions:
+  contents: write  # 添加写入权限
 
 jobs:
   update-rules:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # 设置超时时间
+    timeout-minutes: 30
     
     steps:
     - name: 检出代码
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取所有历史记录
+        token: ${{ secrets.GITHUB_TOKEN }}  # 使用 GitHub Token
     
     - name: 设置Python
       uses: actions/setup-python@v4
@@ -38,56 +45,63 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
     
-    - name: 检查源文件
+    - name: 安装jq（用于解析JSON）
       run: |
-        echo "检查源文件..."
-        if [ -f "rules/sources/black.txt" ]; then
-          echo "✅ 黑名单源文件存在"
-          echo "内容预览:"
-          head -20 rules/sources/black.txt
-        else
-          echo "❌ 黑名单源文件不存在"
-          exit 1
-        fi
-        
-        if [ -f "rules/sources/white.txt" ]; then
-          echo "✅ 白名单源文件存在"
-          echo "内容预览:"
-          head -20 rules/sources/white.txt
-        else
-          echo "⚠️  白名单源文件不存在（可选）"
-        fi
+        sudo apt-get update
+        sudo apt-get install -y jq
     
     - name: 运行规则生成器
-      run: python run.py
-      continue-on-error: true  # 即使失败也继续，为了保存错误日志
+      run: |
+        echo "开始运行规则生成器..."
+        if [ "${{ env.FORCE_UPDATE }}" = "true" ]; then
+          echo "强制更新模式"
+        fi
+        python run.py
     
-    - name: 检查输出文件
+    - name: 检查生成的文件
       run: |
         echo "检查生成的规则文件..."
         if [ -f "rules/outputs/ad.txt" ]; then
           echo "✅ ad.txt 生成成功"
-          echo "文件大小: $(wc -l < rules/outputs/ad.txt) 行"
+          echo "文件行数: $(wc -l < rules/outputs/ad.txt)"
         else
           echo "❌ ad.txt 未生成"
+          exit 1
         fi
         
         if [ -f "rules/outputs/info.json" ]; then
           echo "✅ info.json 生成成功"
-          echo "内容:"
-          cat rules/outputs/info.json
+          echo "版本信息: $(cat rules/outputs/info.json | jq -r '.version')"
         else
           echo "❌ info.json 未生成"
+          exit 1
         fi
     
-    - name: 提交更新
-      if: success()
+    - name: 配置Git并推送
       run: |
-        # 配置Git
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+        echo "配置Git并推送更新..."
+        
+        # 配置Git用户信息
+        git config --global user.email "action@github.com"
+        git config --global user.name "GitHub Action"
+        
+        # 设置远程仓库URL（包含token）
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+        
+        # 拉取最新更改（使用rebase避免合并冲突）
+        echo "拉取远程最新更改..."
+        git fetch origin
+        git rebase origin/main || {
+          echo "rebase失败，尝试合并..."
+          git merge origin/main -X theirs --no-edit || {
+            echo "合并失败，尝试强制更新..."
+            git reset --hard origin/main
+            git pull origin main --allow-unrelated-histories -X theirs
+          }
+        }
         
         # 添加所有更改
+        echo "添加更改的文件..."
         git add -A
         
         # 检查是否有更改需要提交
@@ -105,20 +119,41 @@ jobs:
             commit_msg="规则更新: $timestamp"
           fi
           
+          # 添加提交来源信息
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            commit_msg="$commit_msg [手动触发]"
+          fi
+          
+          echo "提交更改: $commit_msg"
           git commit -m "$commit_msg"
           
-          # 推送更改
+          # 推送更改（使用force-with-lease安全推送）
           echo "推送更改到仓库..."
-          git push origin main
-          echo "✅ 更新已提交"
+          git push origin main --force-with-lease
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ 更新已提交并推送"
+          else
+            echo "尝试强制推送..."
+            git push origin main --force
+            echo "✅ 强制推送完成"
+          fi
         fi
     
-    - name: 发送失败通知（可选）
+    - name: 创建成功标记
+      if: success()
+      run: |
+        echo "✅ 规则更新工作流执行成功"
+        echo "更新时间: $(date '+%Y-%m-%d %H:%M:%S')"
+    
+    - name: 错误处理
       if: failure()
       run: |
-        echo "工作流失败，请检查以下可能的问题："
+        echo "❌ 规则更新工作流执行失败"
+        echo "请检查以下可能的问题："
         echo "1. 网络连接问题"
         echo "2. 规则源URL失效"
-        echo "3. 源文件格式错误"
+        echo "3. Git推送权限问题"
+        echo "4. 磁盘空间不足"
         echo ""
-        echo "请查看运行日志获取详细错误信息"
+        echo "查看详细错误信息请检查运行日志"
