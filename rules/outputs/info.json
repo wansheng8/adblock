@@ -1,18 +1,18 @@
 {
-  "version": "20260201_1142",
-  "updated_at": "2026-02-01T11:42:44.515870",
+  "version": "20260201_1145",
+  "updated_at": "2026-02-01T11:45:23.233032",
   "rules": {
-    "blacklist_domains": 1269674,
-    "whitelist_domains": 5434
+    "blacklist_domains": 307656,
+    "whitelist_domains": 4869
   },
   "performance": {
-    "load_time": 0.0002701282501220703,
-    "download_time": 7.472666025161743,
-    "parse_time": 41.952309370040894,
+    "load_time": 0.00014448165893554688,
+    "download_time": 1.8584039211273193,
+    "parse_time": 5.3209898471832275,
     "process_time": 0,
     "write_time": 0,
     "total_time": 0,
-    "urls_processed": 384,
-    "domains_found": 1269674
+    "urls_processed": 107,
+    "domains_found": 307656
   }
 }

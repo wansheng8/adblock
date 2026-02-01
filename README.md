@@ -12,12 +12,12 @@
 | 黑名单规则 | 黑名单 | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/black.txt` | `https://cdn.jsdelivr.net/gh/wansheng8/adblock@main/rules/outputs/black.txt` |
 | 白名单规则 | 白名单 | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/white.txt` | `https://cdn.jsdelivr.net/gh/wansheng8/adblock@main/rules/outputs/white.txt` |
 
-**版本 20260201_1142 更新内容：**
-- 黑名单域名：1,269,674 个
-- 白名单域名：5,434 个
+**版本 20260201_1145 更新内容：**
+- 黑名单域名：307,656 个
+- 白名单域名：4,869 个
 
 ## 最新更新时间
 
-**2026-02-01 11:42:44.515870**
+**2026-02-01 11:45:23.233032**
 
 *规则每天自动更新，更新时间：北京时间 02:00*
