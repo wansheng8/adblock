@@ -1,14 +1,8 @@
 {
   "version": "20260201",
-  "updated_at": "2026-02-01T03:25:11.839304",
+  "updated_at": "2026-02-01T11:07:29.457735",
   "rules": {
-    "blacklist_domains": 1354269,
-    "whitelist_domains": 5422,
-    "blacklist_rules": 237079,
-    "whitelist_rules": 21430
-  },
-  "sources": {
-    "blacklist": 384,
-    "whitelist": 0
+    "blacklist_domains": 1359845,
+    "whitelist_domains": 0
   }
 }
