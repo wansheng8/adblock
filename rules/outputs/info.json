@@ -1,18 +1,28 @@
 {
-  "version": "20260201_1145",
-  "updated_at": "2026-02-01T11:45:23.233032",
+  "version": "20260201_1159",
+  "updated_at": "2026-02-01T11:59:18.283597",
   "rules": {
-    "blacklist_domains": 307656,
-    "whitelist_domains": 4869
+    "blacklist_domains": 289398,
+    "whitelist_domains": 4855
   },
-  "performance": {
-    "load_time": 0.00014448165893554688,
-    "download_time": 1.8584039211273193,
-    "parse_time": 5.3209898471832275,
-    "process_time": 0,
-    "write_time": 0,
-    "total_time": 0,
-    "urls_processed": 107,
-    "domains_found": 307656
+  "filtering_stats": {
+    "domains_removed_by_whitelist": 6932,
+    "domains_removed_by_safe_check": 6410,
+    "domains_removed_by_suspicious": 11383,
+    "critical_domains_kept": 13,
+    "essential_domains_whitelisted": 627,
+    "total_domains_processed": 314737
+  },
+  "config": {
+    "intelligent_filtering": {
+      "enable_essential_domain_whitelist": true,
+      "enable_safe_domains_check": true,
+      "enable_false_positive_filter": true,
+      "remove_suspicious_wildcards": true,
+      "keep_popular_domains": true,
+      "enable_domain_validation": true
+    },
+    "essential_domains_count": 66,
+    "safe_domains_count": 29
   }
 }

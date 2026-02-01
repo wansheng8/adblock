@@ -1,7 +1,7 @@
 ! 白名单规则
-! 生成时间: 2026-02-01 11:45:23
-! 版本: 20260201_1145
-! 域名数量: 4,869
+! 生成时间: 2026-02-01 11:59:17
+! 版本: 20260201_1159
+! 域名数量: 4,855
 
 @@||0115765.com^
 @@||011st.com^
@@ -42,7 +42,6 @@
 @@||20minutos.es^
 @@||210.40.130.91^
 @@||217.16.188.246^
-@@||2345jsllq.dftoutiao.co^
 @@||24playerhd.com^
 @@||24u.jp^
 @@||2kspecialist.net^
@@ -146,7 +145,6 @@
 @@||acornsquare.jp^
 @@||acs-m.daraz.com.bd^
 @@||acs-m.daraz.pk^
-@@||acs.m.taobao.com^
 @@||action.metaffiliation.com^
 @@||ad-api-v01.uliza.jp^
 @@||ad-doge.com^
@@ -329,7 +327,6 @@
 @@||akw.cam^
 @@||akw.to^
 @@||akyapitv.idealdata.com.tr^
-@@||al-aqsanews.com^
 @@||albforex.com.tr^
 @@||albyatirim.com.tr^
 @@||alexgoldcheidt.com^
@@ -522,7 +519,6 @@
 @@||app.roll20.net^
 @@||app.sendgrid.com^
 @@||app.usercentrics.eu^
-@@||app2.522.com.cn^
 @@||appapi.inspsearchapi.com^
 @@||appdn.net^
 @@||appgw.ess.tencent.cn^
@@ -567,7 +563,6 @@
 @@||artifactory.appodeal.com^
 @@||artnet.com^
 @@||asianporn.li^
-@@||asimgs.pplive.cn^
 @@||ask.qcloudimg.com^
 @@||aspdotnet-suresh.com^
 @@||assbbs.com^
@@ -601,7 +596,6 @@
 @@||auth.vodafone.hu^
 @@||auth.xtrend.ru^
 @@||auth2.picpay.com^
-@@||auto-api.yelp.com^
 @@||autocentrum.pl^
 @@||autocomplete.clearbit.com^
 @@||autokult.pl^
@@ -1366,7 +1360,6 @@
 @@||dmcdn.net^
 @@||dmhy.b168.net^
 @@||dmp.theadex.com^
-@@||dna.ip-only.net^
 @@||dnipro-m.ua^
 @@||dnsleaktest.com^
 @@||do0od.com^
@@ -2289,7 +2282,6 @@
 @@||integration.plarium.com^
 @@||intercelestial.com^
 @@||interfans.org^
-@@||internet--access.net^
 @@||intersport.peerius.com^
 @@||inven.co.kr^
 @@||inven.com^
@@ -2476,7 +2468,6 @@
 @@||kpopstan.com^
 @@||kqzyfj.com^
 @@||kraj-lbc.cz^
-@@||krebsonsecurity.com^
 @@||kropka.onet.pl^
 @@||ktm2day.com^
 @@||ktmx.pro^
@@ -3662,7 +3653,6 @@
 @@||rymg.net^
 @@||rzd.ru^
 @@||s-kip.eu^
-@@||s-plugins.wordpress.org^
 @@||s.bluecore.com^
 @@||s.click.taobao.com^
 @@||s.nitropay.com^
@@ -3866,7 +3856,6 @@
 @@||smartage.pl^
 @@||smartnews-ads.com^
 @@||smartphonehrvatska.com^
-@@||smartpixel.tv^
 @@||smartstore.naver.com^
 @@||smashresume.com^
 @@||sme.sk^
@@ -3945,7 +3934,6 @@
 @@||sravni-labs.ru^
 @@||srvtrck.com^
 @@||ss.phncdn.com^
-@@||ss0.bdstatic.com^
 @@||ssai.aniview.com^
 @@||ssante.com^
 @@||sshconect.com.br^
@@ -4487,7 +4475,6 @@
 @@||uvnc.com^
 @@||uwupad.me^
 @@||uyduportal.net^
-@@||v.l.ykimg.com^
 @@||v.shoosh.co^
 @@||v2cross.com^
 @@||v2rayssr.com^
@@ -4779,7 +4766,6 @@
 @@||xmod.in^
 @@||xmpp.disk.yandex.net^
 @@||xmxing.net^
-@@||xn--nbkw38mlu2a.com^
 @@||xnimg.cn^
 @@||xpicture.ru^
 @@||xploit.ink^
