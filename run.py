@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-精准修复版广告过滤规则生成器
+精准修复版广告过滤规则生成器（增强版）
 解决不拦截和误拦截问题，增加精确匹配和智能过滤
+针对测试结果增强：分析工具、横幅广告、错误监控
 """
 
 import os
@@ -49,6 +50,29 @@ CONFIG = {
         'remove_suspicious_wildcards': True,        # 移除可疑通配符
         'keep_popular_domains': True,              # 保留常用域名
         'enable_domain_validation': True           # 启用域名验证
+    },
+    
+    # 增强拦截配置（针对测试结果）
+    'ENHANCED_BLOCKING': {
+        # 分析工具增强拦截
+        'enhance_analytics_blocking': True,
+        'block_analytics_execution': True,  # 阻止分析脚本执行
+        
+        # 横幅广告增强拦截
+        'enhance_banner_blocking': True,
+        'block_flash_banners': True,
+        'block_gif_ads': True,
+        'block_static_image_ads': True,
+        
+        # 错误监控增强拦截
+        'enhance_error_monitoring_blocking': True,
+        
+        # 元素隐藏规则增强
+        'generate_element_hiding_rules': True,
+        'generate_script_blocking_rules': True,
+        
+        # 上下文广告增强
+        'enhance_contextual_ads': True,
     },
     
     # 必要域名白名单（防止误拦截）
@@ -143,7 +167,342 @@ CONFIG = {
         r'^.*beacon.*',                       # 信标
         r'^.*pixel.*',                        # 像素
         r'^.*tagmanager.*',                   # 标签管理
-    ]
+    ],
+    
+    # 新增：需要增强拦截的分析工具域名
+    'ANALYTICS_DOMAINS': [
+        # 谷歌分析
+        'google-analytics.com', 'analytics.google.com', 'googletagmanager.com',
+        'googleadservices.com', 'googlesyndication.com', 'googleadservices.com',
+        'doubleclick.net', 'stats.g.doubleclick.net', 'google-analytics-urchin.com',
+        
+        # 热图工具
+        'hotjar.com', 'hotjar.io', 'crazyegg.com', 'mouseflow.com',
+        'luckyorange.com', 'inspectlet.com', 'sessioncam.com', 'clicktale.com',
+        'uservoice.com', 'usabilitytools.com', 'wisepops.com',
+        
+        # Yandex 分析
+        'yandex.ru', 'yandex.net', 'yandex.com', 'yandexadexchange.net',
+        'metrika.yandex.ru', 'mc.yandex.ru', 'yastatic.net',
+        
+        # 其他分析工具
+        'matomo.org', 'piwik.org', 'clicky.com', 'clicky.net',
+        'statcounter.com', 'histats.com', 'w3counter.com', 'goingup.com',
+        'woopra.com', 'reinvigorate.net', 'sitemeter.com',
+        
+        # 广告分析
+        'adroll.com', 'criteo.com', 'outbrain.com', 'taboola.com',
+        'revcontent.com', 'zemanta.com', 'mgid.com', 'content.ad',
+        'adblade.com', 'adbrite.com', 'adform.com', 'adition.com',
+        'adnxs.com', 'rubiconproject.com', 'openx.net', 'pubmatic.com',
+        'indexexchange.com', 'sonobi.com', 'districtm.io',
+        
+        # 社交媒体分析
+        'facebook.com/tr', 'facebook.com/connect', 'twitter.com/i/adsct',
+        'linkedin.com/analytics', 'pinterest.com/analytics',
+        
+        # 视频分析
+        'vidyard.com', 'wistia.com', 'vimeo.com/analytics',
+        
+        # A/B测试工具
+        'optimizely.com', 'visualwebsiteoptimizer.com', 'convert.com',
+        'abtasty.com', 'kameleoon.com', 'dynamic-yield.com',
+    ],
+    
+    # 新增：横幅广告相关域名
+    'BANNER_AD_DOMAINS': [
+        # Flash 横幅相关
+        '*.swf', '*.flv', '*.f4v', '*.swf?*', 'cdn.flash.com',
+        'mediafire.com/*.swf', 'uploaded.net/*.swf',
+        
+        # 广告网络
+        'adzerk.net', 'adblade.com', 'adbrn.com', 'adbrite.com',
+        'adbutler.com', 'adcentric.com', 'adcolony.com', 'adform.com',
+        'adition.com', 'adnxs.com', 'adotmob.com', 'adperium.com',
+        'adsrvr.org', 'advertising.com', 'advertstream.com',
+        'adview.cn', 'adxpose.com', 'aerserv.com', 'casalemedia.com',
+        'contextweb.com', 'conversantmedia.com', 'criteo.com',
+        'districtm.io', 'doubleverify.com', 'e-planning.net',
+        'eyereturn.com', 'getclicky.com', 'googleadservices.com',
+        'imrworldwide.com', 'indexexchange.com', 'infolinks.com',
+        'innovid.com', 'ipinyou.com', 'kargo.com', 'kiosked.com',
+        'lijit.com', 'linksynergy.com', 'media.net', 'mediamath.com',
+        'meetrics.net', 'mgid.com', 'mopub.com', 'openx.net',
+        'outbrain.com', 'pubmatic.com', 'pulpix.com', 'quantserve.com',
+        'revcontent.com', 'rubiconproject.com', 'sharethrough.com',
+        'sonobi.com', 'sovrn.com', 'spotxchange.com', 'taboola.com',
+        'teads.tv', 'telaria.com', 'tremorhub.com', 'triplelift.com',
+        'truex.com', 'undertone.com', 'unruly.co', 'video.unrulymedia.com',
+        'videologygroup.com', 'yahoo.com/apollo', 'yieldmo.com',
+        'yieldone.com', 'yldmgrimg.net', 'zemanta.com',
+        
+        # 图片广告域名模式
+        'adimg.*', 'ads.*', 'banner.*', 'promo.*', 'sponsor.*',
+        'adserver.*', 'static.ads.*', 'cdn.ads.*', 'img.ads.*',
+        'media.ads.*', 'resources.ads.*', 'servedby.*', 'serving.*',
+        'static.doubleclick.net', '*.g.doubleclick.net',
+        
+        # 中国广告网络
+        'tanx.com', 'alimama.com', 'miaozhen.com', 'cnzz.com',
+        '51.la', 'baidu.com/cpro', 'cpro.baidu.com', 'hm.baidu.com',
+        'eiv.baidu.com', 'pos.baidu.com', 'cpro.baidustatic.com',
+        'dup.baidustatic.com', 'google-analytics.com.cn',
+        'tongji.baidu.com', 'hmma.baidu.com',
+    ],
+    
+    # 新增：错误监控工具域名
+    'ERROR_MONITORING_DOMAINS': [
+        # Sentry
+        'sentry.io', 'getsentry.com', '*.sentry.io',
+        
+        # Bugsnag
+        'bugsnag.com', 'notify.bugsnag.com', '*.bugsnag.com',
+        
+        # 其他错误监控
+        'rollbar.com', 'airbrake.io', 'raygun.io', 'newrelic.com',
+        'appdynamics.com', 'dynatrace.com', 'datadoghq.com',
+        'splunk.com', 'loggly.com', 'logentries.com', 'papertrailapp.com',
+        'sumologic.com', 'graylog.org', 'elastic.co', 'kibana.org',
+        'librato.com', 'circonus.com', 'copperegg.com', 'serverdensity.com',
+        'scalyr.com', 'logdna.com', 'logz.io', 'humio.com',
+        
+        # 性能监控
+        'speedcurve.com', 'webpagetest.org', 'gtmetrix.com',
+        'pingdom.com', 'uptimerobot.com', 'statuscake.com',
+        'freshping.io', 'monitor.us', 'site24x7.com',
+        
+        # 前端错误监控
+        'trackjs.com', 'errorception.com', 'exceptionhub.com',
+        'muscula.com', 'errorify.com', 'errorlogger.com',
+    ],
+    
+    # 新增：需要增强拦截的上下文广告
+    'CONTEXTUAL_AD_NETWORKS': [
+        'adsense.google.com', 'pagead2.googlesyndication.com',
+        'ad.doubleclick.net', 'securepubads.g.doubleclick.net',
+        'ads.yahoo.com', 'ads.microsoft.com', 'adservice.google.com',
+        'adservice.google.*', 'ads.google.com', 'googleads.g.doubleclick.net',
+        'partner.googleadservices.com', 'tpc.googlesyndication.com',
+        'www.googlesyndication.com', 'www.googleadservices.com',
+        'ads.pubmatic.com', 'ads.revcontent.com', 'ads.taboola.com',
+        'ads.outbrain.com', 'ads.criteo.com', 'ads.adthrive.com',
+        'ads.media.net', 'ads.infolinks.com', 'ads.zemanta.com',
+        'ads.gumgum.com', 'ads.nativeads.com', 'ads.content.ad',
+        'ads.sonobi.com', 'ads.triplelift.com', 'ads.sharethrough.com',
+        'ads.yieldmo.com', 'ads.yieldone.com', 'ads.aerserv.com',
+        'ads.smaato.com', 'ads.mopub.com', 'ads.inmobi.com',
+        'ads.unity3d.com', 'ads.vungle.com', 'ads.applovin.com',
+        'ads.ironsrc.com', 'ads.adcolony.com', 'ads.chartboost.com',
+        'ads.tapjoy.com', 'ads.supersonic.com', 'ads.heyzap.com',
+        'ads.fyber.com', 'ads.digitalturbine.com',
+    ],
+    
+    # 新增：需要阻止执行的脚本模式
+    'BLOCKED_SCRIPT_PATTERNS': [
+        # 分析脚本
+        r'analytics\.js', r'ga\.js', r'gtm\.js', r'gtm\.php',
+        r'stat\.js', r'track\.js', r'beacon\.js', r'pixel\.js',
+        r'tagmanager\.js', r'stats\.js', r'counter\.js',
+        r'metrics\.js', r'measure\.js', r'collect\.js',
+        r'logger\.js', r'log\.js', r'report\.js',
+        
+        # 广告脚本
+        r'ads\.js', r'ad\.js', r'banner\.js', r'popunder\.js',
+        r'popup\.js', r'interstitial\.js', r'preroll\.js',
+        r'midroll\.js', r'postroll\.js', r'video-ad\.js',
+        r'ad-unit\.js', r'ad-container\.js', r'ad-wrapper\.js',
+        
+        # 错误监控脚本
+        r'sentry\.js', r'bugsnag\.js', r'rollbar\.js',
+        r'airbrake\.js', r'raygun\.js', r'newrelic\.js',
+        r'appdynamics\.js', r'dynatrace\.js', r'datadog\.js',
+        
+        # 追踪脚本
+        r'tracking\.js', r'tracker\.js', r'pixel\.js',
+        r'fingerprint\.js', r'cookie\.js', r'session\.js',
+        r'user\.js', r'visitor\.js', r'identification\.js',
+        
+        # 热图脚本
+        r'hotjar\.js', r'crazyegg\.js', r'mouseflow\.js',
+        r'luckyorange\.js', r'inspectlet\.js', r'sessioncam\.js',
+        r'clicktale\.js', r'uservoice\.js',
+        
+        # A/B测试脚本
+        r'optimizely\.js', r'vwo\.js', r'convert\.js',
+        r'abtasty\.js', r'kameleoon\.js', r'dynamic-yield\.js',
+    ],
+    
+    # 新增：元素隐藏规则（针对可见广告）
+    'ELEMENT_HIDING_RULES': [
+        # 通用广告容器
+        r'##div[class*="ad-"]',
+        r'##div[id*="ad-"]',
+        r'##div[class*="banner"]',
+        r'##div[id*="banner"]',
+        r'##div[class*="advert"]',
+        r'##div[id*="advert"]',
+        r'##div[class*="sponsor"]',
+        r'##div[id*="sponsor"]',
+        r'##div[class*="promo"]',
+        r'##div[id*="promo"]',
+        
+        # 内嵌广告
+        r'##iframe[src*="ad"]',
+        r'##iframe[id*="ad"]',
+        r'##iframe[class*="ad"]',
+        r'##iframe[src*="banner"]',
+        r'##iframe[src*="doubleclick"]',
+        r'##iframe[src*="googleadservices"]',
+        r'##iframe[src*="googlesyndication"]',
+        
+        # 图片广告
+        r'##img[src*="ad"]',
+        r'##img[alt*="广告"]',
+        r'##img[alt*="推广"]',
+        r'##img[alt*="赞助"]',
+        r'##img[title*="广告"]',
+        r'##img[src*="banner"]',
+        r'##img[src*="sponsor"]',
+        r'##img[src*="promo"]',
+        
+        # 悬浮广告
+        r'##div[class*="popup"]',
+        r'##div[id*="popup"]',
+        r'##div[class*="float"]',
+        r'##div[id*="float"]',
+        r'##div[class*="overlay"]',
+        r'##div[id*="overlay"]',
+        r'##div[class*="modal"]',
+        r'##div[id*="modal"]',
+        r'##div[class*="lightbox"]',
+        r'##div[id*="lightbox"]',
+        
+        # 视频广告
+        r'##video[src*="ad"]',
+        r'##embed[src*="ad"]',
+        r'##object[data*="ad"]',
+        r'##video[id*="ad"]',
+        r'##video[class*="ad"]',
+        
+        # 文本广告
+        r'##span[class*="ad-text"]',
+        r'##span[id*="ad-text"]',
+        r'##p[class*="ad-text"]',
+        r'##p[id*="ad-text"]',
+        r'##a[class*="ad-link"]',
+        r'##a[id*="ad-link"]',
+        
+        # 社交媒体广告
+        r'##div[class*="fb-ad"]',
+        r'##div[id*="fb-ad"]',
+        r'##div[class*="twitter-ad"]',
+        r'##div[id*="twitter-ad"]',
+        r'##div[class*="instagram-ad"]',
+        r'##div[id*="instagram-ad"]',
+        
+        # 内容推荐广告
+        r'##div[class*="outbrain"]',
+        r'##div[id*="outbrain"]',
+        r'##div[class*="taboola"]',
+        r'##div[id*="taboola"]',
+        r'##div[class*="revcontent"]',
+        r'##div[id*="revcontent"]',
+        r'##div[class*="zemanta"]',
+        r'##div[id*="zemanta"]',
+        r'##div[class*="content-recommendation"]',
+        r'##div[id*="content-recommendation"]',
+        
+        # 原生广告
+        r'##div[class*="native-ad"]',
+        r'##div[id*="native-ad"]',
+        r'##div[class*="sponsored-content"]',
+        r'##div[id*="sponsored-content"]',
+        r'##article[class*="sponsored"]',
+        r'##article[id*="sponsored"]',
+        
+        # 横幅广告特定类名
+        r'##.ad-banner',
+        r'##.adsbygoogle',
+        r'##.ad-unit',
+        r'##.ad-container',
+        r'##.ad-wrapper',
+        r'##.ad-placement',
+        r'##.ad-space',
+        r'##.ad-zone',
+        r'##.ad-slot',
+        r'##.ad-position',
+        r'##.ad-holder',
+        r'##.ad-box',
+        r'##.ad-frame',
+        r'##.ad-panel',
+        r'##.ad-wall',
+        r'##.ad-wallpaper',
+        r'##.ad-overlay',
+        r'##.ad-interstitial',
+        r'##.ad-popup',
+        r'##.ad-modal',
+        r'##.ad-lightbox',
+        r'##.ad-video',
+        r'##.ad-audio',
+        r'##.ad-flash',
+        r'##.ad-gif',
+        r'##.ad-image',
+        r'##.ad-img',
+        r'##.ad-picture',
+        r'##.ad-photo',
+        r'##.ad-graphic',
+        r'##.ad-illustration',
+        r'##.ad-icon',
+        r'##.ad-logo',
+        r'##.ad-brand',
+        r'##.ad-caption',
+        r'##.ad-text',
+        r'##.ad-headline',
+        r'##.ad-title',
+        r'##.ad-description',
+        r'##.ad-body',
+        r'##.ad-content',
+        r'##.ad-message',
+        r'##.ad-callout',
+        r'##.ad-teaser',
+        r'##.ad-preview',
+        r'##.ad-excerpt',
+        r'##.ad-summary',
+        r'##.ad-abstract',
+        r'##.ad-intro',
+        r'##.ad-lead',
+        r'##.ad-hook',
+        r'##.ad-pitch',
+        r'##.ad-proposition',
+        r'##.ad-offer',
+        r'##.ad-deal',
+        r'##.ad-promo',
+        r'##.ad-coupon',
+        r'##.ad-discount',
+        r'##.ad-sale',
+        r'##.ad-clearance',
+        r'##.ad-bargain',
+        r'##.ad-special',
+        r'##.ad-feature',
+        r'##.ad-highlight',
+        r'##.ad-spotlight',
+        r'##.ad-showcase',
+        r'##.ad-exhibit',
+        r'##.ad-display',
+        r'##.ad-presentation',
+        r'##.ad-demonstration',
+        r'##.ad-illustration',
+        r'##.ad-example',
+        r'##.ad-sample',
+        r'##.ad-specimen',
+        r'##.ad-model',
+        r'##.ad-prototype',
+        r'##.ad-mockup',
+        r'##.ad-dummy',
+        r'##.ad-placeholder',
+        r'##.ad-stub',
+        r'##.ad-skeleton',
+    ],
 }
 
 # ========== 日志设置 ==========
@@ -164,6 +523,14 @@ class AccurateAdBlockGenerator:
         self.black_rules = set()
         self.white_rules = set()
         
+        # 新增：增强拦截相关属性
+        self.analytics_domains = set()
+        self.banner_ad_domains = set()
+        self.error_monitoring_domains = set()
+        self.contextual_ad_domains = set()
+        self.element_hiding_rules = set()
+        self.blocked_script_rules = set()
+        
         # 统计信息
         self.stats = {
             'domains_removed_by_whitelist': 0,
@@ -171,7 +538,15 @@ class AccurateAdBlockGenerator:
             'domains_removed_by_suspicious': 0,
             'critical_domains_kept': 0,
             'essential_domains_whitelisted': 0,
-            'total_domains_processed': 0
+            'total_domains_processed': 0,
+            
+            # 新增统计
+            'analytics_domains_blocked': 0,
+            'banner_ad_domains_blocked': 0,
+            'error_monitoring_domains_blocked': 0,
+            'contextual_ad_domains_blocked': 0,
+            'element_hiding_rules_added': 0,
+            'script_blocking_rules_added': 0,
         }
         
         # 创建目录
@@ -189,16 +564,32 @@ class AccurateAdBlockGenerator:
         """创建示例源文件"""
         if not os.path.exists(CONFIG['BLACK_SOURCE']):
             with open(CONFIG['BLACK_SOURCE'], 'w', encoding='utf-8') as f:
-                f.write("""# 黑名单规则源
-# 推荐使用高质量的规则源，避免不拦截和误拦截
+                f.write("""# 黑名单规则源（增强版）
+# 针对测试结果添加更多针对性规则源
 
-# 高质量广告规则（推荐）
+# 基础广告规则
 https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt
 https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/tracking.txt
 
-# 可选的附加规则（根据需要添加）
-# https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/filters.txt
-# https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/other.txt
+# 分析工具规则（针对分析工具测试失败）
+https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/analytics.txt
+https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/other.txt
+
+# 横幅广告规则（针对横幅广告测试失败）
+https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/banners.txt
+
+# 错误监控规则（针对错误监控测试失败）
+https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/other.txt
+
+# 元素隐藏规则（针对区块可见性测试失败）
+https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/filters.txt
+
+# 社交媒体跟踪规则
+https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/social.txt
+
+# 增强拦截规则源（自定义）
+https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/i18n.txt
+https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/mobile.txt
 """)
         
         if not os.path.exists(CONFIG['WHITE_SOURCE']):
@@ -206,11 +597,14 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
                 f.write("""# 白名单规则源
 # 添加必要的白名单以防止误拦截
 
-# 基本白名单（推荐）
+# 基本白名单
 https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist.txt
 
 # 针对常见误拦截的补充白名单
-# https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist_domains.txt
+https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist_domains.txt
+
+# 必要功能白名单（防止过度拦截）
+https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/other.txt
 """)
     
     def load_sources(self) -> bool:
@@ -522,7 +916,7 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
             'chartbeat.com', 'mixpanel.com',
             
             # 中国广告网络
-            'tanx.com', 'alimama.com', 'tanx.com',
+            'tanx.com', 'alimama.com',
             'miaozhen.com', 'cnzz.com', '51.la',
         ]
         
@@ -593,6 +987,164 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
         
         return filtered_domains
     
+    def enhance_analytics_blocking(self, domains: Set[str]) -> Set[str]:
+        """增强分析工具拦截"""
+        if not CONFIG['ENHANCED_BLOCKING']['enhance_analytics_blocking']:
+            return domains
+        
+        print("🔧 增强分析工具拦截...")
+        
+        analytics_set = set(CONFIG['ANALYTICS_DOMAINS'])
+        enhanced_domains = set(domains)
+        added_count = 0
+        
+        # 添加分析工具域名
+        for analytics_domain in analytics_set:
+            # 跳过通配符域名
+            if '*' in analytics_domain:
+                continue
+                
+            if analytics_domain not in enhanced_domains:
+                # 检查是否在白名单中
+                is_whitelisted = False
+                for white_domain in self.white_domains:
+                    if analytics_domain == white_domain or analytics_domain.endswith(f".{white_domain}"):
+                        is_whitelisted = True
+                        break
+                
+                if not is_whitelisted and self.is_valid_domain(analytics_domain):
+                    enhanced_domains.add(analytics_domain)
+                    self.analytics_domains.add(analytics_domain)
+                    added_count += 1
+        
+        self.stats['analytics_domains_blocked'] = added_count
+        print(f"  ✅ 添加了 {added_count} 个分析工具域名到黑名单")
+        
+        return enhanced_domains
+    
+    def enhance_banner_ad_blocking(self, domains: Set[str]) -> Set[str]:
+        """增强横幅广告拦截"""
+        if not CONFIG['ENHANCED_BLOCKING']['enhance_banner_blocking']:
+            return domains
+        
+        print("🔧 增强横幅广告拦截...")
+        
+        banner_set = set(CONFIG['BANNER_AD_DOMAINS'])
+        enhanced_domains = set(domains)
+        added_count = 0
+        
+        # 处理通配符域名
+        for banner_pattern in banner_set:
+            if '*' in banner_pattern:
+                # 通配符域名，不直接添加
+                continue
+                
+            if banner_pattern not in enhanced_domains:
+                if self.is_valid_domain(banner_pattern):
+                    enhanced_domains.add(banner_pattern)
+                    self.banner_ad_domains.add(banner_pattern)
+                    added_count += 1
+        
+        self.stats['banner_ad_domains_blocked'] = added_count
+        print(f"  ✅ 添加了 {added_count} 个横幅广告域名到黑名单")
+        
+        return enhanced_domains
+    
+    def enhance_error_monitoring_blocking(self, domains: Set[str]) -> Set[str]:
+        """增强错误监控拦截"""
+        if not CONFIG['ENHANCED_BLOCKING']['enhance_error_monitoring_blocking']:
+            return domains
+        
+        print("🔧 增强错误监控拦截...")
+        
+        error_set = set(CONFIG['ERROR_MONITORING_DOMAINS'])
+        enhanced_domains = set(domains)
+        added_count = 0
+        
+        # 添加错误监控域名
+        for error_domain in error_set:
+            # 跳过通配符域名
+            if '*' in error_domain:
+                continue
+                
+            if error_domain not in enhanced_domains:
+                if self.is_valid_domain(error_domain):
+                    enhanced_domains.add(error_domain)
+                    self.error_monitoring_domains.add(error_domain)
+                    added_count += 1
+        
+        self.stats['error_monitoring_domains_blocked'] = added_count
+        print(f"  ✅ 添加了 {added_count} 个错误监控域名到黑名单")
+        
+        return enhanced_domains
+    
+    def enhance_contextual_ads_blocking(self, domains: Set[str]) -> Set[str]:
+        """增强上下文广告拦截"""
+        if not CONFIG['ENHANCED_BLOCKING']['enhance_contextual_ads']:
+            return domains
+        
+        print("🔧 增强上下文广告拦截...")
+        
+        contextual_set = set(CONFIG['CONTEXTUAL_AD_NETWORKS'])
+        enhanced_domains = set(domains)
+        added_count = 0
+        
+        # 添加上下文广告域名
+        for contextual_domain in contextual_set:
+            # 跳过通配符域名
+            if '*' in contextual_domain:
+                continue
+                
+            if contextual_domain not in enhanced_domains:
+                if self.is_valid_domain(contextual_domain):
+                    enhanced_domains.add(contextual_domain)
+                    self.contextual_ad_domains.add(contextual_domain)
+                    added_count += 1
+        
+        self.stats['contextual_ad_domains_blocked'] = added_count
+        print(f"  ✅ 添加了 {added_count} 个上下文广告域名到黑名单")
+        
+        return enhanced_domains
+    
+    def generate_element_hiding_rules(self):
+        """生成元素隐藏规则"""
+        if not CONFIG['ENHANCED_BLOCKING']['generate_element_hiding_rules']:
+            return
+        
+        print("🔧 生成元素隐藏规则...")
+        
+        for rule in CONFIG['ELEMENT_HIDING_RULES']:
+            self.element_hiding_rules.add(rule)
+        
+        self.stats['element_hiding_rules_added'] = len(CONFIG['ELEMENT_HIDING_RULES'])
+        print(f"  ✅ 生成了 {len(CONFIG['ELEMENT_HIDING_RULES'])} 个元素隐藏规则")
+    
+    def generate_script_blocking_rules(self):
+        """生成脚本拦截规则"""
+        if not CONFIG['ENHANCED_BLOCKING']['generate_script_blocking_rules']:
+            return
+        
+        print("🔧 生成脚本拦截规则...")
+        
+        # 针对分析脚本的拦截规则
+        for pattern in CONFIG['BLOCKED_SCRIPT_PATTERNS']:
+            # 移除正则表达式标记
+            clean_pattern = pattern.replace(r'\.', '.').replace('\\', '')
+            rule = f'||*{clean_pattern}$script,important'
+            self.blocked_script_rules.add(rule)
+            
+            # 同时添加域名级别的拦截
+            if '.' in clean_pattern:
+                # 提取可能的域名部分
+                parts = clean_pattern.split('.')
+                if len(parts) >= 2:
+                    script_domain = f"{parts[-2]}.{parts[-1]}"
+                    if self.is_valid_domain(script_domain):
+                        self.black_domains.add(script_domain)
+        
+        self.stats['script_blocking_rules_added'] = len(CONFIG['BLOCKED_SCRIPT_PATTERNS'])
+        print(f"  ✅ 生成了 {len(CONFIG['BLOCKED_SCRIPT_PATTERNS'])} 个脚本拦截规则")
+    
     def process_downloaded_content(self, results: List[Tuple[str, str, str]]):
         """处理下载的内容（智能过滤版）"""
         print("🔧 智能处理规则内容...")
@@ -630,8 +1182,27 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
         # 步骤4：应用精确白名单
         filtered_domains = self.apply_precise_whitelist(filtered_domains, all_white_domains)
         
-        # 步骤5：确保关键广告域名（防止不拦截）
+        # 步骤5：增强分析工具拦截（针对测试失败）
+        filtered_domains = self.enhance_analytics_blocking(filtered_domains)
+        
+        # 步骤6：增强横幅广告拦截（针对测试失败）
+        filtered_domains = self.enhance_banner_ad_blocking(filtered_domains)
+        
+        # 步骤7：增强错误监控拦截（针对测试失败）
+        filtered_domains = self.enhance_error_monitoring_blocking(filtered_domains)
+        
+        # 步骤8：增强上下文广告拦截
+        filtered_domains = self.enhance_contextual_ads_blocking(filtered_domains)
+        
+        # 步骤9：确保关键广告域名（防止不拦截）
         final_domains = self.ensure_critical_domains(filtered_domains)
+        
+        # 步骤10：生成元素隐藏规则
+        self.generate_element_hiding_rules()
+        
+        # 步骤11：生成脚本拦截规则
+        if CONFIG['ENHANCED_BLOCKING']['block_analytics_execution']:
+            self.generate_script_blocking_rules()
         
         # 最终结果
         self.black_domains = final_domains
@@ -658,9 +1229,9 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         version = datetime.now().strftime('%Y%m%d_%H%M')
         
-        # 1. Adblock规则 (ad.txt)
+        # 1. Adblock规则 (ad.txt) - 增强版
         with open(CONFIG['AD_FILE'], 'w', encoding='utf-8') as f:
-            f.write(f"""! 精准广告过滤规则
+            f.write(f"""! 精准广告过滤规则（增强版）
 ! 生成时间: {timestamp}
 ! 版本: {version}
 ! 黑名单域名: {len(self.black_domains):,} 个
@@ -671,28 +1242,53 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
 !   - 可疑域名过滤: {self.stats['domains_removed_by_suspicious']} 个
 !   - 白名单移除: {self.stats['domains_removed_by_whitelist']} 个
 !   - 关键广告域名: {self.stats['critical_domains_kept']} 个
+!   - 分析工具拦截: {self.stats['analytics_domains_blocked']} 个
+!   - 横幅广告拦截: {self.stats['banner_ad_domains_blocked']} 个
+!   - 错误监控拦截: {self.stats['error_monitoring_domains_blocked']} 个
+!   - 上下文广告拦截: {self.stats['contextual_ad_domains_blocked']} 个
+!   - 元素隐藏规则: {self.stats['element_hiding_rules_added']} 个
+!   - 脚本拦截规则: {self.stats['script_blocking_rules_added']} 个
 ! 项目地址: https://github.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}
+! 针对测试结果增强：
+!   - 分析工具脚本执行测试失败 → 增强分析脚本拦截
+!   - 横幅广告文件加载测试失败 → 增强横幅广告拦截
+!   - 错误监控脚本执行测试失败 → 增强错误监控拦截
+!   - 区块可见性测试未通过 → 添加元素隐藏规则
 
 ! ========== 白名单规则（防止误拦截） ==========
 """)
             for rule in sorted(self.white_rules):
                 f.write(f"{rule}\n")
             
+            f.write(f"""
+! ========== 脚本拦截规则（阻止分析脚本执行） ==========
+! 针对测试结果：分析工具脚本执行测试失败，错误监控脚本执行测试失败
+""")
+            for rule in sorted(self.blocked_script_rules):
+                f.write(f"{rule}\n")
+            
+            f.write("""
+! ========== 元素隐藏规则（隐藏可见广告） ==========
+! 针对测试结果：区块可见性测试未通过，Flash/GIF/静态图像广告测试失败
+""")
+            for rule in sorted(self.element_hiding_rules):
+                f.write(f"{rule}\n")
+            
             f.write("""
 ! ========== 黑名单规则（精准广告过滤） ==========
-! 已应用智能过滤，减少误拦截和不拦截问题
+! 已应用智能过滤和增强拦截，解决测试中的不拦截问题
 """)
             for domain in sorted(self.black_domains):
                 f.write(f"||{domain}^\n")
         
         # 2. DNS规则 (dns.txt)
         with open(CONFIG['DNS_FILE'], 'w', encoding='utf-8') as f:
-            f.write(f"""# DNS过滤规则
+            f.write(f"""# DNS过滤规则（增强版）
 # 生成时间: {timestamp}
 # 版本: {version}
 # 域名数量: {len(self.black_domains):,}
 # 项目地址: https://github.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}
-# 已应用智能过滤，减少误拦截
+# 已应用智能过滤和增强拦截，解决测试中的不拦截问题
 
 """)
             for domain in sorted(self.black_domains):
@@ -700,27 +1296,28 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
         
         # 3. Hosts规则 (hosts.txt)
         with open(CONFIG['HOSTS_FILE'], 'w', encoding='utf-8') as f:
-            f.write(f"""# Hosts格式广告过滤规则
+            f.write(f"""# Hosts格式广告过滤规则（增强版）
 # 生成时间: {timestamp}
 # 版本: {version}
 # 域名数量: {len(self.black_domains):,}
 # 项目地址: https://github.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}
-# 已应用智能过滤，减少误拦截
+# 已应用智能过滤和增强拦截，解决测试中的不拦截问题
 
 127.0.0.1 localhost
 ::1 localhost
 
-# 广告域名屏蔽（智能过滤版）
+# 广告域名屏蔽（智能过滤增强版）
 """)
             for domain in sorted(self.black_domains):
                 f.write(f"0.0.0.0 {domain}\n")
         
         # 4. 黑名单规则 (black.txt)
         with open(CONFIG['BLACK_FILE'], 'w', encoding='utf-8') as f:
-            f.write(f"""! 黑名单规则
+            f.write(f"""! 黑名单规则（增强版）
 ! 生成时间: {timestamp}
 ! 版本: {version}
 ! 域名数量: {len(self.black_domains):,}
+! 增强拦截：分析工具、横幅广告、错误监控、上下文广告
 
 """)
             for domain in sorted(self.black_domains):
@@ -748,8 +1345,20 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
             'filtering_stats': self.stats,
             'config': {
                 'intelligent_filtering': CONFIG['INTELLIGENT_FILTERING'],
+                'enhanced_blocking': CONFIG['ENHANCED_BLOCKING'],
                 'essential_domains_count': len(CONFIG['ESSENTIAL_DOMAINS']),
-                'safe_domains_count': len(CONFIG['SAFE_DOMAINS'])
+                'safe_domains_count': len(CONFIG['SAFE_DOMAINS']),
+                'analytics_domains_count': len(CONFIG['ANALYTICS_DOMAINS']),
+                'banner_ad_domains_count': len(CONFIG['BANNER_AD_DOMAINS']),
+                'error_monitoring_domains_count': len(CONFIG['ERROR_MONITORING_DOMAINS']),
+                'element_hiding_rules_count': len(CONFIG['ELEMENT_HIDING_RULES']),
+                'script_blocking_patterns_count': len(CONFIG['BLOCKED_SCRIPT_PATTERNS']),
+            },
+            'test_improvements': {
+                'analytics_tools': '增强脚本执行拦截，解决测试失败',
+                'banner_ads': '增强文件加载拦截，解决测试失败',
+                'error_monitoring': '增强脚本执行拦截，解决测试失败',
+                'visibility_issues': '添加元素隐藏规则，解决可见性测试'
             }
         }
         
@@ -759,7 +1368,7 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
         print("✅ 规则文件生成完成")
     
     def generate_readme(self):
-        """生成README.md"""
+        """生成README.md（精简版，只包含名称介绍、订阅地址表格和最新更新时间）"""
         print("📖 生成README.md...")
         
         # 读取规则信息
@@ -770,18 +1379,17 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
             info = {
                 'version': datetime.now().strftime('%Y%m%d'),
                 'updated_at': datetime.now().isoformat(),
-                'rules': {'blacklist_domains': 0, 'whitelist_domains': 0}
             }
         
         # 生成链接
         base_url = f"https://raw.githubusercontent.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}/{CONFIG['GITHUB_BRANCH']}/rules/outputs"
         cdn_url = f"https://cdn.jsdelivr.net/gh/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}@{CONFIG['GITHUB_BRANCH']}/rules/outputs"
         
-        readme = f"""# 广告过滤规则
-
-一个自动更新的广告过滤规则集合，适用于各种广告拦截器和DNS过滤器。
-
-## 订阅地址
+        # 1. 名称介绍
+        name_intro = "# 广告过滤规则\n\n一个精准的广告过滤规则集合，自动更新维护，适用于各种广告拦截器、DNS过滤器和Hosts文件。通过智能过滤算法，有效拦截广告、分析工具、错误监控和追踪脚本，同时防止误拦截重要域名。\n\n"
+        
+        # 2. 订阅地址表格（美化版）
+        subscription_table = """## 订阅地址
 
 | 规则名称 | 规则类型 | 原始链接 | 加速链接 |
 |----------|----------|----------|----------|
@@ -791,18 +1399,15 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
 | 黑名单规则 | 黑名单 | `{base_url}/black.txt` | `{cdn_url}/black.txt` |
 | 白名单规则 | 白名单 | `{base_url}/white.txt` | `{cdn_url}/white.txt` |
 
-**版本 {info['version']} 更新内容：**
-- 黑名单域名：{info['rules']['blacklist_domains']:,} 个
-- 白名单域名：{info['rules']['whitelist_domains']:,} 个
-- 智能过滤：防止误拦截和不拦截问题
-- 必要域名保护：{info.get('filtering_stats', {}).get('essential_domains_whitelisted', 0)} 个
-
-## 最新更新时间
-
-**{info['updated_at'].replace('T', ' ').replace('Z', '')}**
-
-*规则每天自动更新，更新时间：北京时间 02:00*
-"""
+""".format(base_url=base_url, cdn_url=cdn_url)
+        
+        # 3. 最新更新时间
+        last_updated = "## 最新更新时间\n\n**{updated_at}**\n\n*规则每天自动更新，更新时间：北京时间 02:00*".format(
+            updated_at=info['updated_at'].replace('T', ' ').replace('Z', '')
+        )
+        
+        # 组合三个部分
+        readme = name_intro + subscription_table + last_updated
         
         with open('README.md', 'w', encoding='utf-8') as f:
             f.write(readme)
@@ -812,8 +1417,8 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
     def run(self):
         """运行主流程"""
         print("=" * 60)
-        print("🎯 精准广告过滤规则生成器")
-        print("解决不拦截和误拦截问题")
+        print("🎯 精准广告过滤规则生成器（增强版）")
+        print("针对测试结果增强：分析工具、横幅广告、错误监控")
         print("=" * 60)
         
         start_time = time.time()
@@ -856,6 +1461,12 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
             print(f"  • 可疑域名过滤: {self.stats['domains_removed_by_suspicious']}个")
             print(f"  • 白名单移除: {self.stats['domains_removed_by_whitelist']}个")
             print(f"  • 关键广告域名: {self.stats['critical_domains_kept']}个")
+            print(f"  • 分析工具拦截: {self.stats['analytics_domains_blocked']}个")
+            print(f"  • 横幅广告拦截: {self.stats['banner_ad_domains_blocked']}个")
+            print(f"  • 错误监控拦截: {self.stats['error_monitoring_domains_blocked']}个")
+            print(f"  • 上下文广告拦截: {self.stats['contextual_ad_domains_blocked']}个")
+            print(f"  • 元素隐藏规则: {self.stats['element_hiding_rules_added']}个")
+            print(f"  • 脚本拦截规则: {self.stats['script_blocking_rules_added']}个")
             print("=" * 60)
             print(f"📁 规则文件: rules/outputs/")
             print("📖 文档更新: README.md")
@@ -863,12 +1474,20 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
             print("=" * 60)
             
             # 建议
-            if self.stats['domains_removed_by_suspicious'] > 100:
-                print("\n💡 建议：检测到大量可疑域名被过滤，如果广告拦截效果不足，")
-                print("      可以在配置中关闭 'enable_false_positive_filter'")
+            if self.stats['analytics_domains_blocked'] > 0:
+                print("\n💡 分析工具拦截已增强，应该解决脚本执行测试失败问题")
             
-            if self.stats['essential_domains_whitelisted'] > 50:
-                print("\n💡 建议：已保护大量必要域名，可有效减少误拦截")
+            if self.stats['banner_ad_domains_blocked'] > 0:
+                print("💡 横幅广告拦截已增强，应该解决文件加载测试失败问题")
+            
+            if self.stats['error_monitoring_domains_blocked'] > 0:
+                print("💡 错误监控拦截已增强，应该解决脚本执行测试失败问题")
+            
+            if self.stats['element_hiding_rules_added'] > 0:
+                print("💡 元素隐藏规则已添加，应该解决区块可见性测试问题")
+            
+            print("\n🚀 建议运行增强模式：python run.py --enhanced")
+            print("📊 查看详细统计：python run.py --stats")
             
             return True
             
@@ -897,11 +1516,12 @@ def main():
     # 命令行参数
     if len(sys.argv) > 1:
         if sys.argv[1] == '--help' or sys.argv[1] == '-h':
-            print("🎯 精准广告过滤规则生成器")
+            print("🎯 精准广告过滤规则生成器（增强版）")
             print("\n使用方法:")
             print("  python run.py              # 正常运行")
             print("  python run.py --strict     # 严格模式（更多过滤）")
             print("  python run.py --loose      # 宽松模式（减少过滤）")
+            print("  python run.py --enhanced   # 增强拦截模式（针对测试结果，推荐）")
             print("  python run.py --stats      # 显示过滤统计")
             return
         
@@ -915,22 +1535,48 @@ def main():
             CONFIG['INTELLIGENT_FILTERING']['enable_false_positive_filter'] = False
             CONFIG['INTELLIGENT_FILTERING']['enable_safe_domains_check'] = False
         
+        elif sys.argv[1] == '--enhanced':
+            print("🔧 增强拦截模式：针对测试结果优化")
+            CONFIG['ENHANCED_BLOCKING']['enhance_analytics_blocking'] = True
+            CONFIG['ENHANCED_BLOCKING']['block_analytics_execution'] = True
+            CONFIG['ENHANCED_BLOCKING']['enhance_banner_blocking'] = True
+            CONFIG['ENHANCED_BLOCKING']['enhance_error_monitoring_blocking'] = True
+            CONFIG['ENHANCED_BLOCKING']['generate_element_hiding_rules'] = True
+            CONFIG['ENHANCED_BLOCKING']['generate_script_blocking_rules'] = True
+            CONFIG['ENHANCED_BLOCKING']['enhance_contextual_ads'] = True
+            print("✅ 已启用增强拦截：")
+            print("   - 分析工具拦截（解决脚本执行测试失败）")
+            print("   - 横幅广告拦截（解决文件加载测试失败）")
+            print("   - 错误监控拦截（解决脚本执行测试失败）")
+            print("   - 元素隐藏规则（解决区块可见性测试）")
+            print("   - 脚本拦截规则（阻止分析脚本执行）")
+        
         elif sys.argv[1] == '--stats':
             print("📊 过滤配置统计:")
             print(f"  必要域名数量: {len(CONFIG['ESSENTIAL_DOMAINS'])}")
             print(f"  安全域名数量: {len(CONFIG['SAFE_DOMAINS'])}")
-            print(f"  可疑模式数量: {len(CONFIG['SUSPICIOUS_PATTERNS'])}")
-            print(f"  关键模式数量: {len(CONFIG['CRITICAL_PATTERNS'])}")
+            print(f"  分析域名数量: {len(CONFIG['ANALYTICS_DOMAINS'])}")
+            print(f"  横幅广告域名数量: {len(CONFIG['BANNER_AD_DOMAINS'])}")
+            print(f"  错误监控域名数量: {len(CONFIG['ERROR_MONITORING_DOMAINS'])}")
+            print(f"  上下文广告域名数量: {len(CONFIG['CONTEXTUAL_AD_NETWORKS'])}")
+            print(f"  元素隐藏规则数量: {len(CONFIG['ELEMENT_HIDING_RULES'])}")
+            print(f"  脚本拦截模式数量: {len(CONFIG['BLOCKED_SCRIPT_PATTERNS'])}")
             
             print("\n🔧 智能过滤配置:")
             for key, value in CONFIG['INTELLIGENT_FILTERING'].items():
                 status = "✅ 启用" if value else "❌ 禁用"
                 print(f"  {key}: {status}")
+            
+            print("\n🔧 增强拦截配置:")
+            for key, value in CONFIG['ENHANCED_BLOCKING'].items():
+                status = "✅ 启用" if value else "❌ 禁用"
+                print(f"  {key}: {status}")
             return
     
     # 正常运行
-    print("🎯 正在启动精准广告过滤生成器...")
-    print("💡 目标：解决不拦截和误拦截问题")
+    print("🎯 正在启动精准广告过滤生成器（增强版）...")
+    print("💡 目标：解决测试中的不拦截问题")
+    print("📊 测试问题：分析工具、横幅广告、错误监控拦截不足")
     
     generator = AccurateAdBlockGenerator()
     success = generator.run()
@@ -939,9 +1585,14 @@ def main():
         print("\n🎉 规则生成成功！")
         print("📄 查看README.md获取订阅链接")
         print("🚀 GitHub Actions会自动提交更新")
-        print("\n💡 如果仍有不拦截或误拦截问题，可以：")
-        print("   1. 调整 rules/sources/ 中的规则源")
-        print("   2. 使用 --strict 或 --loose 模式")
+        print("\n💡 针对测试结果的增强功能：")
+        print("   1. 分析工具脚本执行拦截 - 解决谷歌分析、热图、Yandex分析测试失败")
+        print("   2. 横幅广告文件加载拦截 - 解决Flash、GIF、静态图像广告测试失败")
+        print("   3. 错误监控脚本执行拦截 - 解决Sentry、Bugsnag测试失败")
+        print("   4. 元素隐藏规则 - 解决区块可见性测试未通过")
+        print("\n🔧 如果仍有问题，可以：")
+        print("   1. 使用 --enhanced 模式运行（已默认启用）")
+        print("   2. 调整 rules/sources/ 中的规则源")
         print("   3. 查看 rules/outputs/info.json 获取详细统计")
     else:
         print("\n💥 规则生成失败！")
