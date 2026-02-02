@@ -1,17 +1,23 @@
 {
-  "version": "20260202_1423",
-  "updated_at": "2026-02-02T14:23:57.054516",
+  "version": "20260202_1622",
+  "updated_at": "2026-02-02T16:22:28.447454",
   "rules": {
-    "blacklist_domains": 1184211,
+    "blacklist_domains": 1184320,
     "whitelist_domains": 5429
   },
   "filtering_stats": {
     "domains_removed_by_whitelist": 28594,
     "domains_removed_by_safe_check": 26360,
-    "domains_removed_by_suspicious": 150896,
-    "critical_domains_kept": 14,
+    "domains_removed_by_suspicious": 150898,
+    "critical_domains_kept": 4,
     "essential_domains_whitelisted": 1803,
-    "total_domains_processed": 1391850
+    "total_domains_processed": 1391865,
+    "analytics_domains_blocked": 24,
+    "banner_ad_domains_blocked": 21,
+    "error_monitoring_domains_blocked": 27,
+    "contextual_ad_domains_blocked": 34,
+    "element_hiding_rules_added": 149,
+    "script_blocking_rules_added": 62
   },
   "config": {
     "intelligent_filtering": {
@@ -22,7 +28,30 @@
       "keep_popular_domains": true,
       "enable_domain_validation": true
     },
+    "enhanced_blocking": {
+      "enhance_analytics_blocking": true,
+      "block_analytics_execution": true,
+      "enhance_banner_blocking": true,
+      "block_flash_banners": true,
+      "block_gif_ads": true,
+      "block_static_image_ads": true,
+      "enhance_error_monitoring_blocking": true,
+      "generate_element_hiding_rules": true,
+      "generate_script_blocking_rules": true,
+      "enhance_contextual_ads": true
+    },
     "essential_domains_count": 66,
-    "safe_domains_count": 29
+    "safe_domains_count": 29,
+    "analytics_domains_count": 71,
+    "banner_ad_domains_count": 105,
+    "error_monitoring_domains_count": 44,
+    "element_hiding_rules_count": 149,
+    "script_blocking_patterns_count": 62
+  },
+  "test_improvements": {
+    "analytics_tools": "增强脚本执行拦截，解决测试失败",
+    "banner_ads": "增强文件加载拦截，解决测试失败",
+    "error_monitoring": "增强脚本执行拦截，解决测试失败",
+    "visibility_issues": "添加元素隐藏规则，解决可见性测试"
   }
 }
