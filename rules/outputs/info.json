@@ -1,8 +1,8 @@
 {
-  "version": "20260202_1421",
-  "updated_at": "2026-02-02T14:21:08.745425",
+  "version": "20260202_1423",
+  "updated_at": "2026-02-02T14:23:57.054516",
   "rules": {
-    "blacklist_domains": 1184207,
+    "blacklist_domains": 1184211,
     "whitelist_domains": 5429
   },
   "filtering_stats": {
@@ -11,7 +11,7 @@
     "domains_removed_by_suspicious": 150896,
     "critical_domains_kept": 14,
     "essential_domains_whitelisted": 1803,
-    "total_domains_processed": 1391846
+    "total_domains_processed": 1391850
   },
   "config": {
     "intelligent_filtering": {
