@@ -1,17 +1,17 @@
 {
-  "version": "20260204_0301",
-  "updated_at": "2026-02-04T03:01:45.556013",
+  "version": "20260205_0257",
+  "updated_at": "2026-02-05T02:57:15.292913",
   "rules": {
-    "blacklist_domains": 526457,
-    "whitelist_domains": 7333
+    "blacklist_domains": 527659,
+    "whitelist_domains": 7327
   },
   "filtering_stats": {
-    "domains_removed_by_whitelist": 15629,
-    "domains_removed_by_safe_check": 10298,
-    "domains_removed_by_suspicious": 50972,
+    "domains_removed_by_whitelist": 15589,
+    "domains_removed_by_safe_check": 10395,
+    "domains_removed_by_suspicious": 50992,
     "critical_domains_kept": 4,
     "essential_domains_whitelisted": 2458,
-    "total_domains_processed": 605699,
+    "total_domains_processed": 606978,
     "analytics_domains_blocked": 22,
     "banner_ad_domains_blocked": 24,
     "error_monitoring_domains_blocked": 29,
