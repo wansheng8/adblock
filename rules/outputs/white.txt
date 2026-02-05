@@ -1,7 +1,7 @@
 ! 白名单规则
-! 生成时间: 2026-02-05 02:57:13
-! 版本: 20260205_0257
-! 域名数量: 7,327
+! 生成时间: 2026-02-06 02:56:10
+! 版本: 20260206_0256
+! 域名数量: 7,363
 
 @@||000714.xyz^
 @@||0115765.com^
@@ -215,6 +215,7 @@
 @@||active.jd.com^
 @@||activity.browser.intl.miui.com^
 @@||activity.hdslb.com^
+@@||activity.huaweicloud.com^
 @@||activity.tuiapple.com^
 @@||activity.youku.com^
 @@||acts.qidian.com^
@@ -873,6 +874,7 @@
 @@||ausha.tsbluebox.com^
 @@||auth.avs.io^
 @@||auth.gfx.ms^
+@@||auth.huaweicloud.com^
 @@||auth.mail.ru^
 @@||auth.opera.com^
 @@||auth.schale.network^
@@ -1288,6 +1290,7 @@
 @@||cdn.iocdn.cc^
 @@||cdn.jsdelivr.net^
 @@||cdn.kaizenplatform.net^
+@@||cdn.myhuaweicloud.com^
 @@||cdn.nlark.com^
 @@||cdn.opencmp.net^
 @@||cdn.petametrics.com^
@@ -1520,7 +1523,6 @@
 @@||cloudfront.net^
 @@||cloudns.net^
 @@||cloudpush.aliyuncs.com^
-@@||clover-manga.com^
 @@||club.tgfcer.com^
 @@||cm-beacon.nakanohito.jp^
 @@||cm-h.phncdn.com^
@@ -1586,7 +1588,6 @@
 @@||collect.hupu.com^
 @@||collect.igodigital.com^
 @@||colorspire.com^
-@@||comandotorrent.tv^
 @@||comate-ide.cdn.bcebos.com^
 @@||comate.baidu.com^
 @@||comcast.net^
@@ -1639,8 +1640,10 @@
 @@||consentmanager.mgr.consensu.org^
 @@||consentmanager.net^
 @@||conservationmag.org^
+@@||console-intl.huaweicloud.com^
 @@||console.cloud.google.com^
 @@||console.cloud.tencent.com^
+@@||console.huaweicloud.com^
 @@||consumerapp-1251779293.image.myqcloud.com^
 @@||contacts.google.com^
 @@||content-autofill.googleapis.com^
@@ -2172,7 +2175,6 @@
 @@||earnsato.com^
 @@||eastus.api.speech.microsoft.com^
 @@||easydutchcdn.pages.dev^
-@@||easyexploits.com^
 @@||easylife.tw^
 @@||easypari.fr^
 @@||eatsmarter.de^
@@ -2604,7 +2606,6 @@
 @@||freepsdvn.com^
 @@||freeserial-keys.blogspot.com^
 @@||freeshib.biz^
-@@||freesoft.id^
 @@||freesoftpdfdownload.blogspot.com^
 @@||freetimelearning.com^
 @@||freetutorials.us^
@@ -3111,6 +3112,7 @@
 @@||html-load.com^
 @@||html5.5games.cc^
 @@||htnovo.net^
+@@||huaweicloud.com^
 @@||hub.docker.com^
 @@||hub5btmain.sandai.net^
 @@||hub5btmain.v6.shub.sandai.net^
@@ -3711,6 +3713,7 @@
 @@||legendas.dev^
 @@||legionscans.com^
 @@||leihuo.163.com^
+@@||lematin.ch^
 @@||lemon.baidu.com^
 @@||lemondeinformatique.fr^
 @@||lencr.org^
@@ -4093,6 +4096,7 @@
 @@||marketing.net.idealo-partner.com^
 @@||marketingautomation.services^
 @@||marketmovers.it^
+@@||marketplace.huaweicloud.com^
 @@||marketplace.xbox.com^
 @@||marquiz.ru^
 @@||mars.jd.com^
@@ -4212,7 +4216,6 @@
 @@||messitv.net^
 @@||metabase.com^
 @@||metabomb.net^
-@@||metalnaveia66.com^
 @@||metamani.blog15.fc2.com^
 @@||meteomedia.com^
 @@||metok.sys.miui.com^
@@ -4282,6 +4285,7 @@
 @@||mip.xiachufang.com^
 @@||mipcache.bdstatic.com^
 @@||mirrors.163.com^
+@@||mirrors.huaweicloud.com^
 @@||miscellaneous-c.blogspot.com^
 @@||missav.ai^
 @@||missav.live^
@@ -4301,6 +4305,8 @@
 @@||mizugigurabia.com^
 @@||mjakmama24.pl^
 @@||mjrpay.jd.com^
+@@||mkp-intl-res.hc-cdn.com^
+@@||mkp-res.hc-cdn.com^
 @@||mkto-sj250060.com^
 @@||mlol-file.qpic.cn^
 @@||mlvbdc.live.qcloud.com^
@@ -4690,6 +4696,36 @@
 @@||obituaries.therecord.com^
 @@||obituaries.thestar.com^
 @@||objectivequiz.com^
+@@||obs.af-north-1.myhuaweicloud.com^
+@@||obs.af-south-1.myhuaweicloud.com^
+@@||obs.ap-southeast-1.myhuaweicloud.com^
+@@||obs.ap-southeast-2.myhuaweicloud.com^
+@@||obs.ap-southeast-3.myhuaweicloud.com^
+@@||obs.ap-southeast-4.myhuaweicloud.com^
+@@||obs.ap-southeast-5.myhuaweicloud.com^
+@@||obs.cn-east-2.myhuaweicloud.com^
+@@||obs.cn-east-3.myhuaweicloud.com^
+@@||obs.cn-east-4.myhuaweicloud.com^
+@@||obs.cn-east-5.myhuaweicloud.com^
+@@||obs.cn-north-1.myhuaweicloud.com^
+@@||obs.cn-north-11.myhuaweicloud.com^
+@@||obs.cn-north-12.myhuaweicloud.com^
+@@||obs.cn-north-2.myhuaweicloud.com^
+@@||obs.cn-north-4.myhuaweicloud.com^
+@@||obs.cn-north-9.myhuaweicloud.com^
+@@||obs.cn-south-1.myhuaweicloud.com^
+@@||obs.cn-south-2.myhuaweicloud.com^
+@@||obs.cn-south-4.myhuaweicloud.com^
+@@||obs.cn-southwest-2.myhuaweicloud.com^
+@@||obs.cn-southwest-3.myhuaweicloud.com^
+@@||obs.la-north-2.myhuaweicloud.com^
+@@||obs.la-south-2.myhuaweicloud.com^
+@@||obs.me-east-1.myhuaweicloud.com^
+@@||obs.na-mexico-1.myhuaweicloud.com^
+@@||obs.ru-northwest-2.myhuaweicloud.com^
+@@||obs.sa-brazil-1.myhuaweicloud.com^
+@@||obs.sa-peru-1.myhuaweicloud.com^
+@@||obs.tr-west-1.myhuaweicloud.com^
 @@||observador.pt^
 @@||ocr-free.com^
 @@||odb.outbrain.com^
@@ -4994,7 +5030,6 @@
 @@||pe.com^
 @@||peacocktv.com^
 @@||pengantartidurkuh.blogspot.com^
-@@||pennbookcenter.com^
 @@||penta.a.one.impact-ad.jp^
 @@||peperonity.net^
 @@||pepperjamnetwork.com^
@@ -5174,6 +5209,7 @@
 @@||portable4pc.com^
 @@||portal.aae.at^
 @@||portal.azure.com^
+@@||portal.hc-cdn.com^
 @@||portal.ik.weiyunjian.com^
 @@||portal.mail.ru^
 @@||portal.newdaycards.com^
@@ -5443,10 +5479,13 @@
 @@||reports.adguard.com^
 @@||repubblica.it^
 @@||res-r.qingjiaota.com^
+@@||res-static.hc-cdn.cn^
+@@||res-video.hc-cdn.com^
 @@||res-x.com^
 @@||res.126.net^
 @@||res.ads.nicovideo.jp^
 @@||res.cloudinary.com^
+@@||res.hc-cdn.com^
 @@||res.imtt.qq.com^
 @@||res.mall.10010.cn^
 @@||res.mi.baidu.com^
@@ -5634,6 +5673,7 @@
 @@||seamanmemories.com^
 @@||search.kuwo.cn^
 @@||search.sogoucdn.com^
+@@||searchrec.marketplace-intl.huaweicloud.com^
 @@||searchtap.net^
 @@||sears.com^
 @@||sec-cdn.static.xiaomi.net^
@@ -5720,7 +5760,6 @@
 @@||shenyunperformingarts.org^
 @@||shenyunshop.com^
 @@||shenzhoufilm.com^
-@@||shiba.limited^
 @@||shibukei.com^
 @@||shieldsgazette.com^
 @@||shinden.pl^
@@ -6122,6 +6161,7 @@
 @@||support-beacon.nakanohito.jp^
 @@||support-widget.nakanohito.jp^
 @@||support.google.com^
+@@||support.huaweicloud.com^
 @@||support.weixin.qq.com^
 @@||supportcanon.com^
 @@||suratkargo.com.tr^
@@ -6441,7 +6481,6 @@
 @@||toramemoblog.com^
 @@||torimochi.line-apps.com^
 @@||torproject.org^
-@@||torrentsmegafilmes.com^
 @@||tortuga.wtf^
 @@||tot.hoyoverse.com^
 @@||total-sportek.to^
@@ -6645,7 +6684,6 @@
 @@||unimedsorocaba.coop.br^
 @@||union-click.jd.com^
 @@||union.jd.com^
-@@||unionmanga.xyz^
 @@||uniqlo.com^
 @@||unisdk.update.netease.com^
 @@||unity3diy.blogspot.com^
@@ -6841,7 +6879,6 @@
 @@||vip.iqiyi.com^
 @@||vip.sp-flv.com^
 @@||vip1.kuwo.cn^
-@@||viralfeed.xyz^
 @@||viralogic.xyz^
 @@||virginplus.ca^
 @@||virtualearth.net^
@@ -7281,7 +7318,6 @@
 @@||zazhipu.com^
 @@||zbj.com^
 @@||zconfig.alibabausercontent.com^
-@@||zcteam.id^
 @@||zdopravy.cz^
 @@||zee5.com^
 @@||zeemoontv-28.blogspot.com^
