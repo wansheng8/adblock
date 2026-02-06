@@ -2,9 +2,8 @@ name: 更新广告过滤规则
 
 on:
   schedule:
-    # 每天UTC 18:00 (北京时间02:00)
     - cron: '0 18 * * *'
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
   push:
     branches: [ main ]
 
@@ -12,15 +11,13 @@ jobs:
   generate-rules:
     runs-on: ubuntu-latest
     
-    # 设置权限
     permissions:
-      contents: write  # 允许写入仓库
+      contents: write
     
     steps:
     - name: 检出代码
       uses: actions/checkout@v4
       with:
-        # 使用完整历史记录以便git能正常工作
         fetch-depth: 0
     
     - name: 设置Python
@@ -36,139 +33,58 @@ jobs:
     - name: 创建目录结构
       run: |
         mkdir -p rules/sources rules/outputs logs reports backups cache
-        echo "📁 目录结构创建完成"
     
-    - name: 检查并创建源文件
+    - name: 检查源文件
       run: |
-        echo "📁 检查源文件..."
-        
-        # 检查黑名单源文件
-        if [ ! -f "rules/sources/black.txt" ] || [ ! -s "rules/sources/black.txt" ]; then
-          echo "⚠️  black.txt 不存在或为空，创建示例文件"
-          cat > rules/sources/black.txt << 'EOF'
-# 广告过滤规则源 - 黑名单
-# 请在此文件中添加您要采集的黑名单规则源URL
-# 每行一个URL，以#开头的行是注释
-
-# 示例（取消注释即可使用）：
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt
-https://easylist.to/easylist/easylist.txt
-https://easylist.to/easylist/easyprivacy.txt
-https://secure.fanboy.co.nz/fanboy-annoyance.txt
-https://secure.fanboy.co.nz/fanboy-social.txt
-EOF
-          echo "✅ 创建 black.txt 完成"
-        else
-          echo "✅ black.txt 已存在"
-          echo "📄 内容预览："
-          head -20 rules/sources/black.txt
+        if [ ! -f "rules/sources/black.txt" ]; then
+          echo "❌ black.txt 不存在，创建空文件"
+          touch rules/sources/black.txt
         fi
         
-        # 检查白名单源文件
-        if [ ! -f "rules/sources/white.txt" ] || [ ! -s "rules/sources/white.txt" ]; then
-          echo "⚠️  white.txt 不存在或为空，创建示例文件"
-          cat > rules/sources/white.txt << 'EOF'
-# 白名单规则源
-# 请在此文件中添加您要采集的白名单规则源URL
-# 每行一个URL，以#开头的行是注释
-
-# 示例（取消注释即可使用）：
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/allowlist.txt
-https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt
-EOF
-          echo "✅ 创建 white.txt 完成"
-        else
-          echo "✅ white.txt 已存在"
-          echo "📄 内容预览："
-          head -20 rules/sources/white.txt
+        if [ ! -f "rules/sources/white.txt" ]; then
+          echo "❌ white.txt 不存在，创建空文件"
+          touch rules/sources/white.txt
         fi
         
-        # 显示文件大小
-        echo "📊 文件大小统计："
-        ls -lh rules/sources/
+        echo "📊 源文件大小:"
+        wc -l rules/sources/black.txt
+        wc -l rules/sources/white.txt
     
     - name: 生成广告过滤规则
       run: |
-        echo "🚀 开始生成广告过滤规则..."
-        echo "当前工作目录：$(pwd)"
-        echo "目录内容："
-        ls -la
-        
-        # 运行规则生成器
         python run.py --mode enhanced --verbose
-        
-        echo "✅ 规则生成完成"
     
     - name: 验证生成的文件
       run: |
-        echo "📁 生成的文件列表："
-        ls -la rules/outputs/ || echo "rules/outputs/ 目录不存在"
-        
         if [ -d "rules/outputs/" ]; then
-          echo "📊 文件统计："
+          echo "📁 生成的文件:"
+          ls -la rules/outputs/
+          
+          echo "📊 文件统计:"
           for file in rules/outputs/*.txt; do
             if [ -f "$file" ]; then
               lines=$(wc -l < "$file" 2>/dev/null || echo "0")
               size=$(du -h "$file" 2>/dev/null | cut -f1 || echo "0B")
-              echo "  $(basename "$file"): $lines 行, $size"
+              echo "$(basename "$file"): $lines 行, $size"
             fi
           done
-          
-          echo "📈 规则统计："
-          if [ -f "rules/outputs/info.json" ]; then
-            python3 -c "
-import json, sys
-try:
-    with open('rules/outputs/info.json', 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    print(f'黑名单: {data[\"counts\"][\"blacklist\"]:,}')
-    print(f'白名单: {data[\"counts\"][\"whitelist\"]:,}')
-    print(f'过滤后: {data[\"counts\"][\"filtered\"]:,}')
-    print(f'增强添加: {data[\"counts\"][\"enhanced_added\"]:,}')
-except Exception as e:
-    print(f'解析info.json失败: {e}')
-"
-          else
-            echo "❌ info.json 文件不存在"
-          fi
         else
-          echo "❌ rules/outputs/ 目录为空或不存在"
+          echo "❌ 没有生成输出文件"
+          exit 1
         fi
     
     - name: 配置Git
       run: |
         git config --global user.name "GitHub Actions Bot"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        echo "✅ Git配置完成"
     
-    - name: 检查更改并提交
+    - name: 提交更改
       run: |
-        echo "🔍 检查文件更改..."
-        git status
-        
-        # 检查是否有更改
         if [ -n "$(git status --porcelain)" ]; then
-          echo "📝 检测到更改，准备提交"
-          
-          # 添加所有更改的文件
           git add -A
-          
-          # 提交更改
           git commit -m "🤖 自动更新广告过滤规则 $(date +'%Y-%m-%d %H:%M:%S')"
-          
-          # 推送更改
-          echo "🚀 推送更改到仓库..."
           git push origin main
-          
-          echo "✅ 更改已提交并推送"
+          echo "✅ 更改已提交"
         else
           echo "📭 没有检测到更改"
         fi
-    
-    - name: 清理缓存（可选）
-      if: always()
-      run: |
-        echo "🧹 清理临时文件..."
-        rm -rf cache/ || true
-        rm -rf logs/ || true
-        echo "✅ 清理完成"
