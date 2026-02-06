@@ -1,10 +1,10 @@
 # 广告过滤规则生成器配置文件
-# 版本: 3.0
+# 版本: 3.3
 
 # 项目信息
 project:
   name: "adblock-enhanced"
-  version: "3.0.0"
+  version: "3.3.0"
   description: "智能广告过滤规则生成器"
   author: "wansheng8"
   license: "MIT"
@@ -26,7 +26,7 @@ performance:
   retry_times: 3
   batch_size: 1000
   memory_limit_mb: 2048
-  use_cache: true
+  use_cache: false
   cache_expiry_hours: 24
   compress_cache: false
   parallel_processing: true
@@ -34,22 +34,22 @@ performance:
   
 # 规则处理配置
 rules:
-  # 输入源配置
-  sources:
+  # 输入源配置 - 注意：主程序优先使用 rules/sources/black.txt 和 rules/sources/white.txt 中的源
+  # 这里配置的源仅作为备用
+  
+  # 内置备用源（当文件中的源全部失败时使用）
+  backup_sources:
     blacklist:
       - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt"
-      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/tracking.txt"
-      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/analytics.txt"
-      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/banners.txt"
-      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/i18n.txt"
-      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/mobile.txt"
-      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/social.txt"
-      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/other.txt"
-      
+      - "https://easylist.to/easylist/easylist.txt"
+      - "https://easylist.to/easylist/easyprivacy.txt"
+      - "https://secure.fanboy.co.nz/fanboy-annoyance.txt"
+      - "https://secure.fanboy.co.nz/fanboy-social.txt"
+      - "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
     whitelist:
-      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist.txt"
-      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist_domains.txt"
-    
+      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/allowlist.txt"
+      - "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt"
+  
   # 排除的域名
   exclude_domains:
     - "localhost"
@@ -58,22 +58,11 @@ rules:
     - "127.0.0.1"
     - "0.0.0.0"
     - "::1"
-    - "0.0.0.0.0"
     - "ip6-localhost"
     - "ip6-loopback"
     - "ip6-localnet"
     - "ip6-mcastprefix"
-    - "ip6-allnodes"
-    - "ip6-allrouters"
-    - "ip6-allhosts"
   
-  # 白名单处理
-  whitelist:
-    enable_advanced_matching: true
-    match_subdomains: true
-    max_whitelist_size: 10000
-    essential_domains: true
-    
   # 智能过滤配置
   intelligent_filtering:
     enable_essential_domain_whitelist: true
@@ -143,7 +132,7 @@ paths:
   reports_dir: "reports"
   backup_dir: "backups"
   
-  # 源文件
+  # 源文件（您的自定义源文件）
   black_source: "rules/sources/black.txt"
   white_source: "rules/sources/white.txt"
   custom_sources: "rules/sources/custom/"
@@ -157,13 +146,7 @@ paths:
     white: "rules/outputs/white.txt"
     info: "rules/outputs/info.json"
     enhanced: "rules/outputs/enhanced.txt"
-    privacy: "rules/outputs/privacy.txt"
-    mobile: "rules/outputs/mobile.txt"
     
-  # 缓存文件
-  cache_file: "cache/rules_cache.db"
-  stats_cache: "cache/stats.json"
-  
   # 日志文件
   error_log: "logs/error.log"
   access_log: "logs/access.log"
@@ -181,7 +164,7 @@ monitoring:
   enable_error_tracking: true
   enable_performance_monitoring: true
   enable_memory_monitoring: true
-  enable_disk_usage_monitoring: true
+  enable_disk_usage_monitoring: false
   log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR
   max_log_size_mb: 50
   log_retention_days: 30
@@ -190,98 +173,41 @@ monitoring:
 # 报告配置
 reports:
   generate_detailed_report: true
-  generate_validation_report: true
-  generate_performance_report: true
-  generate_stats_report: true
+  generate_validation_report: false
+  generate_performance_report: false
+  generate_stats_report: false
   generate_comparison_report: false
   
   include_tld_stats: true
   include_length_stats: true
-  include_top_domains: 100
+  include_top_domains: 50
   include_removed_domains: true
   include_whitelisted_domains: true
   
-  report_format: "json"  # json, html, markdown
+  report_format: "json"
   compress_reports: false
   
 # 网络配置
 network:
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 AdBlockGenerator/3.0"
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 AdBlockGenerator/3.3"
   accept_encoding: "gzip, deflate, br"
   rate_limit_requests_per_second: 10
   max_redirects: 5
   verify_ssl: true
   proxy_enabled: false
   proxy_url: ""
-  dns_timeout: 5
   connection_timeout: 10
+  enable_backup_sources: true
   
 # 自动更新配置
 auto_update:
-  check_for_updates: true
+  check_for_updates: false
   update_frequency_hours: 12
   notify_on_update: false
   backup_before_update: true
   max_backups: 5
   
   # 源更新配置
-  update_sources: true
+  update_sources: false
   source_update_frequency_hours: 24
   validate_sources: true
-  
-# 测试配置
-testing:
-  enable_testing: true
-  test_frequency_hours: 24
-  test_sites:
-    - "https://example.com"
-    - "https://google.com"
-    - "https://facebook.com"
-    
-  test_categories:
-    - "analytics"
-    - "banners"
-    - "tracking"
-    - "social"
-    
-  performance_testing: true
-  memory_testing: true
-  
-# 通知配置
-notifications:
-  email_enabled: false
-  email_host: ""
-  email_port: 587
-  email_user: ""
-  email_password: ""
-  email_to: ""
-  
-  webhook_enabled: false
-  webhook_url: ""
-  webhook_events:
-    - "success"
-    - "error"
-    - "warning"
-    
-# 安全配置
-security:
-  validate_urls: true
-  sanitize_inputs: true
-  max_file_size_mb: 10
-  allowed_domains: []
-  blocked_domains: []
-  rate_limit_enabled: true
-  
-# 多语言配置
-i18n:
-  default_language: "zh"
-  supported_languages:
-    - "zh"
-    - "en"
-  auto_detect: false
-  
-# 插件配置
-plugins:
-  enabled: false
-  directory: "plugins"
-  auto_load: false
