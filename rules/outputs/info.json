@@ -1,7 +1,7 @@
 {
-  "version": "3.0.0",
-  "build_date": "2026-02-06 17:18:30",
-  "timestamp": "2026-02-06 17:18:30",
+  "version": "3.3.0",
+  "build_date": "2026-02-06 17:37:29",
+  "timestamp": "2026-02-06 17:37:29",
   "mode": "enhanced",
   "stats": {
     "total_processed": 845,
@@ -22,8 +22,8 @@
     "enhanced": 84
   },
   "sources": {
-    "blacklist": 8,
-    "whitelist": 2
+    "blacklist": 6,
+    "whitelist": 1
   },
   "github": {
     "user": "wansheng8",
