@@ -2,18 +2,26 @@ name: 更新广告过滤规则
 
 on:
   schedule:
-    # 每天 UTC 时间 00:00 运行（对应上海时间 08:00）
-    - cron: '0 0 * * *'
+    # 每天 UTC 时间 08:00 运行（对应上海时间 16:00）
+    - cron: '0 8 * * *'
   workflow_dispatch:  # 允许手动触发
   push:
     branches:
       - main
     paths:
       - 'rules/sources/**'
+      - 'run.py'
+      - '.github/workflows/update.yml'
+
+env:
+  PYTHONUNBUFFERED: 1
 
 jobs:
   update-rules:
     runs-on: ubuntu-latest
+    
+    # 增加资源限制
+    timeout-minutes: 30
     
     steps:
     - name: 检查代码
@@ -31,10 +39,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: 清理旧规则文件
+    - name: 清理旧文件
       run: |
-        rm -f rules/outputs/*.txt
-        echo "已清理旧规则文件"
+        rm -rf rules/outputs/*
+        rm -rf temp/
+        mkdir -p rules/outputs temp
+        echo "已清理旧文件"
         
     - name: 运行规则收集器
       run: |
@@ -52,30 +62,53 @@ jobs:
         else
           echo "检测到变化，将提交更新"
           echo "has_changes=true" >> $GITHUB_OUTPUT
+          echo "更新时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
         fi
         
     - name: 提交更新
       if: steps.check-changes.outputs.has_changes == 'true'
       run: |
-        git commit -m "🔧 自动更新规则文件 [$(date +'%Y-%m-%d %H:%M:%S')]"
+        git commit -m "🔧 自动更新规则文件 [$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')]"
         git push
         
     - name: 更新完成通知
       run: |
         echo "✅ 广告过滤规则更新完成！"
         echo "📅 更新时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
-        echo "📊 规则文件已更新至 outputs 目录"
+        echo "📊 输出目录: rules/outputs/"
+        echo "📦 包含文件:"
+        ls -la rules/outputs/
         
-    - name: 生成摘要
+    - name: 生成摘要报告
       if: always()
       run: |
-        echo "## 规则更新报告" >> $GITHUB_STEP_SUMMARY
+        echo "## 📊 规则更新报告" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ 更新任务已完成！" >> $GITHUB_STEP_SUMMARY
+        if [ -f "rules/outputs/stats.json" ]; then
+          echo "✅ 更新任务已完成！" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          stats=$(cat rules/outputs/stats.json)
+          total_rules=$(echo $stats | grep -o '"total_rules": [0-9]*' | grep -o '[0-9]*')
+          white_rules=$(echo $stats | grep -o '"white_rules": [0-9]*' | grep -o '[0-9]*')
+          black_rules=$(echo $stats | grep -o '"black_rules": [0-9]*' | grep -o '[0-9]*')
+          sources_processed=$(echo $stats | grep -o '"sources_processed": [0-9]*' | grep -o '[0-9]*')
+          sources_failed=$(echo $stats | grep -o '"sources_failed": [0-9]*' | grep -o '[0-9]*')
+          
+          echo "**统计信息:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 总规则数: $total_rules 条" >> $GITHUB_STEP_SUMMARY
+          echo "- 白名单规则: $white_rules 条" >> $GITHUB_STEP_SUMMARY
+          echo "- 黑名单规则: $black_rules 条" >> $GITHUB_STEP_SUMMARY
+          echo "- 成功源: $sources_processed 个" >> $GITHUB_STEP_SUMMARY
+          echo "- 失败源: $sources_failed 个" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ 更新任务可能未完全成功" >> $GITHUB_STEP_SUMMARY
+        fi
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**更新时间 (上海时间):** $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 订阅链接" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 订阅链接" >> $GITHUB_STEP_SUMMARY
         echo "- 混合规则: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/adblock.txt" >> $GITHUB_STEP_SUMMARY
+        echo "- 压缩版本: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/adblock.txt.gz" >> $GITHUB_STEP_SUMMARY
         echo "- 仅黑名单: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/black_only.txt" >> $GITHUB_STEP_SUMMARY
         echo "- 仅白名单: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/white_only.txt" >> $GITHUB_STEP_SUMMARY
+        echo "- 统计文件: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/stats.json" >> $GITHUB_STEP_SUMMARY
