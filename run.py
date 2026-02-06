@@ -1368,7 +1368,7 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
         print("✅ 规则文件生成完成")
     
     def generate_readme(self):
-        """生成README.md"""
+        """生成README.md（精简版，只包含名称介绍、订阅地址表格和最新更新时间）"""
         print("📖 生成README.md...")
         
         # 读取规则信息
@@ -1379,18 +1379,17 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
             info = {
                 'version': datetime.now().strftime('%Y%m%d'),
                 'updated_at': datetime.now().isoformat(),
-                'rules': {'blacklist_domains': 0, 'whitelist_domains': 0}
             }
         
         # 生成链接
         base_url = f"https://raw.githubusercontent.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}/{CONFIG['GITHUB_BRANCH']}/rules/outputs"
         cdn_url = f"https://cdn.jsdelivr.net/gh/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}@{CONFIG['GITHUB_BRANCH']}/rules/outputs"
         
-        readme = f"""# 广告过滤规则（增强版）
-
-一个自动更新的广告过滤规则集合，适用于各种广告拦截器和DNS过滤器。
-
-## 订阅地址
+        # 1. 名称介绍
+        name_intro = "# 广告过滤规则\n\n一个精准的广告过滤规则集合，自动更新维护，适用于各种广告拦截器、DNS过滤器和Hosts文件。通过智能过滤算法，有效拦截广告、分析工具、错误监控和追踪脚本，同时防止误拦截重要域名。\n\n"
+        
+        # 2. 订阅地址表格（美化版）
+        subscription_table = """## 订阅地址
 
 | 规则名称 | 规则类型 | 原始链接 | 加速链接 |
 |----------|----------|----------|----------|
@@ -1400,37 +1399,203 @@ https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/s
 | 黑名单规则 | 黑名单 | `{base_url}/black.txt` | `{cdn_url}/black.txt` |
 | 白名单规则 | 白名单 | `{base_url}/white.txt` | `{cdn_url}/white.txt` |
 
-**版本 {info['version']} 增强内容：**
-- 黑名单域名：{info['rules']['blacklist_domains']:,} 个
-- 白名单域名：{info['rules']['whitelist_domains']:,} 个
-- 智能过滤：防止误拦截和不拦截问题
-- 必要域名保护：{info.get('filtering_stats', {}).get('essential_domains_whitelisted', 0)} 个
-- 分析工具拦截：{info.get('filtering_stats', {}).get('analytics_domains_blocked', 0)} 个
-- 横幅广告拦截：{info.get('filtering_stats', {}).get('banner_ad_domains_blocked', 0)} 个
-- 错误监控拦截：{info.get('filtering_stats', {}).get('error_monitoring_domains_blocked', 0)} 个
-- 元素隐藏规则：{info.get('filtering_stats', {}).get('element_hiding_rules_added', 0)} 个
-- 脚本拦截规则：{info.get('filtering_stats', {}).get('script_blocking_rules_added', 0)} 个
+""".format(base_url=base_url, cdn_url=cdn_url)
+        
+        # 3. 最新更新时间
+        last_updated = "## 最新更新时间\n\n**{updated_at}**\n\n*规则每天自动更新，更新时间：北京时间 02:00*".format(
+            updated_at=info['updated_at'].replace('T', ' ').replace('Z', '')
+        )
+        
+        # 组合三个部分
+        readme = name_intro + subscription_table + last_updated
+        
+        with open('README.md', 'w', encoding='utf-8') as f:
+            f.write(readme)
+        
+        print("✅ README.md生成完成")
+    
+    def run(self):
+        """运行主流程"""
+        print("=" * 60)
+        print("🎯 精准广告过滤规则生成器（增强版）")
+        print("针对测试结果增强：分析工具、横幅广告、错误监控")
+        print("=" * 60)
+        
+        start_time = time.time()
+        
+        try:
+            # 1. 加载规则源
+            print("\n步骤 1/5: 加载规则源")
+            if not self.load_sources():
+                return False
+            
+            # 2. 下载规则源
+            print(f"\n步骤 2/5: 下载规则源")
+            results = self.download_all_urls()
+            if not results:
+                return False
+            
+            # 3. 智能处理规则
+            print(f"\n步骤 3/5: 智能处理规则")
+            self.process_downloaded_content(results)
+            
+            # 4. 生成规则文件
+            print(f"\n步骤 4/5: 生成规则文件")
+            self.generate_files()
+            
+            # 5. 生成README
+            print(f"\n步骤 5/5: 生成README.md")
+            self.generate_readme()
+            
+            elapsed_time = time.time() - start_time
+            
+            print("\n" + "=" * 60)
+            print("✅ 处理完成！")
+            print("=" * 60)
+            print(f"⏱️  总耗时: {elapsed_time:.2f}秒")
+            print(f"📊 黑名单域名: {len(self.black_domains):,}个")
+            print(f"📊 白名单域名: {len(self.white_domains):,}个")
+            print("\n🎯 智能过滤统计:")
+            print(f"  • 必要域名保护: {self.stats['essential_domains_whitelisted']}个")
+            print(f"  • 安全域名排除: {self.stats['domains_removed_by_safe_check']}个")
+            print(f"  • 可疑域名过滤: {self.stats['domains_removed_by_suspicious']}个")
+            print(f"  • 白名单移除: {self.stats['domains_removed_by_whitelist']}个")
+            print(f"  • 关键广告域名: {self.stats['critical_domains_kept']}个")
+            print(f"  • 分析工具拦截: {self.stats['analytics_domains_blocked']}个")
+            print(f"  • 横幅广告拦截: {self.stats['banner_ad_domains_blocked']}个")
+            print(f"  • 错误监控拦截: {self.stats['error_monitoring_domains_blocked']}个")
+            print(f"  • 上下文广告拦截: {self.stats['contextual_ad_domains_blocked']}个")
+            print(f"  • 元素隐藏规则: {self.stats['element_hiding_rules_added']}个")
+            print(f"  • 脚本拦截规则: {self.stats['script_blocking_rules_added']}个")
+            print("=" * 60)
+            print(f"📁 规则文件: rules/outputs/")
+            print("📖 文档更新: README.md")
+            print("🔗 订阅地址已在README.md中更新")
+            print("=" * 60)
+            
+            # 建议
+            if self.stats['analytics_domains_blocked'] > 0:
+                print("\n💡 分析工具拦截已增强，应该解决脚本执行测试失败问题")
+            
+            if self.stats['banner_ad_domains_blocked'] > 0:
+                print("💡 横幅广告拦截已增强，应该解决文件加载测试失败问题")
+            
+            if self.stats['error_monitoring_domains_blocked'] > 0:
+                print("💡 错误监控拦截已增强，应该解决脚本执行测试失败问题")
+            
+            if self.stats['element_hiding_rules_added'] > 0:
+                print("💡 元素隐藏规则已添加，应该解决区块可见性测试问题")
+            
+            print("\n🚀 建议运行增强模式：python run.py --enhanced")
+            print("📊 查看详细统计：python run.py --stats")
+            
+            return True
+            
+        except KeyboardInterrupt:
+            print("\n\n⏹️  用户中断程序")
+            return False
+            
+        except Exception as e:
+            print(f"\n❌ 处理失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
-## 测试优化
+def main():
+    """主函数"""
+    import sys
+    
+    # 检查依赖
+    try:
+        import requests
+    except ImportError:
+        print("❌ 缺少依赖：requests")
+        print("请运行：pip install requests")
+        return
+    
+    # 命令行参数
+    if len(sys.argv) > 1:
+        if sys.argv[1] == '--help' or sys.argv[1] == '-h':
+            print("🎯 精准广告过滤规则生成器（增强版）")
+            print("\n使用方法:")
+            print("  python run.py              # 正常运行")
+            print("  python run.py --strict     # 严格模式（更多过滤）")
+            print("  python run.py --loose      # 宽松模式（减少过滤）")
+            print("  python run.py --enhanced   # 增强拦截模式（针对测试结果，推荐）")
+            print("  python run.py --stats      # 显示过滤统计")
+            return
+        
+        elif sys.argv[1] == '--strict':
+            print("🔧 严格模式：更多过滤，减少误拦截")
+            CONFIG['INTELLIGENT_FILTERING']['enable_false_positive_filter'] = True
+            CONFIG['INTELLIGENT_FILTERING']['enable_safe_domains_check'] = True
+        
+        elif sys.argv[1] == '--loose':
+            print("🔧 宽松模式：减少过滤，增加拦截")
+            CONFIG['INTELLIGENT_FILTERING']['enable_false_positive_filter'] = False
+            CONFIG['INTELLIGENT_FILTERING']['enable_safe_domains_check'] = False
+        
+        elif sys.argv[1] == '--enhanced':
+            print("🔧 增强拦截模式：针对测试结果优化")
+            CONFIG['ENHANCED_BLOCKING']['enhance_analytics_blocking'] = True
+            CONFIG['ENHANCED_BLOCKING']['block_analytics_execution'] = True
+            CONFIG['ENHANCED_BLOCKING']['enhance_banner_blocking'] = True
+            CONFIG['ENHANCED_BLOCKING']['enhance_error_monitoring_blocking'] = True
+            CONFIG['ENHANCED_BLOCKING']['generate_element_hiding_rules'] = True
+            CONFIG['ENHANCED_BLOCKING']['generate_script_blocking_rules'] = True
+            CONFIG['ENHANCED_BLOCKING']['enhance_contextual_ads'] = True
+            print("✅ 已启用增强拦截：")
+            print("   - 分析工具拦截（解决脚本执行测试失败）")
+            print("   - 横幅广告拦截（解决文件加载测试失败）")
+            print("   - 错误监控拦截（解决脚本执行测试失败）")
+            print("   - 元素隐藏规则（解决区块可见性测试）")
+            print("   - 脚本拦截规则（阻止分析脚本执行）")
+        
+        elif sys.argv[1] == '--stats':
+            print("📊 过滤配置统计:")
+            print(f"  必要域名数量: {len(CONFIG['ESSENTIAL_DOMAINS'])}")
+            print(f"  安全域名数量: {len(CONFIG['SAFE_DOMAINS'])}")
+            print(f"  分析域名数量: {len(CONFIG['ANALYTICS_DOMAINS'])}")
+            print(f"  横幅广告域名数量: {len(CONFIG['BANNER_AD_DOMAINS'])}")
+            print(f"  错误监控域名数量: {len(CONFIG['ERROR_MONITORING_DOMAINS'])}")
+            print(f"  上下文广告域名数量: {len(CONFIG['CONTEXTUAL_AD_NETWORKS'])}")
+            print(f"  元素隐藏规则数量: {len(CONFIG['ELEMENT_HIDING_RULES'])}")
+            print(f"  脚本拦截模式数量: {len(CONFIG['BLOCKED_SCRIPT_PATTERNS'])}")
+            
+            print("\n🔧 智能过滤配置:")
+            for key, value in CONFIG['INTELLIGENT_FILTERING'].items():
+                status = "✅ 启用" if value else "❌ 禁用"
+                print(f"  {key}: {status}")
+            
+            print("\n🔧 增强拦截配置:")
+            for key, value in CONFIG['ENHANCED_BLOCKING'].items():
+                status = "✅ 启用" if value else "❌ 禁用"
+                print(f"  {key}: {status}")
+            return
+    
+    # 正常运行
+    print("🎯 正在启动精准广告过滤生成器（增强版）...")
+    print("💡 目标：解决测试中的不拦截问题")
+    print("📊 测试问题：分析工具、横幅广告、错误监控拦截不足")
+    
+    generator = AccurateAdBlockGenerator()
+    success = generator.run()
+    
+    if success:
+        print("\n🎉 规则生成成功！")
+        print("📄 查看README.md获取订阅链接")
+        print("🚀 GitHub Actions会自动提交更新")
+        print("\n💡 针对测试结果的增强功能：")
+        print("   1. 分析工具脚本执行拦截 - 解决谷歌分析、热图、Yandex分析测试失败")
+        print("   2. 横幅广告文件加载拦截 - 解决Flash、GIF、静态图像广告测试失败")
+        print("   3. 错误监控脚本执行拦截 - 解决Sentry、Bugsnag测试失败")
+        print("   4. 元素隐藏规则 - 解决区块可见性测试未通过")
+        print("\n🔧 如果仍有问题，可以：")
+        print("   1. 使用 --enhanced 模式运行（已默认启用）")
+        print("   2. 调整 rules/sources/ 中的规则源")
+        print("   3. 查看 rules/outputs/info.json 获取详细统计")
+    else:
+        print("\n💥 规则生成失败！")
 
-针对测试结果的增强拦截：
-1. **分析工具**（谷歌分析、热图、Yandex分析）- 脚本执行测试失败 → 已增强拦截
-2. **横幅广告**（Flash、GIF、静态图像）- 文件加载测试失败 → 已增强拦截
-3. **错误监控**（Sentry、Bugsnag）- 脚本执行测试失败 → 已增强拦截
-4. **区块可见性** - 测试未通过 → 已添加元素隐藏规则
-
-## 使用方法
-
-### 命令行运行：
-```bash
-# 正常运行
-python run.py
-
-# 增强拦截模式（推荐）
-python run.py --enhanced
-
-# 严格模式（更多过滤）
-python run.py --strict
-
-# 宽松模式（减少过滤）
-python run.py --loose
+if __name__ == "__main__":
+    main()
