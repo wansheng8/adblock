@@ -15,6 +15,7 @@ on:
 
 env:
   PYTHONUNBUFFERED: 1
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   update-rules:
@@ -28,6 +29,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
         
     - name: 设置Python环境
       uses: actions/setup-python@v4
@@ -56,19 +58,23 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add -A
+        
+        # 检查是否有变化
         if git diff --cached --quiet; then
           echo "没有变化需要提交"
           echo "has_changes=false" >> $GITHUB_OUTPUT
         else
           echo "检测到变化，将提交更新"
           echo "has_changes=true" >> $GITHUB_OUTPUT
-          echo "更新时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
+          UPDATE_TIME=$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')
+          echo "update_time=$UPDATE_TIME" >> $GITHUB_OUTPUT
+          echo "更新时间: $UPDATE_TIME"
         fi
         
     - name: 提交更新
       if: steps.check-changes.outputs.has_changes == 'true'
       run: |
-        git commit -m "🔧 自动更新规则文件 [$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')]"
+        git commit -m "🔧 自动更新规则文件 [${{ steps.check-changes.outputs.update_time }}]"
         git push
         
     - name: 更新完成通知
@@ -76,23 +82,23 @@ jobs:
         echo "✅ 广告过滤规则更新完成！"
         echo "📅 更新时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
         echo "📊 输出目录: rules/outputs/"
-        echo "📦 包含文件:"
-        ls -la rules/outputs/
         
     - name: 生成摘要报告
       if: always()
       run: |
         echo "## 📊 规则更新报告" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
+        
         if [ -f "rules/outputs/stats.json" ]; then
           echo "✅ 更新任务已完成！" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          stats=$(cat rules/outputs/stats.json)
-          total_rules=$(echo $stats | grep -o '"total_rules": [0-9]*' | grep -o '[0-9]*')
-          white_rules=$(echo $stats | grep -o '"white_rules": [0-9]*' | grep -o '[0-9]*')
-          black_rules=$(echo $stats | grep -o '"black_rules": [0-9]*' | grep -o '[0-9]*')
-          sources_processed=$(echo $stats | grep -o '"sources_processed": [0-9]*' | grep -o '[0-9]*')
-          sources_failed=$(echo $stats | grep -o '"sources_failed": [0-9]*' | grep -o '[0-9]*')
+          
+          # 读取统计信息
+          total_rules=$(grep -o '"total_rules": [0-9]*' rules/outputs/stats.json | grep -o '[0-9]*' || echo "0")
+          white_rules=$(grep -o '"white_rules": [0-9]*' rules/outputs/stats.json | grep -o '[0-9]*' || echo "0")
+          black_rules=$(grep -o '"black_rules": [0-9]*' rules/outputs/stats.json | grep -o '[0-9]*' || echo "0")
+          sources_processed=$(grep -o '"sources_processed": [0-9]*' rules/outputs/stats.json | grep -o '[0-9]*' || echo "0")
+          sources_failed=$(grep -o '"sources_failed": [0-9]*' rules/outputs/stats.json | grep -o '[0-9]*' || echo "0")
           
           echo "**统计信息:**" >> $GITHUB_STEP_SUMMARY
           echo "- 总规则数: $total_rules 条" >> $GITHUB_STEP_SUMMARY
@@ -102,13 +108,25 @@ jobs:
           echo "- 失败源: $sources_failed 个" >> $GITHUB_STEP_SUMMARY
         else
           echo "⚠️ 更新任务可能未完全成功" >> $GITHUB_STEP_SUMMARY
+          echo "请检查运行日志" >> $GITHUB_STEP_SUMMARY
         fi
+        
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**更新时间 (上海时间):** $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
+        
         echo "### 🔗 订阅链接" >> $GITHUB_STEP_SUMMARY
         echo "- 混合规则: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/adblock.txt" >> $GITHUB_STEP_SUMMARY
         echo "- 压缩版本: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/adblock.txt.gz" >> $GITHUB_STEP_SUMMARY
         echo "- 仅黑名单: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/black_only.txt" >> $GITHUB_STEP_SUMMARY
         echo "- 仅白名单: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/white_only.txt" >> $GITHUB_STEP_SUMMARY
-        echo "- 统计文件: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/stats.json" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f "rules/outputs/stats.json" ]; then
+          echo "- 统计文件: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/stats.json" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📁 文件列表" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        ls -la rules/outputs/ >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "输出目录为空" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
