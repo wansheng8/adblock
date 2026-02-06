@@ -18,7 +18,6 @@
 ||cdn.betgorebysson.club^
 ||mmstat.com^
 ||o.wowreality.info^
-||yonsandileer.com^
 ||chykohija.pro^
 ||rr.tracker.mobiletracking.ru^
 ||www.ostlon.com^
@@ -45,7 +44,6 @@
 ||nvnxxrk.cn^
 ||yingshuigscs.com^
 ||henzy.com.cn^
-||xmkbrfyu.cn^
 ||wusuliriver.com^
 ||gervasdonatee.guru^
 ||su.tahltanboutell.com^

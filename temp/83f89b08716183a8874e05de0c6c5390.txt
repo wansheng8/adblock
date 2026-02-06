@@ -87,9 +87,6 @@
 @@||googletagmanager.com/gtm.js$domain=nexon.com
 @@||bs.nakanohito.jp/b3/bi.js$domain=nexon.com
 ||webtags.logitech.com^$redirect-rule=nooptext
-musinsa.com#%#//scriptlet('trusted-suppress-native-method', 'CookieStore.prototype.set', '_dd_s', 'prevent', 'datadog')
-musinsa.com#%#//scriptlet('trusted-suppress-native-method', 'Date.prototype.toUTCString', 'undefined', 'abort', 'datadog')
-musinsa.com#%#//scriptlet('set-cookie', '_dd_s', '0', '/', 'musinsa.com')
 @@||googletagmanager.com/gtm.js$script,domain=musinsa.com
 @@||googletagmanager.com/gtag/destination$script,domain=musinsa.com
 @@||huntress.com/assets/snowplow.tracker-*.js$domain=huntress.com
@@ -97,9 +94,6 @@ musinsa.com#%#//scriptlet('set-cookie', '_dd_s', '0', '/', 'musinsa.com')
 @@||s.ssl.qhres2.com/baomitu/jquery/*/jquery.min.js$domain=yasuo.360.cn
 @@||feliz-web.data.tm-awx.com/smile-web.min.js$domain=themirror.com
 @@||feliz.data.tm-awx.com/smile-web-v2/rootEvent$domain=themirror.com
-xinshuru.com#%#//scriptlet('set-constant', 'RADAR_MONITOR', 'emptyObj')
-xinshuru.com#%#//scriptlet('set-constant', 'RADAR_MONITOR.setProject', 'emptyObj', '', 'asFunction')
-xinshuru.com#%#//scriptlet('set-constant', 'Object.prototype.getTrack', 'noopFunc')
 @@||s.ssl.qhres2.com/pkg/radarsdk/radar-analytic-js-sdk-*.umd.js$domain=xinshuru.com
 @@||cdn.stroeerdigitalgroup.de/metatag/live/ctc_golem_relaunch/metaTag.min.js$domain=golem.de
 @@||api.cxense.com/public/widget/data$domain=krone.at
@@ -119,10 +113,9 @@ xinshuru.com#%#//scriptlet('set-constant', 'Object.prototype.getTrack', 'noopFun
 @@||curos.ca/res/*/resources/scripts/lib/fingerprint.js$domain=curos.ca
 @@||cdn.dsmcdn.com/sfx/mergen/*.js$domain=trendyol-milla.com
 @@||se.com/_uce_/immutable/chunks/google-analytics.$script
+bitdefender.com#$#body[style="opacity: 0;"] { opacity: 1 !important; }
 ||sstats.bitdefender.com^$xmlhttprequest,redirect=nooptext,~third-party,important
 @@||sstats.bitdefender.com^$~third-party
-sports.yahoo.com#%#//scriptlet('set-constant', 'rapidInstance.isModuleTracked', 'falseFunc')
-sports.yahoo.com#%#//scriptlet('set-constant', 'rapidInstance.addModulesWithViewability', 'noopFunc')
 @@||s.yimg.com/aaq/benji/benji-*.js$domain=sports.yahoo.com
 @@||s.yimg.com/ss/analytics3.js$domain=tw.sports.yahoo.com
 ||files.upscore.com/iframe/iframe_conversion_tracking.js$script,redirect=noopjs,domain=schwarzwaelder-bote.de
@@ -133,7 +126,6 @@ sports.yahoo.com#%#//scriptlet('set-constant', 'rapidInstance.addModulesWithView
 @@||cdn.dsmcdn.com/sfx/mergen/*/errors.$domain=trendyol.com
 @@||prod.adobeccstatic.com/unav/*/AnalyticsProvider.*.bundle.js$domain=acrobat.adobe.com
 @@||s.yimg.com/ss/analytics3.js$domain=tw.news.yahoo.com|tw.yahoo.com|tw.stock.yahoo.com|hk.news.yahoo.com|hk.yahoo.com|hk.stock.yahoo.com
-id.condenast.com#%#//scriptlet('set-constant', 'appInfo.snowplow.trackSelfDescribingEvent', 'noopFunc')
 @@||id.condenast.com/static/js/analytics/snowplow/snowplowTracking.$domain=id.condenast.com
 @@||googletagmanager.com/gtm.js$domain=challenges.fr
 @@||cdn.optimizely.com/datafiles/*.json$domain=alaskaair.com
@@ -203,7 +195,7 @@ id.condenast.com#%#//scriptlet('set-constant', 'appInfo.snowplow.trackSelfDescri
 @@||api.cxense.com/public/widget/$domain=elcorreogallego.es
 @@||btt.community/assets/plugins/discourse-fingerprint-
 @@||js.monitor.azure.com/scripts/c/ms.jsll-3.min.js$domain=contentsafety.cognitive.azure.com
-elahmad.com#%#//scriptlet('prevent-fetch', 'pahtag.tech')
+elahmad.com##body > div[id^="ads"]
 @@||st-eu.dynamicyield.com/st$domain=amorelie.de
 @@||tag.aticdn.net/piano-analytics.js$domain=taughtie.campusfrance.org
 @@||googletagmanager.com/gtm.js$domain=kitamura.jp|net-chuko.com
@@ -301,6 +293,7 @@ elahmad.com#%#//scriptlet('prevent-fetch', 'pahtag.tech')
 @@||googletagmanager.com/gtm.js$domain=turkcell.com.tr
 @@||yelpcdn.com/assets/public/snowplow.*.chunk.js$domain=yelp.com
 @@||cib.com.cn/cn/*/js/*/sensorsdata.min.js
+mustar.meitetsu.co.jp#$#body[style="opacity: 0;"] { opacity: 1 !important; }
 @@||googletagmanager.com/gtm.js$domain=mustar.meitetsu.co.jp
 @@||cdn.sophi.io/assets/demeter/*/stable/*.js$domain=nationalpost.com
 @@||mailingtechnology.com/tracking/tracking_$~third-party
@@ -312,7 +305,6 @@ elahmad.com#%#//scriptlet('prevent-fetch', 'pahtag.tech')
 @@||googletagmanager.com/gtag/js$domain=square-enix.com
 @@||securepubads.g.doubleclick.net/tag/js/gpt.js$domain=ifoodie.tw
 @@||googletagmanager.com/gtm.js$domain=ifoodie.tw
-samsung.com#%#//scriptlet('prevent-element-src-loading', 'script', 'mpsnare.iesnare.com/snare.js')
 @@||mpsnare.iesnare.com/snare.js$domain=samsung.com
 @@||scorecardresearch.com/*/streamingtag_plugin_jwplayer.js$domain=telemundopr.com
 @@||edge.permutive.app/*-web.js$domain=eldo.lu
@@ -341,7 +333,6 @@ e-begin.jp#$#.inviewSection:not(.is-show) { transform: translateY(0) !important;
 @@||cdn.cxense.com/cx.js$domain=tvaplus.ca
 @@||api.cxense.com/segment/lookup?callback=$domain=tvaplus.ca
 @@||pv.sohu.com/cityjson$domain=ems.com.cn
-jooble.org#%#//scriptlet('google-analytics')
 @@||googletagmanager.com/gtm.js$domain=jooble.org
 @@||securepubads.g.doubleclick.net/tag/js/gpt.js$domain=mxplayer.in
 @@||asia-*.inside-graph.com^$domain=lenovo.com
@@ -349,9 +340,6 @@ jooble.org#%#//scriptlet('google-analytics')
 @@||cdn.cxense.com/cx.cce.js$domain=variety.com
 @@||globo.com^$cookie=_ga
 @@||globo.com^$cookie=/^_ga_/
-globo.com#%#//scriptlet('trusted-set-cookie', '_ga', '1.1')
-globo.com#%#//scriptlet('trusted-set-constant', 'libAnalytics', '{"status":{"dataAvailable":false},"data":{}}')
-globo.com#%#//scriptlet('set-constant', 'libAnalytics.data.get', 'noopFunc')
 @@||googletagmanager.com/gtm.js$domain=globo.com
 @@||googletagmanager.com/gtag/$domain=globo.com
 @@||googletagmanager.com/gtm.js$domain=sonos.com
@@ -367,8 +355,10 @@ globo.com#%#//scriptlet('set-constant', 'libAnalytics.data.get', 'noopFunc')
 @@||googletagmanager.com/gtag/js?id=$domain=m-1.fm
 @@||googletagmanager.com/gtm.js$domain=eki-net.com
 @@||c.webengage.com/lw/*.jpg?p=
+anikore.jp#$#html[class^="loading"] { visibility: visible !important; }
 @@||googletagmanager.com/gtm.js$domain=kfc.co.jp
 @@||js.appboycdn.com/web-sdk/$domain=kfc.co.jp
+nintendolife.com#$?#input[name=fingerprint] { remove: true; }
 @@||static.nintendolife.com/themes/base/javascript/fingerprint.js
 @@||img.kilimall.com/*/js/sensorsdata.min.js$domain=kilimall.co.ke
 @@||googletagmanager.com/gtm.js$domain=propertydesign.pl
@@ -955,7 +945,6 @@ abema.tv$$script:contains(NREUM)
 @@||googletagmanager.com/gtm.js$domain=managertoday.com.tw
 @@||googletagmanager.com/gtm.js$domain=security-demo.extrahop.com
 ||googletagmanager.com/gtm.js$script,xmlhttprequest,redirect=noopjs,domain=security-demo.extrahop.com,important
-extrahop.com#%#//scriptlet('prevent-setTimeout', 'ad blocker')
 ||googletagmanager.com/gtm.js$script,xmlhttprequest,redirect=google-analytics,domain=coda.io,important
 @@||googletagmanager.com/gtm.js$domain=coda.io
 @@||gj.mmstat.com/aliyun.$domain=work.aliyun.com
@@ -1779,7 +1768,6 @@ extrahop.com#%#//scriptlet('prevent-setTimeout', 'ad blocker')
 @@||inpref.s3.amazonaws.com/sites/eventim_$script,third-party
 @@||googletagmanager.com/gtm.js$domain=hub.docker.com
 @@||google-analytics.com/analytics.js$domain=mamibuy.com.tw
-kizi.com#%#window.google_trackConversion = function() {};
 @@||googleadservices.com/pagead/conversion_async.js$domain=kizi.com
 @@||cxense.com^$domain=ikea.com
 @@||google-analytics.com/analytics.js$domain=blt.se
@@ -2053,7 +2041,10 @@ kizi.com#%#window.google_trackConversion = function() {};
 @@||googletagmanager.com/gtm.js$domain=forum.worldoftanks.ru
 @@||online-metrix.net/*/tags.js$domain=smartsource.com
 @@||secure.info.seek.com/b/ss/
+@@||opensubtitles.org/cdn-cgi/pe/bag2?r[]=*google-analytics.com
 @@||wix-dashboard.visitor-analytics.net/backoffice/restricted-demo$domain=wix.com
+@@||nmac.to/cdn-cgi/pe/bag2?r[]=*google-analytics.com
+@@||nmac.to/cdn-cgi/pe/bag2?r[]=*histats.com
 @@||cdn.tt.omtrdc.net/cdn/target.js
 @@||cdn.mxpnl.com/libs/mixpanel*.min.js$domain=grammarly.com
 @@||googletagmanager.com/gtm.js$domain=society6.com

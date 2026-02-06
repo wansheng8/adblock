@@ -1,10 +1,8 @@
 {
-  "white_rules": 2977,
-  "black_rules": 1675332,
-  "total_rules": 1660511,
+  "white_rules": 2938,
+  "black_rules": 1665511,
+  "total_rules": 1666608,
   "sources_processed": 35,
   "sources_failed": 1,
-  "duplicate_removed": 1036762,
-  "white_sources": [],
-  "black_sources": []
+  "duplicate_removed": 1037866
 }
