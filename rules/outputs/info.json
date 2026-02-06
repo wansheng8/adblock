@@ -1,7 +1,7 @@
 {
   "version": "3.3.0",
-  "build_date": "2026-02-06 17:37:29",
-  "timestamp": "2026-02-06 17:37:29",
+  "build_date": "2026-02-06 17:37:52",
+  "timestamp": "2026-02-06 17:37:52",
   "mode": "enhanced",
   "stats": {
     "total_processed": 845,
@@ -9,37 +9,36 @@
     "invalid_domains": 216,
     "removed_by_whitelist": 0,
     "removed_by_safe_check": 0,
-    "removed_by_suspicious": 44,
-    "added_by_enhancement": 82,
+    "removed_by_suspicious": 23,
+    "added_by_enhancement": 34,
+    "whitelist_domains": 0,
     "element_hiding_rules": 19,
-    "script_blocking_rules": 7,
-    "whitelist_domains": 0
+    "script_blocking_rules": 7
   },
   "counts": {
     "blacklist": 833,
     "whitelist": 0,
-    "filtered": 871,
-    "enhanced": 84
-  },
-  "sources": {
-    "blacklist": 6,
-    "whitelist": 1
+    "filtered": 844,
+    "enhanced_added": 34
   },
   "github": {
     "user": "wansheng8",
     "repo": "adblock-enhanced",
     "branch": "main"
   },
-  "metrics": {
-    "performance": {},
-    "memory": {},
-    "network": {},
-    "files": {}
-  },
-  "files": {
-    "ad_txt": "https://raw.githubusercontent.com/wansheng8/adblock-enhanced/main/rules/outputs/ad.txt",
-    "dns_txt": "https://raw.githubusercontent.com/wansheng8/adblock-enhanced/main/rules/outputs/dns.txt",
-    "hosts_txt": "https://raw.githubusercontent.com/wansheng8/adblock-enhanced/main/rules/outputs/hosts.txt",
-    "enhanced_txt": "https://raw.githubusercontent.com/wansheng8/adblock-enhanced/main/rules/outputs/enhanced.txt"
+  "sources": {
+    "blacklist_count": 6,
+    "whitelist_count": 1,
+    "blacklist_sources": [
+      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt",
+      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/tracking.txt",
+      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/analytics.txt",
+      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/banners.txt",
+      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/social.txt",
+      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/i18n.txt"
+    ],
+    "whitelist_sources": [
+      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist.txt"
+    ]
   }
 }
