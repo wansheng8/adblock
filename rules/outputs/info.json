@@ -1,21 +1,21 @@
 {
-  "version": "20260206_1407",
-  "updated_at": "2026-02-06T14:07:40.331985",
+  "version": "20260206_1415",
+  "updated_at": "2026-02-06T14:15:13.121539",
   "rules": {
-    "blacklist_domains": 113527,
-    "whitelist_domains": 4064
+    "blacklist_domains": 1102333,
+    "whitelist_domains": 4455
   },
   "filtering_stats": {
-    "domains_removed_by_whitelist": 2723,
-    "domains_removed_by_safe_check": 1761,
-    "domains_removed_by_suspicious": 4931,
-    "critical_domains_kept": 5,
-    "essential_domains_whitelisted": 421,
-    "total_domains_processed": 123225,
-    "analytics_domains_blocked": 30,
-    "banner_ad_domains_blocked": 29,
-    "error_monitoring_domains_blocked": 31,
-    "contextual_ad_domains_blocked": 43,
+    "domains_removed_by_whitelist": 23578,
+    "domains_removed_by_safe_check": 26307,
+    "domains_removed_by_suspicious": 135159,
+    "critical_domains_kept": 4,
+    "essential_domains_whitelisted": 1824,
+    "total_domains_processed": 1289094,
+    "analytics_domains_blocked": 22,
+    "banner_ad_domains_blocked": 21,
+    "error_monitoring_domains_blocked": 26,
+    "contextual_ad_domains_blocked": 34,
     "element_hiding_rules_added": 149,
     "script_blocking_rules_added": 62
   },
