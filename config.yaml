@@ -1,25 +1,53 @@
 # 广告过滤规则生成器配置文件
-# 版本: 2.0
+# 版本: 3.0
+
+# 项目信息
+project:
+  name: "adblock-enhanced"
+  version: "3.0.0"
+  description: "智能广告过滤规则生成器"
+  author: "wansheng8"
+  license: "MIT"
 
 # GitHub配置
 github:
   user: "wansheng8"
   repo: "adblock-enhanced"
   branch: "main"
-
+  # 发布选项
+  publish_releases: true
+  release_tag_prefix: "v"
+  create_pr_on_update: false
+  
 # 性能配置
 performance:
-  max_workers: 10
-  timeout: 25
+  max_workers: 15
+  timeout: 30
   retry_times: 3
   batch_size: 5000
-  memory_limit_mb: 1024
+  memory_limit_mb: 2048
   use_cache: true
   cache_expiry_hours: 24
   compress_cache: true
-
+  parallel_processing: true
+  chunk_size: 1000
+  
 # 规则处理配置
 rules:
+  # 输入源配置
+  sources:
+    blacklist:
+      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt"
+      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/tracking.txt"
+      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/analytics.txt"
+      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/banners.txt"
+      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/i18n.txt"
+      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/mobile.txt"
+      
+    whitelist:
+      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist.txt"
+      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist_domains.txt"
+    
   # 排除的域名
   exclude_domains:
     - "localhost"
@@ -29,20 +57,62 @@ rules:
     - "0.0.0.0"
     - "::1"
     - "0.0.0.0.0"
+    - "ip6-localhost"
+    - "ip6-loopback"
   
   # 白名单处理
   whitelist:
     enable_advanced_matching: true
     match_subdomains: true
     max_whitelist_size: 10000
-  
-  # 优化设置
-  optimization:
+    essential_domains: true
+    
+  # 智能过滤配置
+  intelligent_filtering:
+    enable_essential_domain_whitelist: true
+    enable_safe_domains_check: true
+    enable_false_positive_filter: true
+    remove_suspicious_wildcards: true
+    keep_popular_domains: true
+    enable_domain_validation: true
     remove_duplicate_subdomains: true
     validate_domains: true
     remove_invalid_domains: true
+    
+  # 增强拦截配置
+  enhanced_blocking:
+    analytics:
+      enabled: true
+      block_execution: true
+      block_scripts: true
+      
+    banner_ads:
+      enabled: true
+      block_flash: true
+      block_gif: true
+      block_static_images: true
+      
+    error_monitoring:
+      enabled: true
+      
+    contextual_ads:
+      enabled: true
+      
+    element_hiding:
+      enabled: true
+      generate_rules: true
+      
+    script_blocking:
+      enabled: true
+      generate_rules: true
+    
+  # 优化设置
+  optimization:
     compress_rules: false
     max_rule_length: 500
+    remove_comments: true
+    sort_alphabetically: true
+    remove_empty_lines: true
     
   # 域名验证
   validation:
@@ -51,18 +121,25 @@ rules:
     min_tld_length: 2
     allow_idn: false
     allow_underscores: false
+    allow_hyphens: true
+    allow_numbers: true
+    validate_tld: true
 
-# 文件路径
+# 文件路径配置
 paths:
+  # 目录结构
+  base_dir: "."
   sources_dir: "rules/sources"
   outputs_dir: "rules/outputs"
   cache_dir: "cache"
   logs_dir: "logs"
   reports_dir: "reports"
+  backup_dir: "backups"
   
   # 源文件
   black_source: "rules/sources/black.txt"
   white_source: "rules/sources/white.txt"
+  custom_sources: "rules/sources/custom/"
   
   # 输出文件
   output_files:
@@ -72,47 +149,132 @@ paths:
     black: "rules/outputs/black.txt"
     white: "rules/outputs/white.txt"
     info: "rules/outputs/info.json"
-  
+    enhanced: "rules/outputs/enhanced.txt"
+    privacy: "rules/outputs/privacy.txt"
+    mobile: "rules/outputs/mobile.txt"
+    
   # 缓存文件
   cache_file: "cache/rules_cache.db"
+  stats_cache: "cache/stats.json"
   
   # 日志文件
-  error_log: "logs/error_log.json"
-  access_log: "logs/access_log.json"
+  error_log: "logs/error.log"
+  access_log: "logs/access.log"
+  debug_log: "logs/debug.log"
   
   # 报告文件
   detailed_report: "reports/detailed_report.json"
   validation_report: "reports/validation_report.json"
   performance_report: "reports/performance_report.json"
+  stats_report: "reports/stats_report.json"
+  comparison_report: "reports/comparison_report.json"
 
 # 监控配置
 monitoring:
   enable_error_tracking: true
   enable_performance_monitoring: true
   enable_memory_monitoring: true
+  enable_disk_usage_monitoring: true
   log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR
-  max_log_size_mb: 10
-  log_retention_days: 7
+  max_log_size_mb: 50
+  log_retention_days: 30
+  rotate_logs: true
   
 # 报告配置
 reports:
   generate_detailed_report: true
   generate_validation_report: true
   generate_performance_report: true
+  generate_stats_report: true
+  generate_comparison_report: false
+  
   include_tld_stats: true
   include_length_stats: true
   include_top_domains: 100
+  include_removed_domains: true
+  include_whitelisted_domains: true
+  
+  report_format: "json"  # json, html, markdown
+  compress_reports: true
   
 # 网络配置
 network:
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 AdBlockGenerator/2.0"
-  accept_encoding: "gzip, deflate"
-  rate_limit_requests_per_second: 5
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 AdBlockGenerator/3.0"
+  accept_encoding: "gzip, deflate, br"
+  rate_limit_requests_per_second: 10
   max_redirects: 5
   verify_ssl: true
+  proxy_enabled: false
+  proxy_url: ""
+  dns_timeout: 5
+  connection_timeout: 10
   
 # 自动更新配置
 auto_update:
   check_for_updates: true
-  update_frequency_hours: 24
+  update_frequency_hours: 12
   notify_on_update: false
+  backup_before_update: true
+  max_backups: 5
+  
+  # 源更新配置
+  update_sources: true
+  source_update_frequency_hours: 24
+  validate_sources: true
+  
+# 测试配置
+testing:
+  enable_testing: true
+  test_frequency_hours: 24
+  test_sites:
+    - "https://example.com"
+    - "https://google.com"
+    - "https://facebook.com"
+    
+  test_categories:
+    - "analytics"
+    - "banners"
+    - "tracking"
+    - "social"
+    
+  performance_testing: true
+  memory_testing: true
+  
+# 通知配置
+notifications:
+  email_enabled: false
+  email_host: ""
+  email_port: 587
+  email_user: ""
+  email_password: ""
+  email_to: ""
+  
+  webhook_enabled: false
+  webhook_url: ""
+  webhook_events:
+    - "success"
+    - "error"
+    - "warning"
+    
+# 安全配置
+security:
+  validate_urls: true
+  sanitize_inputs: true
+  max_file_size_mb: 10
+  allowed_domains: []
+  blocked_domains: []
+  rate_limit_enabled: true
+  
+# 多语言配置
+i18n:
+  default_language: "zh"
+  supported_languages:
+    - "zh"
+    - "en"
+  auto_detect: true
+  
+# 插件配置
+plugins:
+  enabled: false
+  directory: "plugins"
+  auto_load: false
