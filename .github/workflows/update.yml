@@ -2,9 +2,9 @@ name: 更新广告过滤规则
 
 on:
   schedule:
-    # 每天北京时间02:00运行 (UTC 18:00)
+    # 每天UTC 18:00 (北京时间02:00)
     - cron: '0 18 * * *'
-  workflow_dispatch:  # 手动触发
+  workflow_dispatch:
   push:
     branches: [ main ]
 
@@ -28,27 +28,49 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests PyYAML urllib3
     
-    - name: 创建必要目录
+    - name: 创建目录
       run: |
-        mkdir -p rules/sources rules/outputs logs cache reports backups
+        mkdir -p rules/sources rules/outputs logs reports backups
     
-    - name: 创建默认源文件
+    - name: 检查源文件
       run: |
-        cat > rules/sources/black.txt << 'EOF'
-        # 广告过滤规则源
-        # 默认内置源
-        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt
-        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/tracking.txt
-        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/analytics.txt
-        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/banners.txt
-        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/social.txt
-        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/i18n.txt
-        EOF
+        echo "📁 检查源文件:"
+        if [ -f "rules/sources/black.txt" ]; then
+          echo "✅ black.txt 存在"
+          echo "文件行数: $(wc -l < rules/sources/black.txt)"
+          echo "文件内容预览:"
+          head -10 rules/sources/black.txt
+        else
+          echo "❌ black.txt 不存在，创建示例文件"
+          cat > rules/sources/black.txt << 'EOF'
+# 广告过滤规则源
+# 请在此文件中添加您要采集的黑名单规则源URL
+# 每行一个URL，以#开头的行是注释
+
+# 示例（取消注释即可使用）：
+# https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt
+# https://easylist.to/easylist/easylist.txt
+# https://easylist.to/easylist/easyprivacy.txt
+EOF
+        fi
         
-        cat > rules/sources/white.txt << 'EOF'
-        # 白名单规则源
-        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist.txt
-        EOF
+        if [ -f "rules/sources/white.txt" ]; then
+          echo "✅ white.txt 存在"
+          echo "文件行数: $(wc -l < rules/sources/white.txt)"
+          echo "文件内容预览:"
+          head -10 rules/sources/white.txt
+        else
+          echo "❌ white.txt 不存在，创建示例文件"
+          cat > rules/sources/white.txt << 'EOF'
+# 白名单规则源
+# 请在此文件中添加您要采集的白名单规则源URL
+# 每行一个URL，以#开头的行是注释
+
+# 示例（取消注释即可使用）：
+# https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/allowlist.txt
+# https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt
+EOF
+        fi
     
     - name: 生成规则（增强模式）
       run: |
@@ -68,7 +90,17 @@ jobs:
         echo ""
         echo "📈 规则统计:"
         if [ -f "rules/outputs/info.json" ]; then
-          cat rules/outputs/info.json | python3 -c "import sys,json; data=json.load(sys.stdin); print(f'黑名单: {data[\"counts\"][\"blacklist\"]:,}'); print(f'白名单: {data[\"counts\"][\"whitelist\"]:,}'); print(f'过滤后: {data[\"counts\"][\"filtered\"]:,}')"
+          cat rules/outputs/info.json | python3 -c "
+import sys,json
+try:
+    data=json.load(sys.stdin)
+    print(f'黑名单: {data[\"counts\"][\"blacklist\"]:,}')
+    print(f'白名单: {data[\"counts\"][\"whitelist\"]:,}')
+    print(f'过滤后: {data[\"counts\"][\"filtered\"]:,}')
+    print(f'增强添加: {data[\"counts\"][\"enhanced_added\"]:,}')
+except Exception as e:
+    print(f'解析info.json失败: {e}')
+"
         fi
     
     - name: 提交更改
