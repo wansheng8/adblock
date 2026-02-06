@@ -1686,6 +1686,7 @@ m.babytree.com##script + a[class]
 ||news.cn/pc-log?
 ||newspage.xilu.com/model/visitlog.js
 ||nmgnews.com.cn/sys/online_calc.js
+||nsclick.baidu.com^
 ||olpv.onlylady.com^
 ||optaim.com^$third-party
 ||other.v.duowan.com^

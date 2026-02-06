@@ -1837,6 +1837,7 @@
 ||admanager.collegepublisher.com^
 ||admarket.network^
 ||admarkt.marktplaats.nl^
+||admarvel.com^
 ||admatch-syndication.mochila.com^
 ||admatcher.videostrip.com^
 ||admba.shadeit.com^
@@ -2443,6 +2444,7 @@
 ||ads7.advance.net^
 ||ads7.speedbit.com^
 ||adsadmin.corusradionetwork.com^
+||adsage.com^
 ||adsbb.dfiles.eu^
 ||adsbridge.com^
 ||adscan.yelabapp.com^
@@ -2625,6 +2627,9 @@
 ||adsmartracker.com^
 ||adsmind.tc.qq.com^
 ||adsmobi.com^
+||adsmogo.mobi^
+||adsmogo.net^
+||adsmogo.org^
 ||adsninja.b-cdn.net^
 ||adsolutions.yp.com^
 ||adsomenoise.cdn01.rambla.be^
@@ -6415,6 +6420,7 @@
 ||beacon.itmedia.jp^
 ||beacon.mlytics.com^
 ||beacon.skillable.com^
+||beacon.tingyun.com^
 ||beacon.www.theguardian.com^
 ||beaconin2.notinote.me^
 ||beacons*.gvt3.com^
@@ -8428,6 +8434,7 @@
 ||cdn.wg.uproxx.com^
 ||cdn.wuxiqiangheng.com^
 ||cdn.wwfx.xyz^
+||cdn.xianliao.me^
 ||cdn.xlear.com^
 ||cdn.xpozer.com^
 ||cdn.yottos.com^
@@ -21466,6 +21473,7 @@
 ||hubert.branch.rocks^
 ||hubfiles.ws^
 ||hudiecaifu.com^
+||hudong.pl.youku.com^
 ||hudson-bay.com^
 ||huehue.fresha.com^
 ||huemulsoled.help^
@@ -34088,6 +34096,7 @@
 ||omciecoa37tw4.com^
 ||omeda.com^
 ||omegaicons.cyou^
+||omgmta1.qq.com^
 ||omhoa.com^
 ||omieuz.razer.ru^
 ||ommateabeanos.com^
@@ -35929,6 +35938,7 @@
 ||pixelapi-*.cs.mysamba.tv^
 ||pixelapi.mariafloratelie.com^
 ||pixelappcollector.thesun.co.uk^
+||pixels.asia^
 ||pixels.boxberry.ru^
 ||pixels.truvidplayer.com^
 ||pixiessikatch.qpon^
@@ -36956,6 +36966,7 @@
 ||qcalq.whirleypopshop.com^
 ||qcb2xeg.icu^
 ||qcdch.saltlaboratory.com^
+||qchannel03.cn^
 ||qchannel0d.cn^
 ||qchogngn.moychay.nl^
 ||qchoh.lg.com^
@@ -41295,6 +41306,7 @@
 ||seryna.co^
 ||ses.eskill.com^
 ||sesquiflushes.cyou^
+||sessions.bugsnag.com^
 ||set.app.fundedfuturesfamily.com^
 ||set.glow.hormoneuniversity.com^
 ||set.hiowltra.com^
@@ -46658,6 +46670,7 @@
 ||soulsfliest.cfd^
 ||soulxatte.cyou^
 ||soundlyaplitic.qpon^
+||soup.v.qq.com^
 ||soupermusky.qpon^
 ||source-66584305d5.mainpost.de^
 ||source-ed91a21bf0.dastelefonbuch.de^
@@ -51876,6 +51889,7 @@
 ||stat2.corp.56.com^
 ||statantbuttony.cyou^
 ||statcounter.biz^
+||statcounter.com^
 ||statgarden.florinesueur.fr^
 ||static*.365inews.com^
 ||static-doubleclick-net.l.google.com^
@@ -59746,6 +59760,7 @@
 ||www.josh7cuba.com^
 ||www.jsnzoe301m.com^
 ||www.jvzoo.com^
+||www.kanglingjiu.com^
 ||www.kcc4445.top^
 ||www.keepass.com^
 ||www.keepass.fr^

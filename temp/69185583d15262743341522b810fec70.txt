@@ -3143,10 +3143,6 @@ zznews.cn##.ad:not([style="margin-top:0px;padding-top:0px;"]),.ad1000-60
 ||adm.72zx.com/hj/js/adtlhj.js
 ||adman.henghost.com/data/forum-
 ||admapp.com^$third-party
-||adsage.com^
-||adsmogo.mobi^
-||adsmogo.net^
-||adsmogo.org^
 ||aidata.me^$third-party
 ||aimg.shangdu.com/$script,image
 ||aipai.com/rsd/
@@ -3316,7 +3312,6 @@ zznews.cn##.ad:not([style="margin-top:0px;padding-top:0px;"]),.ad1000-60
 ||huacolor.com/softjs/0$script
 ||huacolor.com/wan/$script
 ||huacolor.com/wenzi/0$script
-||hudong.pl.youku.com^
 ||hypertrackeraff.com^$third-party
 ||hzxfmc.com^$third-party
 ||i.ishuo.cn/js/common.js
@@ -4104,9 +4099,6 @@ iadctest.qwapi.com^
 ||jimdo.com^
 ||knet.cn^
 ||qchannel01.cn^
-||admarvel.com^
-||pixels.asia^
-||statcounter.com^
 *$app=com.miui.systemAdSolution
 ||chromefeedcontentsuggestions-pa.googleapis.com/v2/suggestions^
 ||hiphotos.baidu.com/fex/pic/item^
@@ -4510,7 +4502,6 @@ $$a[href="/js/app.htm?url="]
 ||counter.yomob.com.cn^
 ||www.vungle.com^
 ||onelink.me^
-||cdn.xianliao.me^
 ||www.xianliao.me^
 /vkp.tc.qq.com/$media
 ||api.cupid.iqiyi.com^
@@ -4621,7 +4612,6 @@ fedce.com$$div[class="ad-"]
 ||secure.insightexpressai.com/adServer^
 ||youtube.com/ptracking?pltype=adhost
 ||www.youtube.com/ptracking?
-||soup.v.qq.com^
 1688.com##div.recommend-offer.offerAd
 taobao.com##div.smartbanner-wrapper
 m.mi.com##div.download-app-go
@@ -4692,7 +4682,6 @@ fr2135.com###mv_mp4cg
 ||qiqipu.com/ajs/wapdibu_index.js
 ||qiqipu.com/ajs/b2.js
 ||qiqipu.com/ajs/b3.js
-||www.kanglingjiu.com^
 ||qiqipu.com/ajs/waptj.js
 ||qiqipu.com/ajs/tf.js
 ||qiqipu.com/ajs/wapdibu1.js
@@ -4751,7 +4740,6 @@ base64.m.supfree.net##div.navigation
 ||astrategy.beacon.qq.com^
 ||eventlog.beacon.qq.com^
 ||omgmta.qq.com^
-||omgmta1.qq.com^
 ||strategy.beacon.qq.com^
 ||j.wit.qq.com^
 ||jsqmt.qq.c
@@ -4775,7 +4763,6 @@ k.sina.cn##section.s_card.j_article_relevent
 free.aliyun.com##div.module-wrap.J_tb_lazyload.aliyun-bottom
 aliyun.com##banner-wrap
 xiaojianjian.net##div.a0d-m.a0d-site
-||beacon.tingyun.com^
 ||fds.api.xiaomi.com/plato-banner^
 ||amdc.m.taobao.com^
 ||m.qu.la/jsa/p.js
@@ -5628,7 +5615,6 @@ baidu.com###page-copyright
 ||snssdk.com/service/settings/v2/?$replace=/(bds_ad_settings|ad_webview_sdk_config)//
 ||snssdk.com/bds/feed/stream/$replace=/ad_info//
 ||zdmimg.com/collect^
-||qchannel03.cn^
 ||yhg28.xyz/templates/btbook/js/default.js
 ||yhg28.xyz/js/tongji.js
 ||tdum.alibaba.com/dss.js
@@ -5656,7 +5642,6 @@ manhuatai.com$$div[class="acgn-dynamic-content"]
 ||yse1234.com/template/phone/imagess/p4.js^
 ||cmshow.qq.com/xydata/cmshowGamePlatform^
 ||www.zddjq.com/adpos.json
-||sessions.bugsnag.com^
 ||checkadblock.ru/banners^
 ||baidu.com/article/ajax/relatefeed?
 ||t7z.cupid.iqiyi.com^

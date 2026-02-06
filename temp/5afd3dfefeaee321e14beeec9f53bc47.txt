@@ -1552,7 +1552,6 @@ omni.soundestlink.com$image
 ||kissmetrics.com^$third-party
 ||kissmetrics.io^$third-party
 ||kitbit.net^$third-party
-||kiwihk.net^$third-party
 ||klert.com^$third-party
 ||klldabck.com^$third-party
 ||km-sea.net^$third-party
@@ -3472,7 +3471,6 @@ $third-party,xmlhttprequest,domain=opensubtitles.org
 ||tyxo.bg^$third-party
 ||180.76.2.18^$third-party,domain=~baidu.ip
 ||365dmp.com^$third-party
-||50bang.org^$third-party
 ||acs86.com^$third-party
 ||ad7.com^$third-party
 ||adop.cc^$third-party
@@ -3509,7 +3507,6 @@ $third-party,xmlhttprequest,domain=opensubtitles.org
 ||jpush.cn^$third-party
 ||lndata.com^$third-party
 ||mediav.com^$third-party
-||miaozhen.com^$third-party
 ||mmstat.com^$third-party
 ||oadz.com^$third-party
 ||p0y.cn^$third-party
@@ -3526,7 +3523,6 @@ $third-party,xmlhttprequest,domain=opensubtitles.org
 ||sjv.io^$third-party
 ||ta.sbird.xyz^$third-party
 ||tagmanager.cn^$third-party
-||tenmax.io^$third-party
 ||threatbook.cn^$third-party
 ||tomonline-inc.com^$third-party
 ||top-bloggers.com^$third-party
@@ -3540,7 +3536,6 @@ $third-party,xmlhttprequest,domain=opensubtitles.org
 ||webdissector.com^$third-party
 ||xtgreat.com^$third-party
 ||yigao.com^$third-party
-||youle55.com^$third-party
 ||zampda.net^$third-party
 ||ztcadx.com^$third-party
 ||dotmetrics.net^$third-party
@@ -11763,7 +11758,6 @@ $csp=child-src 'none'; frame-src *; worker-src 'none',domain=thepiratebay.org|vi
 ||sinajs.cn/open/api/js/wb.js
 ||sogou.com/cl.gif?
 ||sogoucdn.com/hhytrace/
-||sohu.com/adgtr/
 ||sohu.com/count/
 ||sohu.com/ip/$script
 ||sohu.com/pccollector

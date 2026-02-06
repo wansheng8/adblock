@@ -176,6 +176,7 @@ newduba.cn###jq_youxi
 ||258zw.com^$third-party
 ||3798.com^$third-party
 ||4567.org^$third-party
+||50bang.org^$third-party
 ||5399.com^$third-party
 ||60.190.139.164^
 ||6789.net^$third-party
@@ -202,6 +203,7 @@ newduba.cn###jq_youxi
 ||jsinfo.net^$third-party
 ||juandou.com^$third-party
 ||jusha.com^$third-party
+||kiwihk.net^$third-party
 ||linkvans.com^$third-party
 ||niwota.com^$third-party
 ||qidou.com^$third-party
@@ -259,6 +261,7 @@ newduba.cn###jq_youxi
 ||lianmeng.360.cn^$domain=~lianmeng.360.cn
 ||linkpicture.com^$third-party
 ||mediav.com^$third-party,domain=~dev.360.cn|~g.360.cn
+||miaozhen.com^$third-party
 ||mobads.baidu.com^$third-party
 ||news.tagtoo.co^$third-party
 ||niuza.com^$image,subdocument,third-party
@@ -272,6 +275,7 @@ newduba.cn###jq_youxi
 ||tamedia.com.tw^$third-party
 ||tanx.com^$third-party,domain=~1688.com|~alimama.com|~tmall.com|~www.taobao.com
 ||taobao.com/go/$third-party,domain=~alimama.com|~alitrip.com|~tanx.com|~tmall.com
+||tenmax.io^$third-party
 ||tianji520.cn^$third-party
 ||to8to.com^$subdocument,third-party
 ||unionli.com^$third-party
@@ -285,6 +289,7 @@ newduba.cn###jq_youxi
 ||yhdd1.com^$third-party
 ||yiqifa.com^$subdocument
 ||yiqifa.com^*.js$third-party
+||youle55.com^$third-party
 ||ysm.ezprice.net^$third-party
 ||zzad.com^$third-party
 $popup,third-party,domain=76fengyun.com|avsdown.com|downdv.com|downdvs.com|downhhh.com|imedown.info|jandown.com|mimima.com|mnks.jxedt.com|rmdown.com|soyunpan.com|xmflv.com
@@ -3735,6 +3740,7 @@ hxsame.hexun.com$domain=~quote.hexun.com
 ||sogoucdn.com/nstatic/js/showtime.js
 ||sogoucdn.com/nstatic/js/tmallskin_
 ||sohu.com.cn/ppp/bms/bms.popup.
+||sohu.com/adgtr/
 ||sohu.com/api/labs/hotnews/c/load?
 ||sohu.com/api/labs/mp/load?
 ||sohu.com/api/photo/photo_bottom.json
