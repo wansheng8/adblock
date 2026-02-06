@@ -1,13 +1,15 @@
-name: Update Rules
+name: Update AdBlock Rules
 
 on:
   schedule:
-    # 每天UTC时间0点运行（北京时间8点）
-    - cron: '0 0 * * *'
-  workflow_dispatch:  # 支持手动触发
-
-permissions:
-  contents: write
+    # 每天凌晨2点自动更新 (UTC时间)
+    - cron: '0 18 * * *'
+  workflow_dispatch: # 允许手动触发
+  push:
+    branches:
+      - main
+    paths:
+      - 'rules/sources/*.txt'
 
 jobs:
   update-rules:
@@ -32,71 +34,24 @@ jobs:
     - name: Clean previous outputs
       run: |
         rm -rf rules/outputs/*
-        echo "[]" > rules/outputs/info.json
     
-    - name: Run update script
+    - name: Run rule aggregator
       run: python run.py
     
-    - name: Update README.md
-      run: python -c "
-import json
-from datetime import datetime, timezone
-
-# 读取info.json获取更新时间
-with open('rules/outputs/info.json', 'r', encoding='utf-8') as f:
-    info = json.load(f)
-
-# 生成README.md内容
-readme_content = '''# 🛡️ Adblock Rules Collector
-
-一个精准超级智能的广告过滤规则集合器，自动从多个规则源聚合、去重和优化广告过滤规则。
-
-## 📋 订阅链接
-
-| 规则类型 | 原始链接 | 订阅链接 | 规则数量 |
-|---------|---------|---------|---------|
-| Adblock 规则 | [原始链接](https://github.com/wansheng8/adblock/blob/main/rules/outputs/ad.txt) | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/ad.txt` | {ad_count} |
-| DNS 过滤规则 | [原始链接](https://github.com/wansheng8/adblock/blob/main/rules/outputs/dns.txt) | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/dns.txt` | {dns_count} |
-| Hosts 规则 | [原始链接](https://github.com/wansheng8/adblock/blob/main/rules/outputs/hosts.txt) | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/hosts.txt` | {hosts_count} |
-| 黑名单规则 | [原始链接](https://github.com/wansheng8/adblock/blob/main/rules/outputs/black.txt) | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/black.txt` | {black_count} |
-| 白名单规则 | [原始链接](https://github.com/wansheng8/adblock/blob/main/rules/outputs/white.txt) | `https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/white.txt` | {white_count} |
-
-## 🕒 最新更新时间
-
-**最后更新:** {update_time} (UTC)
-
-> ⚠️ 注意：规则每24小时自动更新一次，您也可以在Adblock插件中设置更频繁的更新间隔。
-'''
-
-# 获取规则数量
-ad_count = sum(1 for item in info if item['type'] == 'adblock')
-dns_count = sum(1 for item in info if item['type'] == 'dns')
-hosts_count = sum(1 for item in info if item['type'] == 'hosts')
-black_count = sum(1 for item in info if item['type'] == 'blacklist')
-white_count = sum(1 for item in info if item['type'] == 'whitelist')
-
-# 格式化更新时间
-update_time = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-
-# 填充模板
-readme_content = readme_content.format(
-    ad_count=ad_count,
-    dns_count=dns_count,
-    hosts_count=hosts_count,
-    black_count=black_count,
-    white_count=white_count,
-    update_time=update_time
-)
-
-# 写入README.md
-with open('README.md', 'w', encoding='utf-8') as f:
-    f.write(readme_content)
-"
+    - name: Check for changes
+      id: git-check
+      run: |
+        git add -A
+        if git diff --cached --quiet; then
+          echo "changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "changes=true" >> $GITHUB_OUTPUT
+        fi
     
     - name: Commit and push changes
+      if: steps.git-check.outputs.changes == 'true'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add .
-        git commit -m "🚀 Auto-update rules $(date -u +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
-        git push origin main
+        git commit -m "🔄 Auto-update rules $(date +'%Y-%m-%d %H:%M:%S')" -a
+        git push
