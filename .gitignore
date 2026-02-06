@@ -19,7 +19,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
 # 虚拟环境
 venv/
@@ -41,10 +40,13 @@ cache/
 logs/
 reports/
 backups/
-rules/outputs/
-!rules/outputs/.gitkeep
 
 # 临时文件
 *.tmp
 *.temp
-*.log
+
+# 配置文件（敏感信息）
+secrets.yaml
+config.local.yaml
+*.key
+*.pem
