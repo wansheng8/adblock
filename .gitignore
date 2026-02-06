@@ -19,6 +19,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # 虚拟环境
 venv/
@@ -32,10 +33,8 @@ venv.bak/
 .idea/
 *.swp
 *.swo
-
-# 系统文件
+*~
 .DS_Store
-Thumbs.db
 
 # 项目文件
 cache/
@@ -43,3 +42,9 @@ logs/
 reports/
 backups/
 rules/outputs/
+!rules/outputs/.gitkeep
+
+# 临时文件
+*.tmp
+*.temp
+*.log
