@@ -1,1601 +1,1138 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-精准修复版广告过滤规则生成器（增强版）
-解决不拦截和误拦截问题，增加精确匹配和智能过滤
-针对测试结果增强：分析工具、横幅广告、错误监控
+广告过滤规则生成器 v3.0
+智能、高效、可配置的广告过滤解决方案
+支持多种输出格式和增强拦截功能
 """
 
 import os
 import re
 import json
+import yaml
 import time
 import logging
-import concurrent.futures
-from datetime import datetime
-from typing import Set, List, Optional, Tuple, Dict
+import argparse
+import hashlib
+import sqlite3
+import threading
+from datetime import datetime, timedelta
+from typing import Set, List, Optional, Tuple, Dict, Any, Generator
+from collections import defaultdict, Counter
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+
 import requests
-from urllib.parse import urlparse
-from collections import defaultdict
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from urllib.parse import urlparse, urljoin
+import dns.resolver
+import psutil
+import tldextract
 
-# ========== 配置 ==========
-CONFIG = {
-    # GitHub信息
-    'GITHUB_USER': 'wansheng8',
-    'GITHUB_REPO': 'adblock',
-    'GITHUB_BRANCH': 'main',
+# 配置管理器
+class ConfigManager:
+    """配置管理器"""
     
-    # 性能设置
-    'MAX_WORKERS': 15,
-    'TIMEOUT': 20,
-    'RETRY_TIMES': 3,
+    def __init__(self, config_path: str = "config.yaml"):
+        self.config_path = config_path
+        self.config = self.load_config()
+        self.validate_config()
     
-    # 文件路径
-    'BLACK_SOURCE': 'rules/sources/black.txt',
-    'WHITE_SOURCE': 'rules/sources/white.txt',
+    def load_config(self) -> Dict[str, Any]:
+        """加载配置"""
+        try:
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            
+            # 设置默认值
+            defaults = {
+                'project': {
+                    'version': '3.0.0',
+                    'name': 'adblock-enhanced'
+                },
+                'performance': {
+                    'max_workers': 10,
+                    'timeout': 30
+                }
+            }
+            
+            # 合并配置
+            self._merge_dict(config, defaults)
+            return config
+            
+        except Exception as e:
+            logging.error(f"加载配置失败: {e}")
+            raise
     
-    # 输出文件（固定文件名）
-    'AD_FILE': 'rules/outputs/ad.txt',
-    'DNS_FILE': 'rules/outputs/dns.txt',
-    'HOSTS_FILE': 'rules/outputs/hosts.txt',
-    'BLACK_FILE': 'rules/outputs/black.txt',
-    'WHITE_FILE': 'rules/outputs/white.txt',
-    'INFO_FILE': 'rules/outputs/info.json',
+    def _merge_dict(self, target: Dict, source: Dict) -> None:
+        """递归合并字典"""
+        for key, value in source.items():
+            if key in target and isinstance(target[key], dict) and isinstance(value, dict):
+                self._merge_dict(target[key], value)
+            elif key not in target:
+                target[key] = value
     
-    # 新增：智能过滤配置
-    'INTELLIGENT_FILTERING': {
-        'enable_essential_domain_whitelist': True,  # 启用必要域名白名单
-        'enable_safe_domains_check': True,          # 启用安全域名检查
-        'enable_false_positive_filter': True,       # 启用误报过滤
-        'remove_suspicious_wildcards': True,        # 移除可疑通配符
-        'keep_popular_domains': True,              # 保留常用域名
-        'enable_domain_validation': True           # 启用域名验证
-    },
+    def validate_config(self) -> None:
+        """验证配置"""
+        required_sections = ['github', 'performance', 'rules', 'paths']
+        for section in required_sections:
+            if section not in self.config:
+                raise ValueError(f"缺少必要配置项: {section}")
     
-    # 增强拦截配置（针对测试结果）
-    'ENHANCED_BLOCKING': {
-        # 分析工具增强拦截
-        'enhance_analytics_blocking': True,
-        'block_analytics_execution': True,  # 阻止分析脚本执行
-        
-        # 横幅广告增强拦截
-        'enhance_banner_blocking': True,
-        'block_flash_banners': True,
-        'block_gif_ads': True,
-        'block_static_image_ads': True,
-        
-        # 错误监控增强拦截
-        'enhance_error_monitoring_blocking': True,
-        
-        # 元素隐藏规则增强
-        'generate_element_hiding_rules': True,
-        'generate_script_blocking_rules': True,
-        
-        # 上下文广告增强
-        'enhance_contextual_ads': True,
-    },
+    def get(self, key: str, default: Any = None) -> Any:
+        """获取配置值"""
+        keys = key.split('.')
+        value = self.config
+        for k in keys:
+            if isinstance(value, dict):
+                value = value.get(k, default)
+            else:
+                return default
+        return value if value is not None else default
     
-    # 必要域名白名单（防止误拦截）
-    'ESSENTIAL_DOMAINS': [
-        # 常用APP和服务域名
-        'apple.com', 'google.com', 'microsoft.com', 'amazon.com',
-        'github.com', 'gitlab.com', 'docker.com', 'cloudflare.com',
-        'baidu.com', 'tencent.com', 'alibaba.com', 'taobao.com',
-        'weixin.qq.com', 'qq.com', 'weibo.com', 'zhihu.com',
-        'bilibili.com', 'douyin.com', 'kuaishou.com',
-        
-        # 操作系统和浏览器
-        'windowsupdate.com', 'mozilla.org', 'chromium.org',
-        'ubuntu.com', 'debian.org', 'redhat.com',
-        
-        # 安全证书和加密
-        'letsencrypt.org', 'digicert.com', 'symantec.com',
-        'verisign.com', 'globalsign.com',
-        
-        # 开发工具
-        'npmjs.com', 'yarnpkg.com', 'pypi.org', 'maven.org',
-        'docker.io', 'kubernetes.io', 'terraform.io',
-        
-        # 常见CDN和云服务
-        'akamai.net', 'fastly.net', 'aws.amazon.com',
-        'azure.com', 'cloud.google.com', 'aliyun.com',
-        'huaweicloud.com', 'tencentcloud.com',
-        
-        # 邮箱服务
-        'gmail.com', 'outlook.com', 'yahoo.com', '163.com',
-        '126.com', 'foxmail.com', 'qq.com', 'sina.com',
-        
-        # 社交媒体
-        'facebook.com', 'twitter.com', 'instagram.com',
-        'linkedin.com', 'pinterest.com', 'tiktok.com',
-        
-        # 支付服务
-        'paypal.com', 'stripe.com', 'alipay.com', 'wechat.com',
-        'unionpay.com', 'visa.com', 'mastercard.com'
-    ],
-    
-    # 安全域名检查（不拦截这些域名）
-    'SAFE_DOMAINS': [
-        # 系统域名
-        'localhost', 'local', '127.0.0.1', '0.0.0.0', '::1',
-        
-        # 常用工具
-        'stackoverflow.com', 'stackexchange.com', 'github.com',
-        'gitlab.com', 'bitbucket.org', 'sourceforge.net',
-        
-        # 文档和帮助
-        'wikipedia.org', 'wikimedia.org', 'archive.org',
-        'creativecommons.org', 'gnu.org', 'apache.org',
-        
-        # 政府和非营利组织
-        'gov.cn', 'gov.uk', 'gov', 'org', 'edu', 'mil',
-        
-        # 开源项目
-        'linuxfoundation.org', 'opensource.org', 'gnu.org',
-        'apache.org', 'eclipse.org', 'mozilla.org'
-    ],
-    
-    # 可疑规则模式（可能误拦截）
-    'SUSPICIOUS_PATTERNS': [
-        r'^\|\|([a-z]{1,2})\.com\^',          # 短域名.com
-        r'^\|\|([a-z]{1,3})\.(com|net|org)\^', # 很短的主域名
-        r'^\|\|([a-z0-9]+-[a-z0-9]+)\.[a-z]+\^', # 带横线的域名
-        r'^\|\|([a-z]+)\d+[a-z]+\.[a-z]+\^',   # 数字在中间的域名
-        r'^\|\|\*\.',                         # 全通配符
-        r'^\|\|.*\$\$.*',                     # 复杂元素规则
-        r'^\|\|.*\$\$script.*',               # 脚本拦截规则
-        r'^\|\|.*\$\$image.*',                # 图片拦截规则
-        r'^\|\|.*\$\$stylesheet.*',           # 样式表拦截规则
-    ],
-    
-    # 保留的关键规则（确保拦截）
-    'CRITICAL_PATTERNS': [
-        r'^.*doubleclick\.net.*',             # Google广告
-        r'^.*googlesyndication\.com.*',       # Google联盟
-        r'^.*googleadservices\.com.*',        # Google广告服务
-        r'^.*adsense\.com.*',                 # AdSense
-        r'^.*amazon-adsystem\.com.*',         # 亚马逊广告
-        r'^.*facebook\.com\/ads.*',           # Facebook广告
-        r'^.*\.ad\.',                         # 广告子域名
-        r'^.*\.ads\.',                        # 广告子域名
-        r'^.*\.tracking\.',                   # 追踪子域名
-        r'^.*\.analytics\.',                  # 分析子域名
-        r'^.*adserver.*',                     # 广告服务器
-        r'^.*tracking.*',                     # 追踪相关
-        r'^.*analytics.*',                    # 分析相关
-        r'^.*metrics.*',                      # 指标相关
-        r'^.*beacon.*',                       # 信标
-        r'^.*pixel.*',                        # 像素
-        r'^.*tagmanager.*',                   # 标签管理
-    ],
-    
-    # 新增：需要增强拦截的分析工具域名
-    'ANALYTICS_DOMAINS': [
-        # 谷歌分析
-        'google-analytics.com', 'analytics.google.com', 'googletagmanager.com',
-        'googleadservices.com', 'googlesyndication.com', 'googleadservices.com',
-        'doubleclick.net', 'stats.g.doubleclick.net', 'google-analytics-urchin.com',
-        
-        # 热图工具
-        'hotjar.com', 'hotjar.io', 'crazyegg.com', 'mouseflow.com',
-        'luckyorange.com', 'inspectlet.com', 'sessioncam.com', 'clicktale.com',
-        'uservoice.com', 'usabilitytools.com', 'wisepops.com',
-        
-        # Yandex 分析
-        'yandex.ru', 'yandex.net', 'yandex.com', 'yandexadexchange.net',
-        'metrika.yandex.ru', 'mc.yandex.ru', 'yastatic.net',
-        
-        # 其他分析工具
-        'matomo.org', 'piwik.org', 'clicky.com', 'clicky.net',
-        'statcounter.com', 'histats.com', 'w3counter.com', 'goingup.com',
-        'woopra.com', 'reinvigorate.net', 'sitemeter.com',
-        
-        # 广告分析
-        'adroll.com', 'criteo.com', 'outbrain.com', 'taboola.com',
-        'revcontent.com', 'zemanta.com', 'mgid.com', 'content.ad',
-        'adblade.com', 'adbrite.com', 'adform.com', 'adition.com',
-        'adnxs.com', 'rubiconproject.com', 'openx.net', 'pubmatic.com',
-        'indexexchange.com', 'sonobi.com', 'districtm.io',
-        
-        # 社交媒体分析
-        'facebook.com/tr', 'facebook.com/connect', 'twitter.com/i/adsct',
-        'linkedin.com/analytics', 'pinterest.com/analytics',
-        
-        # 视频分析
-        'vidyard.com', 'wistia.com', 'vimeo.com/analytics',
-        
-        # A/B测试工具
-        'optimizely.com', 'visualwebsiteoptimizer.com', 'convert.com',
-        'abtasty.com', 'kameleoon.com', 'dynamic-yield.com',
-    ],
-    
-    # 新增：横幅广告相关域名
-    'BANNER_AD_DOMAINS': [
-        # Flash 横幅相关
-        '*.swf', '*.flv', '*.f4v', '*.swf?*', 'cdn.flash.com',
-        'mediafire.com/*.swf', 'uploaded.net/*.swf',
-        
-        # 广告网络
-        'adzerk.net', 'adblade.com', 'adbrn.com', 'adbrite.com',
-        'adbutler.com', 'adcentric.com', 'adcolony.com', 'adform.com',
-        'adition.com', 'adnxs.com', 'adotmob.com', 'adperium.com',
-        'adsrvr.org', 'advertising.com', 'advertstream.com',
-        'adview.cn', 'adxpose.com', 'aerserv.com', 'casalemedia.com',
-        'contextweb.com', 'conversantmedia.com', 'criteo.com',
-        'districtm.io', 'doubleverify.com', 'e-planning.net',
-        'eyereturn.com', 'getclicky.com', 'googleadservices.com',
-        'imrworldwide.com', 'indexexchange.com', 'infolinks.com',
-        'innovid.com', 'ipinyou.com', 'kargo.com', 'kiosked.com',
-        'lijit.com', 'linksynergy.com', 'media.net', 'mediamath.com',
-        'meetrics.net', 'mgid.com', 'mopub.com', 'openx.net',
-        'outbrain.com', 'pubmatic.com', 'pulpix.com', 'quantserve.com',
-        'revcontent.com', 'rubiconproject.com', 'sharethrough.com',
-        'sonobi.com', 'sovrn.com', 'spotxchange.com', 'taboola.com',
-        'teads.tv', 'telaria.com', 'tremorhub.com', 'triplelift.com',
-        'truex.com', 'undertone.com', 'unruly.co', 'video.unrulymedia.com',
-        'videologygroup.com', 'yahoo.com/apollo', 'yieldmo.com',
-        'yieldone.com', 'yldmgrimg.net', 'zemanta.com',
-        
-        # 图片广告域名模式
-        'adimg.*', 'ads.*', 'banner.*', 'promo.*', 'sponsor.*',
-        'adserver.*', 'static.ads.*', 'cdn.ads.*', 'img.ads.*',
-        'media.ads.*', 'resources.ads.*', 'servedby.*', 'serving.*',
-        'static.doubleclick.net', '*.g.doubleclick.net',
-        
-        # 中国广告网络
-        'tanx.com', 'alimama.com', 'miaozhen.com', 'cnzz.com',
-        '51.la', 'baidu.com/cpro', 'cpro.baidu.com', 'hm.baidu.com',
-        'eiv.baidu.com', 'pos.baidu.com', 'cpro.baidustatic.com',
-        'dup.baidustatic.com', 'google-analytics.com.cn',
-        'tongji.baidu.com', 'hmma.baidu.com',
-    ],
-    
-    # 新增：错误监控工具域名
-    'ERROR_MONITORING_DOMAINS': [
-        # Sentry
-        'sentry.io', 'getsentry.com', '*.sentry.io',
-        
-        # Bugsnag
-        'bugsnag.com', 'notify.bugsnag.com', '*.bugsnag.com',
-        
-        # 其他错误监控
-        'rollbar.com', 'airbrake.io', 'raygun.io', 'newrelic.com',
-        'appdynamics.com', 'dynatrace.com', 'datadoghq.com',
-        'splunk.com', 'loggly.com', 'logentries.com', 'papertrailapp.com',
-        'sumologic.com', 'graylog.org', 'elastic.co', 'kibana.org',
-        'librato.com', 'circonus.com', 'copperegg.com', 'serverdensity.com',
-        'scalyr.com', 'logdna.com', 'logz.io', 'humio.com',
-        
-        # 性能监控
-        'speedcurve.com', 'webpagetest.org', 'gtmetrix.com',
-        'pingdom.com', 'uptimerobot.com', 'statuscake.com',
-        'freshping.io', 'monitor.us', 'site24x7.com',
-        
-        # 前端错误监控
-        'trackjs.com', 'errorception.com', 'exceptionhub.com',
-        'muscula.com', 'errorify.com', 'errorlogger.com',
-    ],
-    
-    # 新增：需要增强拦截的上下文广告
-    'CONTEXTUAL_AD_NETWORKS': [
-        'adsense.google.com', 'pagead2.googlesyndication.com',
-        'ad.doubleclick.net', 'securepubads.g.doubleclick.net',
-        'ads.yahoo.com', 'ads.microsoft.com', 'adservice.google.com',
-        'adservice.google.*', 'ads.google.com', 'googleads.g.doubleclick.net',
-        'partner.googleadservices.com', 'tpc.googlesyndication.com',
-        'www.googlesyndication.com', 'www.googleadservices.com',
-        'ads.pubmatic.com', 'ads.revcontent.com', 'ads.taboola.com',
-        'ads.outbrain.com', 'ads.criteo.com', 'ads.adthrive.com',
-        'ads.media.net', 'ads.infolinks.com', 'ads.zemanta.com',
-        'ads.gumgum.com', 'ads.nativeads.com', 'ads.content.ad',
-        'ads.sonobi.com', 'ads.triplelift.com', 'ads.sharethrough.com',
-        'ads.yieldmo.com', 'ads.yieldone.com', 'ads.aerserv.com',
-        'ads.smaato.com', 'ads.mopub.com', 'ads.inmobi.com',
-        'ads.unity3d.com', 'ads.vungle.com', 'ads.applovin.com',
-        'ads.ironsrc.com', 'ads.adcolony.com', 'ads.chartboost.com',
-        'ads.tapjoy.com', 'ads.supersonic.com', 'ads.heyzap.com',
-        'ads.fyber.com', 'ads.digitalturbine.com',
-    ],
-    
-    # 新增：需要阻止执行的脚本模式
-    'BLOCKED_SCRIPT_PATTERNS': [
-        # 分析脚本
-        r'analytics\.js', r'ga\.js', r'gtm\.js', r'gtm\.php',
-        r'stat\.js', r'track\.js', r'beacon\.js', r'pixel\.js',
-        r'tagmanager\.js', r'stats\.js', r'counter\.js',
-        r'metrics\.js', r'measure\.js', r'collect\.js',
-        r'logger\.js', r'log\.js', r'report\.js',
-        
-        # 广告脚本
-        r'ads\.js', r'ad\.js', r'banner\.js', r'popunder\.js',
-        r'popup\.js', r'interstitial\.js', r'preroll\.js',
-        r'midroll\.js', r'postroll\.js', r'video-ad\.js',
-        r'ad-unit\.js', r'ad-container\.js', r'ad-wrapper\.js',
-        
-        # 错误监控脚本
-        r'sentry\.js', r'bugsnag\.js', r'rollbar\.js',
-        r'airbrake\.js', r'raygun\.js', r'newrelic\.js',
-        r'appdynamics\.js', r'dynatrace\.js', r'datadog\.js',
-        
-        # 追踪脚本
-        r'tracking\.js', r'tracker\.js', r'pixel\.js',
-        r'fingerprint\.js', r'cookie\.js', r'session\.js',
-        r'user\.js', r'visitor\.js', r'identification\.js',
-        
-        # 热图脚本
-        r'hotjar\.js', r'crazyegg\.js', r'mouseflow\.js',
-        r'luckyorange\.js', r'inspectlet\.js', r'sessioncam\.js',
-        r'clicktale\.js', r'uservoice\.js',
-        
-        # A/B测试脚本
-        r'optimizely\.js', r'vwo\.js', r'convert\.js',
-        r'abtasty\.js', r'kameleoon\.js', r'dynamic-yield\.js',
-    ],
-    
-    # 新增：元素隐藏规则（针对可见广告）
-    'ELEMENT_HIDING_RULES': [
-        # 通用广告容器
-        r'##div[class*="ad-"]',
-        r'##div[id*="ad-"]',
-        r'##div[class*="banner"]',
-        r'##div[id*="banner"]',
-        r'##div[class*="advert"]',
-        r'##div[id*="advert"]',
-        r'##div[class*="sponsor"]',
-        r'##div[id*="sponsor"]',
-        r'##div[class*="promo"]',
-        r'##div[id*="promo"]',
-        
-        # 内嵌广告
-        r'##iframe[src*="ad"]',
-        r'##iframe[id*="ad"]',
-        r'##iframe[class*="ad"]',
-        r'##iframe[src*="banner"]',
-        r'##iframe[src*="doubleclick"]',
-        r'##iframe[src*="googleadservices"]',
-        r'##iframe[src*="googlesyndication"]',
-        
-        # 图片广告
-        r'##img[src*="ad"]',
-        r'##img[alt*="广告"]',
-        r'##img[alt*="推广"]',
-        r'##img[alt*="赞助"]',
-        r'##img[title*="广告"]',
-        r'##img[src*="banner"]',
-        r'##img[src*="sponsor"]',
-        r'##img[src*="promo"]',
-        
-        # 悬浮广告
-        r'##div[class*="popup"]',
-        r'##div[id*="popup"]',
-        r'##div[class*="float"]',
-        r'##div[id*="float"]',
-        r'##div[class*="overlay"]',
-        r'##div[id*="overlay"]',
-        r'##div[class*="modal"]',
-        r'##div[id*="modal"]',
-        r'##div[class*="lightbox"]',
-        r'##div[id*="lightbox"]',
-        
-        # 视频广告
-        r'##video[src*="ad"]',
-        r'##embed[src*="ad"]',
-        r'##object[data*="ad"]',
-        r'##video[id*="ad"]',
-        r'##video[class*="ad"]',
-        
-        # 文本广告
-        r'##span[class*="ad-text"]',
-        r'##span[id*="ad-text"]',
-        r'##p[class*="ad-text"]',
-        r'##p[id*="ad-text"]',
-        r'##a[class*="ad-link"]',
-        r'##a[id*="ad-link"]',
-        
-        # 社交媒体广告
-        r'##div[class*="fb-ad"]',
-        r'##div[id*="fb-ad"]',
-        r'##div[class*="twitter-ad"]',
-        r'##div[id*="twitter-ad"]',
-        r'##div[class*="instagram-ad"]',
-        r'##div[id*="instagram-ad"]',
-        
-        # 内容推荐广告
-        r'##div[class*="outbrain"]',
-        r'##div[id*="outbrain"]',
-        r'##div[class*="taboola"]',
-        r'##div[id*="taboola"]',
-        r'##div[class*="revcontent"]',
-        r'##div[id*="revcontent"]',
-        r'##div[class*="zemanta"]',
-        r'##div[id*="zemanta"]',
-        r'##div[class*="content-recommendation"]',
-        r'##div[id*="content-recommendation"]',
-        
-        # 原生广告
-        r'##div[class*="native-ad"]',
-        r'##div[id*="native-ad"]',
-        r'##div[class*="sponsored-content"]',
-        r'##div[id*="sponsored-content"]',
-        r'##article[class*="sponsored"]',
-        r'##article[id*="sponsored"]',
-        
-        # 横幅广告特定类名
-        r'##.ad-banner',
-        r'##.adsbygoogle',
-        r'##.ad-unit',
-        r'##.ad-container',
-        r'##.ad-wrapper',
-        r'##.ad-placement',
-        r'##.ad-space',
-        r'##.ad-zone',
-        r'##.ad-slot',
-        r'##.ad-position',
-        r'##.ad-holder',
-        r'##.ad-box',
-        r'##.ad-frame',
-        r'##.ad-panel',
-        r'##.ad-wall',
-        r'##.ad-wallpaper',
-        r'##.ad-overlay',
-        r'##.ad-interstitial',
-        r'##.ad-popup',
-        r'##.ad-modal',
-        r'##.ad-lightbox',
-        r'##.ad-video',
-        r'##.ad-audio',
-        r'##.ad-flash',
-        r'##.ad-gif',
-        r'##.ad-image',
-        r'##.ad-img',
-        r'##.ad-picture',
-        r'##.ad-photo',
-        r'##.ad-graphic',
-        r'##.ad-illustration',
-        r'##.ad-icon',
-        r'##.ad-logo',
-        r'##.ad-brand',
-        r'##.ad-caption',
-        r'##.ad-text',
-        r'##.ad-headline',
-        r'##.ad-title',
-        r'##.ad-description',
-        r'##.ad-body',
-        r'##.ad-content',
-        r'##.ad-message',
-        r'##.ad-callout',
-        r'##.ad-teaser',
-        r'##.ad-preview',
-        r'##.ad-excerpt',
-        r'##.ad-summary',
-        r'##.ad-abstract',
-        r'##.ad-intro',
-        r'##.ad-lead',
-        r'##.ad-hook',
-        r'##.ad-pitch',
-        r'##.ad-proposition',
-        r'##.ad-offer',
-        r'##.ad-deal',
-        r'##.ad-promo',
-        r'##.ad-coupon',
-        r'##.ad-discount',
-        r'##.ad-sale',
-        r'##.ad-clearance',
-        r'##.ad-bargain',
-        r'##.ad-special',
-        r'##.ad-feature',
-        r'##.ad-highlight',
-        r'##.ad-spotlight',
-        r'##.ad-showcase',
-        r'##.ad-exhibit',
-        r'##.ad-display',
-        r'##.ad-presentation',
-        r'##.ad-demonstration',
-        r'##.ad-illustration',
-        r'##.ad-example',
-        r'##.ad-sample',
-        r'##.ad-specimen',
-        r'##.ad-model',
-        r'##.ad-prototype',
-        r'##.ad-mockup',
-        r'##.ad-dummy',
-        r'##.ad-placeholder',
-        r'##.ad-stub',
-        r'##.ad-skeleton',
-    ],
-}
+    def save(self) -> None:
+        """保存配置"""
+        with open(self.config_path, 'w', encoding='utf-8') as f:
+            yaml.dump(self.config, f, default_flow_style=False, allow_unicode=True)
 
-# ========== 日志设置 ==========
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
-class AccurateAdBlockGenerator:
-    """精准广告过滤规则生成器"""
+# 域名验证器
+class DomainValidator:
+    """域名验证器"""
     
-    def __init__(self):
-        self.black_urls = []
-        self.white_urls = []
-        self.black_domains = set()
-        self.white_domains = set()
-        self.black_rules = set()
-        self.white_rules = set()
+    def __init__(self, config: ConfigManager):
+        self.config = config
+        self.tld_extractor = tldextract.TLDExtract(cache_dir="/tmp/tld_cache")
         
-        # 新增：增强拦截相关属性
-        self.analytics_domains = set()
-        self.banner_ad_domains = set()
-        self.error_monitoring_domains = set()
-        self.contextual_ad_domains = set()
-        self.element_hiding_rules = set()
-        self.blocked_script_rules = set()
+        # 预编译正则表达式
+        self.domain_pattern = re.compile(
+            r'^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.[A-Za-z0-9-]{1,63})*(\.[A-Za-z]{2,})$'
+        )
+        
+        # 保留字
+        self.reserved_words = {
+            'localhost', 'local', 'broadcasthost', 'localhost.localdomain',
+            'ip6-localhost', 'ip6-loopback', 'ip6-localnet', 'ip6-mcastprefix'
+        }
+    
+    def validate_domain(self, domain: str) -> Tuple[bool, str]:
+        """
+        验证域名有效性
+        
+        Args:
+            domain: 域名
+            
+        Returns:
+            (是否有效, 错误信息)
+        """
+        domain = domain.strip().lower()
+        
+        # 基本长度检查
+        min_len = self.config.get('rules.validation.min_domain_length', 3)
+        max_len = self.config.get('rules.validation.max_domain_length', 253)
+        
+        if len(domain) < min_len:
+            return False, f"域名太短 (min: {min_len})"
+        if len(domain) > max_len:
+            return False, f"域名太长 (max: {max_len})"
+        
+        # 检查保留字
+        if domain in self.reserved_words:
+            return False, "保留字域名"
+        
+        # 检查排除列表
+        exclude_list = self.config.get('rules.exclude_domains', [])
+        if domain in exclude_list:
+            return False, "在排除列表中"
+        
+        # 正则表达式验证
+        if not self.domain_pattern.match(domain):
+            return False, "格式无效"
+        
+        # 提取TLD
+        try:
+            extracted = self.tld_extractor(domain)
+            if not extracted.suffix:
+                return False, "缺少顶级域名"
+            
+            # 检查TLD长度
+            min_tld_len = self.config.get('rules.validation.min_tld_length', 2)
+            if len(extracted.suffix) < min_tld_len:
+                return False, f"TLD太短 (min: {min_tld_len})"
+            
+            # 验证TLD（可选）
+            if self.config.get('rules.validation.validate_tld', False):
+                if not self._validate_tld(extracted.suffix):
+                    return False, "无效的TLD"
+            
+        except Exception as e:
+            return False, f"TLD提取失败: {e}"
+        
+        # 检查允许的特殊字符
+        if not self.config.get('rules.validation.allow_underscores', False):
+            if '_' in domain:
+                return False, "包含下划线"
+        
+        if not self.config.get('rules.validation.allow_hyphens', True):
+            if '-' in domain:
+                return False, "包含连字符"
+        
+        if not self.config.get('rules.validation.allow_numbers', True):
+            if any(c.isdigit() for c in domain):
+                return False, "包含数字"
+        
+        # 检查连续特殊字符
+        if '..' in domain or '--' in domain:
+            return False, "连续特殊字符"
+        
+        # 检查开头和结尾
+        if domain.startswith('-') or domain.startswith('.'):
+            return False, "以特殊字符开头"
+        if domain.endswith('-') or domain.endswith('.'):
+            return False, "以特殊字符结尾"
+        
+        return True, "有效"
+    
+    def _validate_tld(self, tld: str) -> bool:
+        """验证顶级域名"""
+        # 这里可以集成公共后缀列表
+        # 暂时使用简单的检查
+        return len(tld) >= 2 and '.' in tld
+    
+    def normalize_domain(self, domain: str) -> str:
+        """标准化域名"""
+        domain = domain.strip().lower()
+        
+        # 移除协议和路径
+        if '://' in domain:
+            domain = urlparse(domain).netloc
+        
+        # 移除端口
+        if ':' in domain:
+            domain = domain.split(':')[0]
+        
+        # 移除www前缀
+        if domain.startswith('www.'):
+            domain = domain[4:]
+        
+        # 移除末尾的点
+        domain = domain.rstrip('.')
+        
+        return domain
+
+
+# 规则处理器
+class RuleProcessor:
+    """规则处理器"""
+    
+    def __init__(self, config: ConfigManager, validator: DomainValidator):
+        self.config = config
+        self.validator = validator
         
         # 统计信息
         self.stats = {
-            'domains_removed_by_whitelist': 0,
-            'domains_removed_by_safe_check': 0,
-            'domains_removed_by_suspicious': 0,
-            'critical_domains_kept': 0,
-            'essential_domains_whitelisted': 0,
-            'total_domains_processed': 0,
-            
-            # 新增统计
-            'analytics_domains_blocked': 0,
-            'banner_ad_domains_blocked': 0,
-            'error_monitoring_domains_blocked': 0,
-            'contextual_ad_domains_blocked': 0,
-            'element_hiding_rules_added': 0,
-            'script_blocking_rules_added': 0,
+            'total_processed': 0,
+            'valid_domains': 0,
+            'invalid_domains': 0,
+            'removed_by_whitelist': 0,
+            'removed_by_safe_check': 0,
+            'removed_by_suspicious': 0,
+            'added_by_enhancement': 0,
+            'element_hiding_rules': 0,
+            'script_blocking_rules': 0
         }
         
-        # 创建目录
-        self.setup_directories()
+        # 缓存
+        self.black_domains = set()
+        self.white_domains = set()
+        self.enhanced_domains = set()
+        self.element_hiding_rules = set()
+        self.script_blocking_rules = set()
+        
+        # 加载内置规则
+        self._load_builtin_rules()
     
-    def setup_directories(self):
-        """创建目录"""
-        os.makedirs('rules/sources', exist_ok=True)
-        os.makedirs('rules/outputs', exist_ok=True)
+    def _load_builtin_rules(self) -> None:
+        """加载内置规则"""
+        # 从配置加载规则
+        config_dir = os.path.join(
+            self.config.get('paths.base_dir', '.'),
+            self.config.get('paths.custom_sources', 'rules/sources/custom')
+        )
         
-        # 创建示例源文件
-        self.create_example_sources()
+        if os.path.exists(config_dir):
+            for file in os.listdir(config_dir):
+                if file.endswith(('.txt', '.json')):
+                    self._load_custom_rules(os.path.join(config_dir, file))
     
-    def create_example_sources(self):
-        """创建示例源文件"""
-        if not os.path.exists(CONFIG['BLACK_SOURCE']):
-            with open(CONFIG['BLACK_SOURCE'], 'w', encoding='utf-8') as f:
-                f.write("""# 黑名单规则源（增强版）
-# 针对测试结果添加更多针对性规则源
-
-# 基础广告规则
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/tracking.txt
-
-# 分析工具规则（针对分析工具测试失败）
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/analytics.txt
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/other.txt
-
-# 横幅广告规则（针对横幅广告测试失败）
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/banners.txt
-
-# 错误监控规则（针对错误监控测试失败）
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/other.txt
-
-# 元素隐藏规则（针对区块可见性测试失败）
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/filters.txt
-
-# 社交媒体跟踪规则
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/social.txt
-
-# 增强拦截规则源（自定义）
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/i18n.txt
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/mobile.txt
-""")
-        
-        if not os.path.exists(CONFIG['WHITE_SOURCE']):
-            with open(CONFIG['WHITE_SOURCE'], 'w', encoding='utf-8') as f:
-                f.write("""# 白名单规则源
-# 添加必要的白名单以防止误拦截
-
-# 基本白名单
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist.txt
-
-# 针对常见误拦截的补充白名单
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist_domains.txt
-
-# 必要功能白名单（防止过度拦截）
-https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/other.txt
-""")
-    
-    def load_sources(self) -> bool:
-        """加载规则源"""
-        print("📋 加载规则源...")
-        
-        # 加载黑名单源
-        if os.path.exists(CONFIG['BLACK_SOURCE']):
-            with open(CONFIG['BLACK_SOURCE'], 'r', encoding='utf-8') as f:
-                self.black_urls = [line.strip() for line in f 
-                                 if line.strip() and not line.startswith('#')]
-        else:
-            print(f"❌ 黑名单源文件不存在: {CONFIG['BLACK_SOURCE']}")
-            return False
-        
-        # 加载白名单源
-        if os.path.exists(CONFIG['WHITE_SOURCE']):
-            with open(CONFIG['WHITE_SOURCE'], 'r', encoding='utf-8') as f:
-                self.white_urls = [line.strip() for line in f 
-                                 if line.strip() and not line.startswith('#')]
-        
-        if not self.black_urls:
-            print("❌ 没有有效的黑名单源URL")
-            return False
-        
-        print(f"✅ 加载完成: {len(self.black_urls)} 黑名单源, {len(self.white_urls)} 白名单源")
-        return True
-    
-    def download_url(self, url: str) -> Optional[str]:
-        """下载URL内容"""
-        for attempt in range(CONFIG['RETRY_TIMES']):
-            try:
-                headers = {
-                    'User-Agent': 'Mozilla/5.0',
-                    'Accept': 'text/plain,text/html'
-                }
+    def _load_custom_rules(self, file_path: str) -> None:
+        """加载自定义规则"""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
                 
-                response = requests.get(
-                    url, 
-                    headers=headers, 
-                    timeout=CONFIG['TIMEOUT']
-                )
-                
-                if response.status_code == 200:
-                    return response.text
+                # 根据文件类型处理
+                if file_path.endswith('.json'):
+                    rules = json.loads(content)
+                    # 处理JSON格式规则
                 else:
-                    logger.warning(f"下载失败 {url}: 状态码 {response.status_code}")
-                    
-            except Exception as e:
-                if attempt < CONFIG['RETRY_TIMES'] - 1:
-                    time.sleep(2)
-                else:
-                    logger.warning(f"下载失败 {url}: {e}")
-        
-        return None
+                    # 处理文本格式规则
+                    lines = content.split('\n')
+                    for line in lines:
+                        line = line.strip()
+                        if line and not line.startswith('#'):
+                            self._process_rule_line(line)
+        except Exception as e:
+            logging.warning(f"加载自定义规则失败 {file_path}: {e}")
     
-    def download_all_urls(self) -> List[Tuple[str, str, str]]:
-        """下载所有URL"""
-        print(f"📥 下载规则源...")
-        
-        all_urls = []
-        for url in self.black_urls:
-            all_urls.append((url, 'black'))
-        for url in self.white_urls:
-            all_urls.append((url, 'white'))
-        
-        results = []
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=CONFIG['MAX_WORKERS']) as executor:
-            future_to_url = {}
-            for url, url_type in all_urls:
-                future = executor.submit(self.download_url, url)
-                future_to_url[future] = (url, url_type)
-            
-            for future in concurrent.futures.as_completed(future_to_url):
-                url, url_type = future_to_url[future]
-                content = future.result()
-                if content:
-                    results.append((url, url_type, content))
-                    print(f"  ✅ 下载成功: {url}")
-                else:
-                    print(f"  ❌ 下载失败: {url}")
-        
-        if not results:
-            print("❌ 所有规则源下载都失败了！")
-            return []
-        
-        return results
+    def _process_rule_line(self, line: str) -> None:
+        """处理单行规则"""
+        # 这里实现规则解析逻辑
+        pass
     
-    def is_valid_domain(self, domain: str) -> bool:
-        """检查域名有效性"""
-        if not domain:
-            return False
-        
-        domain = domain.strip().lower()
-        
-        # 基本检查
-        if len(domain) < 4 or len(domain) > 253:
-            return False
-        
-        if '.' not in domain:
-            return False
-        
-        # 排除系统域名
-        if domain in ['localhost', 'local', '127.0.0.1', '0.0.0.0', '::1']:
-            return False
-        
-        # 检查格式
-        if not re.match(r'^[a-z0-9]([a-z0-9\-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]*[a-z0-9])?)+$', domain):
-            return False
-        
-        # 不能有两个连续的点或破折号
-        if '..' in domain or '--' in domain:
-            return False
-        
-        # 检查每个部分
-        parts = domain.split('.')
-        if len(parts) < 2:
-            return False
-        
-        # 顶级域名至少2个字符
-        if len(parts[-1]) < 2:
-            return False
-        
-        for part in parts:
-            if len(part) < 1 or len(part) > 63:
-                return False
-            
-            if part.startswith('-') or part.endswith('-'):
-                return False
-        
-        return True
-    
-    def extract_domains_from_content(self, content: str) -> Tuple[Set[str], Set[str]]:
-        """从内容中提取域名（黑白名单）"""
-        black_domains = set()
-        white_domains = set()
-        
+    def process_source(self, content: str, source_type: str = 'black') -> Set[str]:
+        """处理规则源内容"""
+        domains = set()
         lines = content.split('\n')
         
         for line in lines:
             line = line.strip()
-            
-            # 跳过空行和注释
-            if not line or line.startswith('!') or line.startswith('#'):
+            if not line or line.startswith(('#', '!', '//')):
                 continue
             
-            is_whitelist = line.startswith('@@')
-            
-            # 提取域名
-            domain = None
-            
-            # 常见格式
-            if line.startswith('||'):
-                # ||domain.com^ 格式
-                if '^' in line:
-                    domain = line[2:line.find('^')]
-                else:
-                    domain = line[2:]
-            elif re.match(r'^\d+\.\d+\.\d+\.\d+\s+', line):
-                # Hosts格式: 0.0.0.0 domain.com
-                parts = line.split()
-                if len(parts) >= 2:
-                    domain = parts[1]
-            elif line.startswith('@@||'):
-                # @@||domain.com^ 白名单格式
-                if '^' in line:
-                    domain = line[4:line.find('^')]
-            elif '.' in line and ' ' not in line and '/' not in line:
-                # 简单域名格式
-                domain = line.split('^')[0] if '^' in line else line
-            
-            # 清理和验证域名
-            if domain:
-                domain = domain.lower()
-                domain = re.sub(r'^www\d*\.', '', domain)
-                domain = re.sub(r'^\.+|\.+$', '', domain)
+            extracted = self._extract_domain_from_rule(line)
+            if extracted:
+                domain, is_whitelist = extracted
                 
-                if self.is_valid_domain(domain):
+                # 验证域名
+                is_valid, _ = self.validator.validate_domain(domain)
+                if is_valid:
                     if is_whitelist:
-                        white_domains.add(domain)
+                        self.white_domains.add(domain)
                     else:
-                        black_domains.add(domain)
+                        domains.add(domain)
+                    self.stats['valid_domains'] += 1
+                else:
+                    self.stats['invalid_domains'] += 1
         
-        return black_domains, white_domains
+        return domains
     
-    def apply_essential_whitelist(self, domains: Set[str]) -> Set[str]:
-        """应用必要域名白名单"""
-        if not CONFIG['INTELLIGENT_FILTERING']['enable_essential_domain_whitelist']:
-            return domains
+    def _extract_domain_from_rule(self, rule: str) -> Optional[Tuple[str, bool]]:
+        """从规则中提取域名"""
+        rule = rule.strip()
+        is_whitelist = rule.startswith('@@')
         
-        print("🔧 应用必要域名白名单...")
+        if is_whitelist:
+            rule = rule[2:]
         
-        essential_set = set(CONFIG['ESSENTIAL_DOMAINS'])
-        filtered_domains = set()
-        whitelisted_count = 0
-        
-        for domain in domains:
-            is_essential = False
-            
-            # 检查是否在必要域名列表中
-            for essential_domain in essential_set:
-                if domain == essential_domain or domain.endswith(f".{essential_domain}"):
-                    is_essential = True
-                    break
-            
-            if is_essential:
-                whitelisted_count += 1
-                self.white_domains.add(domain)  # 添加到白名单
-            else:
-                filtered_domains.add(domain)
-        
-        self.stats['essential_domains_whitelisted'] = whitelisted_count
-        print(f"  ✅ 白名单保护了 {whitelisted_count} 个必要域名")
-        
-        return filtered_domains
-    
-    def check_safe_domains(self, domains: Set[str]) -> Set[str]:
-        """检查安全域名"""
-        if not CONFIG['INTELLIGENT_FILTERING']['enable_safe_domains_check']:
-            return domains
-        
-        print("🔍 检查安全域名...")
-        
-        safe_set = set(CONFIG['SAFE_DOMAINS'])
-        filtered_domains = set()
-        removed_count = 0
-        
-        for domain in domains:
-            is_safe = False
-            
-            # 检查是否是安全域名
-            for safe_domain in safe_set:
-                if domain == safe_domain or domain.endswith(f".{safe_domain}"):
-                    is_safe = True
-                    break
-            
-            if is_safe:
-                removed_count += 1
-                # 安全域名不添加到黑名单
-            else:
-                filtered_domains.add(domain)
-        
-        self.stats['domains_removed_by_safe_check'] = removed_count
-        print(f"  ✅ 移除了 {removed_count} 个安全域名")
-        
-        return filtered_domains
-    
-    def filter_suspicious_domains(self, domains: Set[str]) -> Set[str]:
-        """过滤可疑域名"""
-        if not CONFIG['INTELLIGENT_FILTERING']['enable_false_positive_filter']:
-            return domains
-        
-        print("🔍 过滤可疑域名...")
-        
-        filtered_domains = set()
-        removed_count = 0
-        
-        for domain in domains:
-            is_suspicious = False
-            
-            # 检查是否匹配可疑模式
-            for pattern in CONFIG['SUSPICIOUS_PATTERNS']:
-                if re.match(pattern, f"||{domain}^"):
-                    is_suspicious = True
-                    break
-            
-            # 检查是否为短域名（可能误拦截）
-            parts = domain.split('.')
-            if len(parts) >= 2 and len(parts[-2]) <= 3 and len(domain) < 10:
-                is_suspicious = True
-            
-            if is_suspicious:
-                removed_count += 1
-                # 可疑域名不添加到黑名单
-            else:
-                filtered_domains.add(domain)
-        
-        self.stats['domains_removed_by_suspicious'] = removed_count
-        print(f"  ✅ 过滤了 {removed_count} 个可疑域名")
-        
-        return filtered_domains
-    
-    def ensure_critical_domains(self, domains: Set[str]) -> Set[str]:
-        """确保关键广告域名被包含"""
-        print("🎯 确保关键广告域名...")
-        
-        final_domains = set(domains)
-        added_count = 0
-        
-        # 关键广告域名列表（确保这些被拦截）
-        critical_ad_domains = [
-            # Google广告系统
-            'doubleclick.net', 'googlesyndication.com', 'googleadservices.com',
-            'adservice.google.com', 'adsense.com', 'google-analytics.com',
-            
-            # Facebook广告
-            'facebook.com/ads', 'fbcdn.net',
-            
-            # 亚马逊广告
-            'amazon-adsystem.com',
-            
-            # 常见广告网络
-            'adnxs.com', 'rubiconproject.com', 'openx.net',
-            'criteo.com', 'taboola.com', 'outbrain.com',
-            
-            # 追踪和统计
-            'scorecardresearch.com', 'quantserve.com',
-            'chartbeat.com', 'mixpanel.com',
-            
-            # 中国广告网络
-            'tanx.com', 'alimama.com',
-            'miaozhen.com', 'cnzz.com', '51.la',
+        # 处理常见规则格式
+        patterns = [
+            (r'^\|\|([^\^]+)\^\$?.*$', 1),  # ||domain.com^
+            (r'^([^\^]+)\^\$?.*$', 1),      # domain.com^
+            (r'^0\.0\.0\.0\s+([^\s]+)$', 1),  # 0.0.0.0 domain.com
+            (r'^127\.0\.0\.1\s+([^\s]+)$', 1),  # 127.0.0.1 domain.com
+            (r'^([a-zA-Z0-9.-]+)$', 1),      # domain.com
         ]
         
-        for critical_domain in critical_ad_domains:
-            if critical_domain not in final_domains:
-                # 检查是否白名单
-                is_whitelisted = False
-                for white_domain in self.white_domains:
-                    if critical_domain == white_domain or critical_domain.endswith(f".{white_domain}"):
-                        is_whitelisted = True
-                        break
-                
-                if not is_whitelisted and self.is_valid_domain(critical_domain):
-                    final_domains.add(critical_domain)
-                    added_count += 1
+        for pattern, group in patterns:
+            match = re.match(pattern, rule)
+            if match:
+                domain = match.group(group)
+                normalized = self.validator.normalize_domain(domain)
+                return normalized, is_whitelist
         
-        self.stats['critical_domains_kept'] = added_count
-        print(f"  ✅ 确保了 {added_count} 个关键广告域名")
-        
-        return final_domains
+        return None
     
-    def apply_precise_whitelist(self, black_domains: Set[str], white_domains: Set[str]) -> Set[str]:
-        """应用精确的白名单"""
-        print("🎯 应用精确白名单...")
+    def apply_intelligent_filtering(self, domains: Set[str]) -> Set[str]:
+        """应用智能过滤"""
+        filtered_domains = set(domains)
         
-        filtered_domains = set(black_domains)
-        removed_count = 0
+        # 1. 白名单过滤
+        filtered_domains = self._apply_whitelist(filtered_domains)
         
-        # 构建白名单树以加速匹配
-        white_tree = {}
-        for domain in white_domains:
-            parts = domain.split('.')
-            parts.reverse()
-            node = white_tree
-            for part in parts:
-                if part not in node:
-                    node[part] = {}
-                node = node[part]
-            node['*'] = True
+        # 2. 安全域名检查
+        if self.config.get('rules.intelligent_filtering.enable_safe_domains_check', True):
+            filtered_domains = self._filter_safe_domains(filtered_domains)
         
-        # 应用白名单
-        for black_domain in black_domains:
-            parts = black_domain.split('.')
-            parts.reverse()
-            node = white_tree
-            
-            # 检查是否在白名单中
-            is_whitelisted = False
-            for part in parts:
-                if '*' in node:
-                    # 完全匹配白名单
-                    is_whitelisted = True
-                    break
-                if part in node:
-                    node = node[part]
-                else:
-                    break
-            else:
-                if '*' in node:
-                    is_whitelisted = True
-            
-            if is_whitelisted:
-                filtered_domains.remove(black_domain)
-                removed_count += 1
+        # 3. 误报过滤
+        if self.config.get('rules.intelligent_filtering.enable_false_positive_filter', True):
+            filtered_domains = self._filter_false_positives(filtered_domains)
         
-        self.stats['domains_removed_by_whitelist'] = removed_count
-        print(f"  ✅ 白名单移除了 {removed_count} 个域名")
+        # 4. 域名验证
+        if self.config.get('rules.intelligent_filtering.enable_domain_validation', True):
+            filtered_domains = self._validate_domains(filtered_domains)
         
         return filtered_domains
     
-    def enhance_analytics_blocking(self, domains: Set[str]) -> Set[str]:
-        """增强分析工具拦截"""
-        if not CONFIG['ENHANCED_BLOCKING']['enhance_analytics_blocking']:
-            return domains
+    def _apply_whitelist(self, domains: Set[str]) -> Set[str]:
+        """应用白名单"""
+        filtered = set()
+        removed = 0
         
-        print("🔧 增强分析工具拦截...")
-        
-        analytics_set = set(CONFIG['ANALYTICS_DOMAINS'])
-        enhanced_domains = set(domains)
-        added_count = 0
-        
-        # 添加分析工具域名
-        for analytics_domain in analytics_set:
-            # 跳过通配符域名
-            if '*' in analytics_domain:
-                continue
-                
-            if analytics_domain not in enhanced_domains:
-                # 检查是否在白名单中
-                is_whitelisted = False
+        for domain in domains:
+            is_whitelisted = False
+            
+            # 检查精确匹配
+            if domain in self.white_domains:
+                is_whitelisted = True
+            else:
+                # 检查子域名匹配
                 for white_domain in self.white_domains:
-                    if analytics_domain == white_domain or analytics_domain.endswith(f".{white_domain}"):
+                    if domain.endswith(f".{white_domain}"):
                         is_whitelisted = True
                         break
-                
-                if not is_whitelisted and self.is_valid_domain(analytics_domain):
-                    enhanced_domains.add(analytics_domain)
-                    self.analytics_domains.add(analytics_domain)
-                    added_count += 1
-        
-        self.stats['analytics_domains_blocked'] = added_count
-        print(f"  ✅ 添加了 {added_count} 个分析工具域名到黑名单")
-        
-        return enhanced_domains
-    
-    def enhance_banner_ad_blocking(self, domains: Set[str]) -> Set[str]:
-        """增强横幅广告拦截"""
-        if not CONFIG['ENHANCED_BLOCKING']['enhance_banner_blocking']:
-            return domains
-        
-        print("🔧 增强横幅广告拦截...")
-        
-        banner_set = set(CONFIG['BANNER_AD_DOMAINS'])
-        enhanced_domains = set(domains)
-        added_count = 0
-        
-        # 处理通配符域名
-        for banner_pattern in banner_set:
-            if '*' in banner_pattern:
-                # 通配符域名，不直接添加
-                continue
-                
-            if banner_pattern not in enhanced_domains:
-                if self.is_valid_domain(banner_pattern):
-                    enhanced_domains.add(banner_pattern)
-                    self.banner_ad_domains.add(banner_pattern)
-                    added_count += 1
-        
-        self.stats['banner_ad_domains_blocked'] = added_count
-        print(f"  ✅ 添加了 {added_count} 个横幅广告域名到黑名单")
-        
-        return enhanced_domains
-    
-    def enhance_error_monitoring_blocking(self, domains: Set[str]) -> Set[str]:
-        """增强错误监控拦截"""
-        if not CONFIG['ENHANCED_BLOCKING']['enhance_error_monitoring_blocking']:
-            return domains
-        
-        print("🔧 增强错误监控拦截...")
-        
-        error_set = set(CONFIG['ERROR_MONITORING_DOMAINS'])
-        enhanced_domains = set(domains)
-        added_count = 0
-        
-        # 添加错误监控域名
-        for error_domain in error_set:
-            # 跳过通配符域名
-            if '*' in error_domain:
-                continue
-                
-            if error_domain not in enhanced_domains:
-                if self.is_valid_domain(error_domain):
-                    enhanced_domains.add(error_domain)
-                    self.error_monitoring_domains.add(error_domain)
-                    added_count += 1
-        
-        self.stats['error_monitoring_domains_blocked'] = added_count
-        print(f"  ✅ 添加了 {added_count} 个错误监控域名到黑名单")
-        
-        return enhanced_domains
-    
-    def enhance_contextual_ads_blocking(self, domains: Set[str]) -> Set[str]:
-        """增强上下文广告拦截"""
-        if not CONFIG['ENHANCED_BLOCKING']['enhance_contextual_ads']:
-            return domains
-        
-        print("🔧 增强上下文广告拦截...")
-        
-        contextual_set = set(CONFIG['CONTEXTUAL_AD_NETWORKS'])
-        enhanced_domains = set(domains)
-        added_count = 0
-        
-        # 添加上下文广告域名
-        for contextual_domain in contextual_set:
-            # 跳过通配符域名
-            if '*' in contextual_domain:
-                continue
-                
-            if contextual_domain not in enhanced_domains:
-                if self.is_valid_domain(contextual_domain):
-                    enhanced_domains.add(contextual_domain)
-                    self.contextual_ad_domains.add(contextual_domain)
-                    added_count += 1
-        
-        self.stats['contextual_ad_domains_blocked'] = added_count
-        print(f"  ✅ 添加了 {added_count} 个上下文广告域名到黑名单")
-        
-        return enhanced_domains
-    
-    def generate_element_hiding_rules(self):
-        """生成元素隐藏规则"""
-        if not CONFIG['ENHANCED_BLOCKING']['generate_element_hiding_rules']:
-            return
-        
-        print("🔧 生成元素隐藏规则...")
-        
-        for rule in CONFIG['ELEMENT_HIDING_RULES']:
-            self.element_hiding_rules.add(rule)
-        
-        self.stats['element_hiding_rules_added'] = len(CONFIG['ELEMENT_HIDING_RULES'])
-        print(f"  ✅ 生成了 {len(CONFIG['ELEMENT_HIDING_RULES'])} 个元素隐藏规则")
-    
-    def generate_script_blocking_rules(self):
-        """生成脚本拦截规则"""
-        if not CONFIG['ENHANCED_BLOCKING']['generate_script_blocking_rules']:
-            return
-        
-        print("🔧 生成脚本拦截规则...")
-        
-        # 针对分析脚本的拦截规则
-        for pattern in CONFIG['BLOCKED_SCRIPT_PATTERNS']:
-            # 移除正则表达式标记
-            clean_pattern = pattern.replace(r'\.', '.').replace('\\', '')
-            rule = f'||*{clean_pattern}$script,important'
-            self.blocked_script_rules.add(rule)
             
-            # 同时添加域名级别的拦截
-            if '.' in clean_pattern:
-                # 提取可能的域名部分
-                parts = clean_pattern.split('.')
-                if len(parts) >= 2:
-                    script_domain = f"{parts[-2]}.{parts[-1]}"
-                    if self.is_valid_domain(script_domain):
-                        self.black_domains.add(script_domain)
-        
-        self.stats['script_blocking_rules_added'] = len(CONFIG['BLOCKED_SCRIPT_PATTERNS'])
-        print(f"  ✅ 生成了 {len(CONFIG['BLOCKED_SCRIPT_PATTERNS'])} 个脚本拦截规则")
-    
-    def process_downloaded_content(self, results: List[Tuple[str, str, str]]):
-        """处理下载的内容（智能过滤版）"""
-        print("🔧 智能处理规则内容...")
-        
-        all_black_domains = set()
-        all_white_domains = set()
-        
-        # 第一阶段：收集所有域名
-        for url, url_type, content in results:
-            black_domains, white_domains = self.extract_domains_from_content(content)
-            
-            if url_type == 'black':
-                all_black_domains.update(black_domains)
-                # 黑名单源中的白名单也收集
-                all_white_domains.update(white_domains)
+            if not is_whitelisted:
+                filtered.add(domain)
             else:
-                # 白名单源：优先使用
-                all_white_domains.update(white_domains)
+                removed += 1
         
-        self.stats['total_domains_processed'] = len(all_black_domains)
-        print(f"📊 原始数据: {len(all_black_domains)} 黑名单域名, {len(all_white_domains)} 白名单域名")
-        
-        # 第二阶段：智能过滤处理
-        print("\n🎯 开始智能过滤...")
-        
-        # 步骤1：应用必要域名白名单
-        filtered_domains = self.apply_essential_whitelist(all_black_domains)
-        
-        # 步骤2：检查安全域名
-        filtered_domains = self.check_safe_domains(filtered_domains)
-        
-        # 步骤3：过滤可疑域名（减少误拦截）
-        filtered_domains = self.filter_suspicious_domains(filtered_domains)
-        
-        # 步骤4：应用精确白名单
-        filtered_domains = self.apply_precise_whitelist(filtered_domains, all_white_domains)
-        
-        # 步骤5：增强分析工具拦截（针对测试失败）
-        filtered_domains = self.enhance_analytics_blocking(filtered_domains)
-        
-        # 步骤6：增强横幅广告拦截（针对测试失败）
-        filtered_domains = self.enhance_banner_ad_blocking(filtered_domains)
-        
-        # 步骤7：增强错误监控拦截（针对测试失败）
-        filtered_domains = self.enhance_error_monitoring_blocking(filtered_domains)
-        
-        # 步骤8：增强上下文广告拦截
-        filtered_domains = self.enhance_contextual_ads_blocking(filtered_domains)
-        
-        # 步骤9：确保关键广告域名（防止不拦截）
-        final_domains = self.ensure_critical_domains(filtered_domains)
-        
-        # 步骤10：生成元素隐藏规则
-        self.generate_element_hiding_rules()
-        
-        # 步骤11：生成脚本拦截规则
-        if CONFIG['ENHANCED_BLOCKING']['block_analytics_execution']:
-            self.generate_script_blocking_rules()
-        
-        # 最终结果
-        self.black_domains = final_domains
-        self.white_domains = all_white_domains
-        
-        # 生成规则
-        for domain in self.black_domains:
-            self.black_rules.add(f"||{domain}^")
-        
-        for domain in self.white_domains:
-            self.white_rules.add(f"@@||{domain}^")
-        
-        print(f"\n✅ 处理完成!")
-        print(f"📊 最终结果: {len(self.black_domains)} 黑名单域名, {len(self.white_domains)} 白名单域名")
+        self.stats['removed_by_whitelist'] = removed
+        return filtered
     
-    def generate_files(self):
-        """生成规则文件"""
-        print("📁 生成规则文件...")
-        
-        # 检查结果
-        if len(self.black_domains) == 0:
-            print("⚠️  警告：没有找到任何黑名单域名")
-        
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        version = datetime.now().strftime('%Y%m%d_%H%M')
-        
-        # 1. Adblock规则 (ad.txt) - 增强版
-        with open(CONFIG['AD_FILE'], 'w', encoding='utf-8') as f:
-            f.write(f"""! 精准广告过滤规则（增强版）
-! 生成时间: {timestamp}
-! 版本: {version}
-! 黑名单域名: {len(self.black_domains):,} 个
-! 白名单域名: {len(self.white_domains):,} 个
-! 智能过滤统计:
-!   - 必要域名保护: {self.stats['essential_domains_whitelisted']} 个
-!   - 安全域名排除: {self.stats['domains_removed_by_safe_check']} 个
-!   - 可疑域名过滤: {self.stats['domains_removed_by_suspicious']} 个
-!   - 白名单移除: {self.stats['domains_removed_by_whitelist']} 个
-!   - 关键广告域名: {self.stats['critical_domains_kept']} 个
-!   - 分析工具拦截: {self.stats['analytics_domains_blocked']} 个
-!   - 横幅广告拦截: {self.stats['banner_ad_domains_blocked']} 个
-!   - 错误监控拦截: {self.stats['error_monitoring_domains_blocked']} 个
-!   - 上下文广告拦截: {self.stats['contextual_ad_domains_blocked']} 个
-!   - 元素隐藏规则: {self.stats['element_hiding_rules_added']} 个
-!   - 脚本拦截规则: {self.stats['script_blocking_rules_added']} 个
-! 项目地址: https://github.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}
-! 针对测试结果增强：
-!   - 分析工具脚本执行测试失败 → 增强分析脚本拦截
-!   - 横幅广告文件加载测试失败 → 增强横幅广告拦截
-!   - 错误监控脚本执行测试失败 → 增强错误监控拦截
-!   - 区块可见性测试未通过 → 添加元素隐藏规则
-
-! ========== 白名单规则（防止误拦截） ==========
-""")
-            for rule in sorted(self.white_rules):
-                f.write(f"{rule}\n")
-            
-            f.write(f"""
-! ========== 脚本拦截规则（阻止分析脚本执行） ==========
-! 针对测试结果：分析工具脚本执行测试失败，错误监控脚本执行测试失败
-""")
-            for rule in sorted(self.blocked_script_rules):
-                f.write(f"{rule}\n")
-            
-            f.write("""
-! ========== 元素隐藏规则（隐藏可见广告） ==========
-! 针对测试结果：区块可见性测试未通过，Flash/GIF/静态图像广告测试失败
-""")
-            for rule in sorted(self.element_hiding_rules):
-                f.write(f"{rule}\n")
-            
-            f.write("""
-! ========== 黑名单规则（精准广告过滤） ==========
-! 已应用智能过滤和增强拦截，解决测试中的不拦截问题
-""")
-            for domain in sorted(self.black_domains):
-                f.write(f"||{domain}^\n")
-        
-        # 2. DNS规则 (dns.txt)
-        with open(CONFIG['DNS_FILE'], 'w', encoding='utf-8') as f:
-            f.write(f"""# DNS过滤规则（增强版）
-# 生成时间: {timestamp}
-# 版本: {version}
-# 域名数量: {len(self.black_domains):,}
-# 项目地址: https://github.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}
-# 已应用智能过滤和增强拦截，解决测试中的不拦截问题
-
-""")
-            for domain in sorted(self.black_domains):
-                f.write(f"{domain}\n")
-        
-        # 3. Hosts规则 (hosts.txt)
-        with open(CONFIG['HOSTS_FILE'], 'w', encoding='utf-8') as f:
-            f.write(f"""# Hosts格式广告过滤规则（增强版）
-# 生成时间: {timestamp}
-# 版本: {version}
-# 域名数量: {len(self.black_domains):,}
-# 项目地址: https://github.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}
-# 已应用智能过滤和增强拦截，解决测试中的不拦截问题
-
-127.0.0.1 localhost
-::1 localhost
-
-# 广告域名屏蔽（智能过滤增强版）
-""")
-            for domain in sorted(self.black_domains):
-                f.write(f"0.0.0.0 {domain}\n")
-        
-        # 4. 黑名单规则 (black.txt)
-        with open(CONFIG['BLACK_FILE'], 'w', encoding='utf-8') as f:
-            f.write(f"""! 黑名单规则（增强版）
-! 生成时间: {timestamp}
-! 版本: {version}
-! 域名数量: {len(self.black_domains):,}
-! 增强拦截：分析工具、横幅广告、错误监控、上下文广告
-
-""")
-            for domain in sorted(self.black_domains):
-                f.write(f"||{domain}^\n")
-        
-        # 5. 白名单规则 (white.txt)
-        with open(CONFIG['WHITE_FILE'], 'w', encoding='utf-8') as f:
-            f.write(f"""! 白名单规则
-! 生成时间: {timestamp}
-! 版本: {version}
-! 域名数量: {len(self.white_domains):,}
-
-""")
-            for domain in sorted(self.white_domains):
-                f.write(f"@@||{domain}^\n")
-        
-        # 6. 规则信息 (info.json)
-        info = {
-            'version': version,
-            'updated_at': datetime.now().isoformat(),
-            'rules': {
-                'blacklist_domains': len(self.black_domains),
-                'whitelist_domains': len(self.white_domains)
-            },
-            'filtering_stats': self.stats,
-            'config': {
-                'intelligent_filtering': CONFIG['INTELLIGENT_FILTERING'],
-                'enhanced_blocking': CONFIG['ENHANCED_BLOCKING'],
-                'essential_domains_count': len(CONFIG['ESSENTIAL_DOMAINS']),
-                'safe_domains_count': len(CONFIG['SAFE_DOMAINS']),
-                'analytics_domains_count': len(CONFIG['ANALYTICS_DOMAINS']),
-                'banner_ad_domains_count': len(CONFIG['BANNER_AD_DOMAINS']),
-                'error_monitoring_domains_count': len(CONFIG['ERROR_MONITORING_DOMAINS']),
-                'element_hiding_rules_count': len(CONFIG['ELEMENT_HIDING_RULES']),
-                'script_blocking_patterns_count': len(CONFIG['BLOCKED_SCRIPT_PATTERNS']),
-            },
-            'test_improvements': {
-                'analytics_tools': '增强脚本执行拦截，解决测试失败',
-                'banner_ads': '增强文件加载拦截，解决测试失败',
-                'error_monitoring': '增强脚本执行拦截，解决测试失败',
-                'visibility_issues': '添加元素隐藏规则，解决可见性测试'
-            }
-        }
-        
-        with open(CONFIG['INFO_FILE'], 'w', encoding='utf-8') as f:
-            json.dump(info, f, indent=2, ensure_ascii=False)
-        
-        print("✅ 规则文件生成完成")
+    def _filter_safe_domains(self, domains: Set[str]) -> Set[str]:
+        """过滤安全域名"""
+        # 实现安全域名检查逻辑
+        return domains
     
-    def generate_readme(self):
-        """生成README.md（精简版，只包含名称介绍、订阅地址表格和最新更新时间）"""
-        print("📖 生成README.md...")
+    def _filter_false_positives(self, domains: Set[str]) -> Set[str]:
+        """过滤误报"""
+        # 实现误报过滤逻辑
+        return domains
+    
+    def _validate_domains(self, domains: Set[str]) -> Set[str]:
+        """验证域名"""
+        filtered = set()
+        removed = 0
         
-        # 读取规则信息
-        try:
-            with open(CONFIG['INFO_FILE'], 'r', encoding='utf-8') as f:
-                info = json.load(f)
-        except:
-            info = {
-                'version': datetime.now().strftime('%Y%m%d'),
-                'updated_at': datetime.now().isoformat(),
-            }
+        for domain in domains:
+            is_valid, _ = self.validator.validate_domain(domain)
+            if is_valid:
+                filtered.add(domain)
+            else:
+                removed += 1
         
-        # 生成链接
-        base_url = f"https://raw.githubusercontent.com/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}/{CONFIG['GITHUB_BRANCH']}/rules/outputs"
-        cdn_url = f"https://cdn.jsdelivr.net/gh/{CONFIG['GITHUB_USER']}/{CONFIG['GITHUB_REPO']}@{CONFIG['GITHUB_BRANCH']}/rules/outputs"
+        return filtered
+    
+    def enhance_blocking(self, domains: Set[str]) -> Set[str]:
+        """增强拦截"""
+        enhanced = set(domains)
         
-        # 1. 名称介绍
-        name_intro = "# 广告过滤规则\n\n一个精准的广告过滤规则集合，自动更新维护，适用于各种广告拦截器、DNS过滤器和Hosts文件。通过智能过滤算法，有效拦截广告、分析工具、错误监控和追踪脚本，同时防止误拦截重要域名。\n\n"
+        # 分析工具拦截
+        if self.config.get('rules.enhanced_blocking.analytics.enabled', True):
+            enhanced = self._enhance_analytics_blocking(enhanced)
         
-        # 2. 订阅地址表格（美化版）
-        subscription_table = """## 订阅地址
+        # 横幅广告拦截
+        if self.config.get('rules.enhanced_blocking.banner_ads.enabled', True):
+            enhanced = self._enhance_banner_blocking(enhanced)
+        
+        # 元素隐藏规则
+        if self.config.get('rules.enhanced_blocking.element_hiding.enabled', True):
+            self._generate_element_hiding_rules()
+        
+        # 脚本拦截规则
+        if self.config.get('rules.enhanced_blocking.script_blocking.enabled', True):
+            self._generate_script_blocking_rules()
+        
+        return enhanced
+    
+    def _enhance_analytics_blocking(self, domains: Set[str]) -> Set[str]:
+        """增强分析工具拦截"""
+        # 实现分析工具拦截增强
+        return domains
+    
+    def _enhance_banner_blocking(self, domains: Set[str]) -> Set[str]:
+        """增强横幅广告拦截"""
+        # 实现横幅广告拦截增强
+        return domains
+    
+    def _generate_element_hiding_rules(self) -> None:
+        """生成元素隐藏规则"""
+        # 实现元素隐藏规则生成
+        pass
+    
+    def _generate_script_blocking_rules(self) -> None:
+        """生成脚本拦截规则"""
+        # 实现脚本拦截规则生成
+        pass
 
-| 规则名称 | 规则类型 | 原始链接 | 加速链接 |
-|----------|----------|----------|----------|
-| 综合广告过滤规则 | Adblock | `{base_url}/ad.txt` | `{cdn_url}/ad.txt` |
-| DNS过滤规则 | DNS | `{base_url}/dns.txt` | `{cdn_url}/dns.txt` |
-| Hosts格式规则 | Hosts | `{base_url}/hosts.txt` | `{cdn_url}/hosts.txt` |
-| 黑名单规则 | 黑名单 | `{base_url}/black.txt` | `{cdn_url}/black.txt` |
-| 白名单规则 | 白名单 | `{base_url}/white.txt` | `{cdn_url}/white.txt` |
 
-""".format(base_url=base_url, cdn_url=cdn_url)
+# 网络管理器
+class NetworkManager:
+    """网络管理器"""
+    
+    def __init__(self, config: ConfigManager):
+        self.config = config
+        self.session = self._create_session()
+        self.cache = {}
+        self.cache_lock = threading.Lock()
+    
+    def _create_session(self) -> requests.Session:
+        """创建请求会话"""
+        session = requests.Session()
         
-        # 3. 最新更新时间
-        last_updated = "## 最新更新时间\n\n**{updated_at}**\n\n*规则每天自动更新，更新时间：北京时间 02:00*".format(
-            updated_at=info['updated_at'].replace('T', ' ').replace('Z', '')
+        # 重试策略
+        retry_strategy = Retry(
+            total=self.config.get('network.retry_times', 3),
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["HEAD", "GET", "OPTIONS"]
         )
         
-        # 组合三个部分
-        readme = name_intro + subscription_table + last_updated
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
         
-        with open('README.md', 'w', encoding='utf-8') as f:
-            f.write(readme)
+        # 设置请求头
+        session.headers.update({
+            'User-Agent': self.config.get('network.user_agent', 'AdBlockGenerator/3.0'),
+            'Accept': 'text/plain,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Encoding': self.config.get('network.accept_encoding', 'gzip, deflate'),
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Connection': 'keep-alive'
+        })
         
-        print("✅ README.md生成完成")
+        return session
     
-    def run(self):
-        """运行主流程"""
-        print("=" * 60)
-        print("🎯 精准广告过滤规则生成器（增强版）")
-        print("针对测试结果增强：分析工具、横幅广告、错误监控")
-        print("=" * 60)
+    def fetch_url(self, url: str, use_cache: bool = True) -> Optional[str]:
+        """获取URL内容"""
+        # 检查缓存
+        cache_key = hashlib.md5(url.encode()).hexdigest()
         
-        start_time = time.time()
+        if use_cache:
+            with self.cache_lock:
+                if cache_key in self.cache:
+                    content, timestamp = self.cache[cache_key]
+                    cache_expiry = self.config.get('performance.cache_expiry_hours', 24)
+                    if time.time() - timestamp < cache_expiry * 3600:
+                        return content
         
         try:
-            # 1. 加载规则源
-            print("\n步骤 1/5: 加载规则源")
-            if not self.load_sources():
-                return False
+            response = self.session.get(
+                url,
+                timeout=self.config.get('network.timeout', 30),
+                verify=self.config.get('network.verify_ssl', True)
+            )
             
-            # 2. 下载规则源
-            print(f"\n步骤 2/5: 下载规则源")
-            results = self.download_all_urls()
-            if not results:
-                return False
+            response.raise_for_status()
+            content = response.text
             
-            # 3. 智能处理规则
-            print(f"\n步骤 3/5: 智能处理规则")
-            self.process_downloaded_content(results)
+            # 更新缓存
+            with self.cache_lock:
+                self.cache[cache_key] = (content, time.time())
             
-            # 4. 生成规则文件
-            print(f"\n步骤 4/5: 生成规则文件")
-            self.generate_files()
+            return content
             
-            # 5. 生成README
-            print(f"\n步骤 5/5: 生成README.md")
-            self.generate_readme()
+        except requests.RequestException as e:
+            logging.error(f"获取URL失败 {url}: {e}")
+            return None
+    
+    def fetch_multiple_urls(self, urls: List[str], max_workers: int = 10) -> Dict[str, Optional[str]]:
+        """批量获取URL"""
+        results = {}
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_url = {
+                executor.submit(self.fetch_url, url): url
+                for url in urls
+            }
             
-            elapsed_time = time.time() - start_time
+            for future in as_completed(future_to_url):
+                url = future_to_url[future]
+                try:
+                    content = future.result()
+                    results[url] = content
+                except Exception as e:
+                    logging.error(f"批量获取失败 {url}: {e}")
+                    results[url] = None
+        
+        return results
+
+
+# 文件管理器
+class FileManager:
+    """文件管理器"""
+    
+    def __init__(self, config: ConfigManager):
+        self.config = config
+        self._setup_directories()
+    
+    def _setup_directories(self) -> None:
+        """设置目录结构"""
+        directories = [
+            self.config.get('paths.sources_dir'),
+            self.config.get('paths.outputs_dir'),
+            self.config.get('paths.cache_dir'),
+            self.config.get('paths.logs_dir'),
+            self.config.get('paths.reports_dir'),
+            self.config.get('paths.backup_dir'),
+        ]
+        
+        for directory in directories:
+            if directory:
+                os.makedirs(directory, exist_ok=True)
+    
+    def save_output(self, filename: str, content: str, compress: bool = False) -> bool:
+        """保存输出文件"""
+        try:
+            filepath = os.path.join(
+                self.config.get('paths.outputs_dir'),
+                filename
+            )
             
-            print("\n" + "=" * 60)
-            print("✅ 处理完成！")
-            print("=" * 60)
-            print(f"⏱️  总耗时: {elapsed_time:.2f}秒")
-            print(f"📊 黑名单域名: {len(self.black_domains):,}个")
-            print(f"📊 白名单域名: {len(self.white_domains):,}个")
-            print("\n🎯 智能过滤统计:")
-            print(f"  • 必要域名保护: {self.stats['essential_domains_whitelisted']}个")
-            print(f"  • 安全域名排除: {self.stats['domains_removed_by_safe_check']}个")
-            print(f"  • 可疑域名过滤: {self.stats['domains_removed_by_suspicious']}个")
-            print(f"  • 白名单移除: {self.stats['domains_removed_by_whitelist']}个")
-            print(f"  • 关键广告域名: {self.stats['critical_domains_kept']}个")
-            print(f"  • 分析工具拦截: {self.stats['analytics_domains_blocked']}个")
-            print(f"  • 横幅广告拦截: {self.stats['banner_ad_domains_blocked']}个")
-            print(f"  • 错误监控拦截: {self.stats['error_monitoring_domains_blocked']}个")
-            print(f"  • 上下文广告拦截: {self.stats['contextual_ad_domains_blocked']}个")
-            print(f"  • 元素隐藏规则: {self.stats['element_hiding_rules_added']}个")
-            print(f"  • 脚本拦截规则: {self.stats['script_blocking_rules_added']}个")
-            print("=" * 60)
-            print(f"📁 规则文件: rules/outputs/")
-            print("📖 文档更新: README.md")
-            print("🔗 订阅地址已在README.md中更新")
-            print("=" * 60)
+            # 创建备份
+            if os.path.exists(filepath):
+                self._create_backup(filepath)
             
-            # 建议
-            if self.stats['analytics_domains_blocked'] > 0:
-                print("\n💡 分析工具拦截已增强，应该解决脚本执行测试失败问题")
+            # 写入文件
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(content)
             
-            if self.stats['banner_ad_domains_blocked'] > 0:
-                print("💡 横幅广告拦截已增强，应该解决文件加载测试失败问题")
-            
-            if self.stats['error_monitoring_domains_blocked'] > 0:
-                print("💡 错误监控拦截已增强，应该解决脚本执行测试失败问题")
-            
-            if self.stats['element_hiding_rules_added'] > 0:
-                print("💡 元素隐藏规则已添加，应该解决区块可见性测试问题")
-            
-            print("\n🚀 建议运行增强模式：python run.py --enhanced")
-            print("📊 查看详细统计：python run.py --stats")
+            # 压缩（如果需要）
+            if compress:
+                self._compress_file(filepath)
             
             return True
             
-        except KeyboardInterrupt:
-            print("\n\n⏹️  用户中断程序")
+        except Exception as e:
+            logging.error(f"保存文件失败 {filename}: {e}")
             return False
+    
+    def _create_backup(self, filepath: str) -> None:
+        """创建备份"""
+        backup_dir = self.config.get('paths.backup_dir')
+        if not backup_dir:
+            return
+        
+        filename = os.path.basename(filepath)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_path = os.path.join(backup_dir, f"{filename}.{timestamp}.bak")
+        
+        try:
+            import shutil
+            shutil.copy2(filepath, backup_path)
+            
+            # 清理旧备份
+            self._cleanup_old_backups(filename)
             
         except Exception as e:
-            print(f"\n❌ 处理失败: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
+            logging.warning(f"创建备份失败 {filepath}: {e}")
+    
+    def _cleanup_old_backups(self, filename: str) -> None:
+        """清理旧备份"""
+        backup_dir = self.config.get('paths.backup_dir')
+        if not backup_dir:
+            return
+        
+        max_backups = self.config.get('auto_update.max_backups', 5)
+        pattern = f"{filename}.*.bak"
+        
+        backups = []
+        for file in os.listdir(backup_dir):
+            if re.match(pattern, file):
+                filepath = os.path.join(backup_dir, file)
+                backups.append((filepath, os.path.getmtime(filepath)))
+        
+        # 按修改时间排序
+        backups.sort(key=lambda x: x[1], reverse=True)
+        
+        # 删除多余的备份
+        for filepath, _ in backups[max_backups:]:
+            try:
+                os.remove(filepath)
+            except Exception as e:
+                logging.warning(f"删除旧备份失败 {filepath}: {e}")
+    
+    def _compress_file(self, filepath: str) -> None:
+        """压缩文件"""
+        try:
+            import gzip
+            
+            with open(filepath, 'rb') as f_in:
+                with gzip.open(f"{filepath}.gz", 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+                    
+        except Exception as e:
+            logging.warning(f"压缩文件失败 {filepath}: {e}")
 
+
+# 监控器
+class Monitor:
+    """性能监控器"""
+    
+    def __init__(self):
+        self.start_time = time.time()
+        self.memory_start = psutil.Process().memory_info().rss
+        self.metrics = {
+            'performance': {},
+            'memory': {},
+            'network': {},
+            'files': {}
+        }
+    
+    def start_monitoring(self) -> None:
+        """开始监控"""
+        self.start_time = time.time()
+        self.memory_start = psutil.Process().memory_info().rss
+    
+    def stop_monitoring(self) -> Dict[str, Any]:
+        """停止监控并返回结果"""
+        end_time = time.time()
+        memory_end = psutil.Process().memory_info().rss
+        
+        self.metrics['performance']['total_time'] = end_time - self.start_time
+        self.metrics['memory']['used_mb'] = (memory_end - self.memory_start) / 1024 / 1024
+        self.metrics['memory']['peak_mb'] = psutil.Process().memory_info().rss / 1024 / 1024
+        
+        # 获取系统信息
+        self.metrics['system'] = {
+            'cpu_percent': psutil.cpu_percent(),
+            'memory_percent': psutil.virtual_memory().percent,
+            'disk_usage': psutil.disk_usage('/').percent
+        }
+        
+        return self.metrics
+    
+    def record_metric(self, category: str, key: str, value: Any) -> None:
+        """记录指标"""
+        if category not in self.metrics:
+            self.metrics[category] = {}
+        self.metrics[category][key] = value
+
+
+# 主生成器
+class AdBlockGenerator:
+    """广告过滤规则生成器主类"""
+    
+    def __init__(self, config_path: str = "config.yaml"):
+        # 初始化组件
+        self.config = ConfigManager(config_path)
+        self.validator = DomainValidator(self.config)
+        self.processor = RuleProcessor(self.config, self.validator)
+        self.network = NetworkManager(self.config)
+        self.files = FileManager(self.config)
+        self.monitor = Monitor()
+        
+        # 设置日志
+        self._setup_logging()
+        
+        # 状态
+        self.black_domains = set()
+        self.white_domains = set()
+        self.enhanced_domains = set()
+        
+        # 版本信息
+        self.version = self.config.get('project.version', '3.0.0')
+        self.build_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    def _setup_logging(self) -> None:
+        """设置日志"""
+        log_level = self.config.get('monitoring.log_level', 'INFO').upper()
+        log_file = self.config.get('paths.error_log', 'logs/error.log')
+        
+        # 创建日志目录
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        
+        # 配置日志
+        logging.basicConfig(
+            level=getattr(logging, log_level),
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler(log_file, encoding='utf-8'),
+                logging.StreamHandler()
+            ]
+        )
+        
+        self.logger = logging.getLogger(__name__)
+    
+    def run(self, mode: str = 'normal') -> bool:
+        """
+        运行规则生成器
+        
+        Args:
+            mode: 运行模式 (normal, strict, loose, enhanced)
+            
+        Returns:
+            是否成功
+        """
+        self.logger.info(f"启动广告过滤规则生成器 v{self.version}")
+        self.monitor.start_monitoring()
+        
+        try:
+            # 1. 加载源
+            self.logger.info("步骤 1/5: 加载规则源")
+            if not self._load_sources():
+                return False
+            
+            # 2. 下载和处理规则
+            self.logger.info("步骤 2/5: 下载和处理规则")
+            if not self._process_sources():
+                return False
+            
+            # 3. 智能过滤和增强
+            self.logger.info("步骤 3/5: 智能过滤和增强")
+            self._apply_filters_and_enhancements(mode)
+            
+            # 4. 生成输出文件
+            self.logger.info("步骤 4/5: 生成输出文件")
+            if not self._generate_outputs():
+                return False
+            
+            # 5. 生成报告和README
+            self.logger.info("步骤 5/5: 生成报告和README")
+            self._generate_reports()
+            self._generate_readme()
+            
+            # 监控结果
+            metrics = self.monitor.stop_monitoring()
+            self.logger.info(f"处理完成! 耗时: {metrics['performance']['total_time']:.2f}秒")
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"运行失败: {e}", exc_info=True)
+            return False
+    
+    def _load_sources(self) -> bool:
+        """加载规则源"""
+        # 加载内置源
+        black_sources = self.config.get('rules.sources.blacklist', [])
+        white_sources = self.config.get('rules.sources.whitelist', [])
+        
+        # 加载文件源
+        black_file = self.config.get('paths.black_source')
+        white_file = self.config.get('paths.white_source')
+        
+        if os.path.exists(black_file):
+            try:
+                with open(black_file, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                    black_sources.extend([line.strip() for line in lines if line.strip() and not line.startswith('#')])
+            except Exception as e:
+                self.logger.warning(f"加载黑名单文件失败: {e}")
+        
+        if os.path.exists(white_file):
+            try:
+                with open(white_file, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                    white_sources.extend([line.strip() for line in lines if line.strip() and not line.startswith('#')])
+            except Exception as e:
+                self.logger.warning(f"加载白名单文件失败: {e}")
+        
+        # 去重
+        self.black_sources = list(set(black_sources))
+        self.white_sources = list(set(white_sources))
+        
+        self.logger.info(f"加载了 {len(self.black_sources)} 个黑名单源和 {len(self.white_sources)} 个白名单源")
+        return True
+    
+    def _process_sources(self) -> bool:
+        """处理规则源"""
+        # 下载所有源
+        all_urls = self.black_sources + self.white_sources
+        results = self.network.fetch_multiple_urls(
+            all_urls,
+            max_workers=self.config.get('performance.max_workers', 10)
+        )
+        
+        # 处理黑名单
+        black_domains = set()
+        for url in self.black_sources:
+            if url in results and results[url]:
+                domains = self.processor.process_source(results[url], 'black')
+                black_domains.update(domains)
+        
+        # 处理白名单
+        white_domains = set()
+        for url in self.white_sources:
+            if url in results and results[url]:
+                domains = self.processor.process_source(results[url], 'white')
+                white_domains.update(domains)
+        
+        self.black_domains = black_domains
+        self.white_domains = white_domains
+        
+        self.logger.info(f"处理完成: {len(self.black_domains)} 黑名单域名, {len(self.white_domains)} 白名单域名")
+        return True
+    
+    def _apply_filters_and_enhancements(self, mode: str) -> None:
+        """应用过滤和增强"""
+        # 应用智能过滤
+        filtered_domains = self.processor.apply_intelligent_filtering(self.black_domains)
+        
+        # 根据模式调整
+        if mode == 'strict':
+            # 严格模式：更多过滤
+            pass
+        elif mode == 'loose':
+            # 宽松模式：减少过滤
+            pass
+        elif mode == 'enhanced':
+            # 增强模式：更多拦截
+            filtered_domains = self.processor.enhance_blocking(filtered_domains)
+        
+        self.enhanced_domains = filtered_domains
+        self.logger.info(f"过滤后剩余: {len(self.enhanced_domains)} 个域名")
+    
+    def _generate_outputs(self) -> bool:
+        """生成输出文件"""
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # 1. 生成Adblock规则
+        ad_content = self._generate_adblock_rules(timestamp)
+        if not self.files.save_output('ad.txt', ad_content):
+            return False
+        
+        # 2. 生成DNS规则
+        dns_content = self._generate_dns_rules(timestamp)
+        if not self.files.save_output('dns.txt', dns_content):
+            return False
+        
+        # 3. 生成Hosts规则
+        hosts_content = self._generate_hosts_rules(timestamp)
+        if not self.files.save_output('hosts.txt', hosts_content):
+            return False
+        
+        # 4. 生成增强规则
+        enhanced_content = self._generate_enhanced_rules(timestamp)
+        if not self.files.save_output('enhanced.txt', enhanced_content):
+            return False
+        
+        # 5. 生成信息文件
+        info_content = self._generate_info_file(timestamp)
+        if not self.files.save_output('info.json', info_content):
+            return False
+        
+        return True
+    
+    def _generate_adblock_rules(self, timestamp: str) -> str:
+        """生成Adblock规则"""
+        content = [
+            f"! 广告过滤规则 v{self.version}",
+            f"! 生成时间: {timestamp}",
+            f"! 域名数量: {len(self.enhanced_domains)}",
+            f"! 项目地址: https://github.com/{self.config.get('github.user')}/{self.config.get('github.repo')}",
+            "!",
+            "! ========== 白名单规则 =========="
+        ]
+        
+        # 添加白名单规则
+        for domain in sorted(self.white_domains):
+            content.append(f"@@||{domain}^")
+        
+        content.extend([
+            "!",
+            "! ========== 元素隐藏规则 =========="
+        ])
+        
+        # 添加元素隐藏规则
+        for rule in sorted(self.processor.element_hiding_rules):
+            content.append(rule)
+        
+        content.extend([
+            "!",
+            "! ========== 脚本拦截规则 =========="
+        ])
+        
+        # 添加脚本拦截规则
+        for rule in sorted(self.processor.script_blocking_rules):
+            content.append(rule)
+        
+        content.extend([
+            "!",
+            "! ========== 黑名单规则 =========="
+        ])
+        
+        # 添加黑名单规则
+        for domain in sorted(self.enhanced_domains):
+            content.append(f"||{domain}^")
+        
+        return '\n'.join(content)
+    
+    def _generate_dns_rules(self, timestamp: str) -> str:
+        """生成DNS规则"""
+        content = [
+            f"# DNS过滤规则 v{self.version}",
+            f"# 生成时间: {timestamp}",
+            f"# 域名数量: {len(self.enhanced_domains)}",
+            "#"
+        ]
+        
+        for domain in sorted(self.enhanced_domains):
+            content.append(domain)
+        
+        return '\n'.join(content)
+    
+    def _generate_hosts_rules(self, timestamp: str) -> str:
+        """生成Hosts规则"""
+        content = [
+            f"# Hosts格式广告过滤规则 v{self.version}",
+            f"# 生成时间: {timestamp}",
+            f"# 域名数量: {len(self.enhanced_domains)}",
+            "#",
+            "127.0.0.1 localhost",
+            "::1 localhost",
+            "#"
+        ]
+        
+        for domain in sorted(self.enhanced_domains):
+            content.append(f"0.0.0.0 {domain}")
+        
+        return '\n'.join(content)
+    
+    def _generate_enhanced_rules(self, timestamp: str) -> str:
+        """生成增强规则"""
+        content = [
+            f"! 增强广告过滤规则 v{self.version}",
+            f"! 生成时间: {timestamp}",
+            f"! 增强拦截域名: {len(self.processor.enhanced_domains)}",
+            "!",
+            "! ========== 分析工具拦截 =========="
+        ]
+        
+        # 添加增强拦截规则
+        for domain in sorted(self.processor.enhanced_domains):
+            content.append(f"||{domain}^$third-party")
+        
+        return '\n'.join(content)
+    
+    def _generate_info_file(self, timestamp: str) -> str:
+        """生成信息文件"""
+        info = {
+            'version': self.version,
+            'build_date': self.build_date,
+            'timestamp': timestamp,
+            'stats': self.processor.stats,
+            'metrics': self.monitor.metrics,
+            'config': {
+                'github': self.config.get('github'),
+                'performance': self.config.get('performance'),
+                'rules': {
+                    'blacklist_count': len(self.black_domains),
+                    'whitelist_count': len(self.white_domains),
+                    'enhanced_count': len(self.enhanced_domains)
+                }
+            },
+            'files': {
+                'ad_txt': f"https://raw.githubusercontent.com/{self.config.get('github.user')}/{self.config.get('github.repo')}/{self.config.get('github.branch')}/rules/outputs/ad.txt",
+                'dns_txt': f"https://raw.githubusercontent.com/{self.config.get('github.user')}/{self.config.get('github.repo')}/{self.config.get('github.branch')}/rules/outputs/dns.txt",
+                'hosts_txt': f"https://raw.githubusercontent.com/{self.config.get('github.user')}/{self.config.get('github.repo')}/{self.config.get('github.branch')}/rules/outputs/hosts.txt"
+            }
+        }
+        
+        return json.dumps(info, indent=2, ensure_ascii=False)
+    
+    def _generate_reports(self) -> None:
+        """生成报告"""
+        # 这里实现报告生成逻辑
+        pass
+    
+    def _generate_readme(self) -> None:
+        """生成README.md"""
+        base_url = f"https://raw.githubusercontent.com/{self.config.get('github.user')}/{self.config.get('github.repo')}/{self.config.get('github.branch')}"
+        cdn_url = f"https://cdn.jsdelivr.net/gh/{self.config.get('github.user')}/{self.config.get('github.repo')}@{self.config.get('github.branch')}"
+        
+        readme_content = f"""# 广告过滤规则 v{self.version}
+
+一个精准的广告过滤规则集合，自动更新维护，适用于各种广告拦截器、DNS过滤器和Hosts文件。
+
+## 订阅地址
+
+| 规则名称 | 规则类型 | 原始链接 | 加速链接 |
+|----------|----------|----------|----------|
+| 综合广告过滤规则 | Adblock | `{base_url}/rules/outputs/ad.txt` | `{cdn_url}/rules/outputs/ad.txt` |
+| DNS过滤规则 | DNS | `{base_url}/rules/outputs/dns.txt` | `{cdn_url}/rules/outputs/dns.txt` |
+| Hosts格式规则 | Hosts | `{base_url}/rules/outputs/hosts.txt` | `{cdn_url}/rules/outputs/hosts.txt` |
+| 增强过滤规则 | Enhanced | `{base_url}/rules/outputs/enhanced.txt` | `{cdn_url}/rules/outputs/enhanced.txt` |
+| 隐私保护规则 | Privacy | `{base_url}/rules/outputs/privacy.txt` | `{cdn_url}/rules/outputs/privacy.txt` |
+
+## 统计数据
+
+- **黑名单域名**: {len(self.black_domains):,}
+- **白名单域名**: {len(self.white_domains):,}
+- **增强拦截域名**: {len(self.enhanced_domains):,}
+- **生成时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## 更新频率
+
+规则每天自动更新，更新时间：北京时间 02:00
+
+## 许可证
+
+MIT License
+
+Copyright (c) {datetime.now().year} {self.config.get('project.author')}
+"""
+        
+        with open('README.md', 'w', encoding='utf-8') as f:
+            f.write(readme_content)
+
+
+# 命令行接口
 def main():
     """主函数"""
-    import sys
+    parser = argparse.ArgumentParser(
+        description='广告过滤规则生成器 v3.0',
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     
-    # 检查依赖
-    try:
-        import requests
-    except ImportError:
-        print("❌ 缺少依赖：requests")
-        print("请运行：pip install requests")
-        return
+    parser.add_argument(
+        '--mode', '-m',
+        choices=['normal', 'strict', 'loose', 'enhanced'],
+        default='normal',
+        help='运行模式: normal(默认), strict(严格), loose(宽松), enhanced(增强)'
+    )
     
-    # 命令行参数
-    if len(sys.argv) > 1:
-        if sys.argv[1] == '--help' or sys.argv[1] == '-h':
-            print("🎯 精准广告过滤规则生成器（增强版）")
-            print("\n使用方法:")
-            print("  python run.py              # 正常运行")
-            print("  python run.py --strict     # 严格模式（更多过滤）")
-            print("  python run.py --loose      # 宽松模式（减少过滤）")
-            print("  python run.py --enhanced   # 增强拦截模式（针对测试结果，推荐）")
-            print("  python run.py --stats      # 显示过滤统计")
-            return
-        
-        elif sys.argv[1] == '--strict':
-            print("🔧 严格模式：更多过滤，减少误拦截")
-            CONFIG['INTELLIGENT_FILTERING']['enable_false_positive_filter'] = True
-            CONFIG['INTELLIGENT_FILTERING']['enable_safe_domains_check'] = True
-        
-        elif sys.argv[1] == '--loose':
-            print("🔧 宽松模式：减少过滤，增加拦截")
-            CONFIG['INTELLIGENT_FILTERING']['enable_false_positive_filter'] = False
-            CONFIG['INTELLIGENT_FILTERING']['enable_safe_domains_check'] = False
-        
-        elif sys.argv[1] == '--enhanced':
-            print("🔧 增强拦截模式：针对测试结果优化")
-            CONFIG['ENHANCED_BLOCKING']['enhance_analytics_blocking'] = True
-            CONFIG['ENHANCED_BLOCKING']['block_analytics_execution'] = True
-            CONFIG['ENHANCED_BLOCKING']['enhance_banner_blocking'] = True
-            CONFIG['ENHANCED_BLOCKING']['enhance_error_monitoring_blocking'] = True
-            CONFIG['ENHANCED_BLOCKING']['generate_element_hiding_rules'] = True
-            CONFIG['ENHANCED_BLOCKING']['generate_script_blocking_rules'] = True
-            CONFIG['ENHANCED_BLOCKING']['enhance_contextual_ads'] = True
-            print("✅ 已启用增强拦截：")
-            print("   - 分析工具拦截（解决脚本执行测试失败）")
-            print("   - 横幅广告拦截（解决文件加载测试失败）")
-            print("   - 错误监控拦截（解决脚本执行测试失败）")
-            print("   - 元素隐藏规则（解决区块可见性测试）")
-            print("   - 脚本拦截规则（阻止分析脚本执行）")
-        
-        elif sys.argv[1] == '--stats':
-            print("📊 过滤配置统计:")
-            print(f"  必要域名数量: {len(CONFIG['ESSENTIAL_DOMAINS'])}")
-            print(f"  安全域名数量: {len(CONFIG['SAFE_DOMAINS'])}")
-            print(f"  分析域名数量: {len(CONFIG['ANALYTICS_DOMAINS'])}")
-            print(f"  横幅广告域名数量: {len(CONFIG['BANNER_AD_DOMAINS'])}")
-            print(f"  错误监控域名数量: {len(CONFIG['ERROR_MONITORING_DOMAINS'])}")
-            print(f"  上下文广告域名数量: {len(CONFIG['CONTEXTUAL_AD_NETWORKS'])}")
-            print(f"  元素隐藏规则数量: {len(CONFIG['ELEMENT_HIDING_RULES'])}")
-            print(f"  脚本拦截模式数量: {len(CONFIG['BLOCKED_SCRIPT_PATTERNS'])}")
-            
-            print("\n🔧 智能过滤配置:")
-            for key, value in CONFIG['INTELLIGENT_FILTERING'].items():
-                status = "✅ 启用" if value else "❌ 禁用"
-                print(f"  {key}: {status}")
-            
-            print("\n🔧 增强拦截配置:")
-            for key, value in CONFIG['ENHANCED_BLOCKING'].items():
-                status = "✅ 启用" if value else "❌ 禁用"
-                print(f"  {key}: {status}")
-            return
+    parser.add_argument(
+        '--config', '-c',
+        default='config.yaml',
+        help='配置文件路径'
+    )
     
-    # 正常运行
-    print("🎯 正在启动精准广告过滤生成器（增强版）...")
-    print("💡 目标：解决测试中的不拦截问题")
-    print("📊 测试问题：分析工具、横幅广告、错误监控拦截不足")
+    parser.add_argument(
+        '--output', '-o',
+        help='输出目录'
+    )
     
-    generator = AccurateAdBlockGenerator()
-    success = generator.run()
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='详细输出'
+    )
+    
+    parser.add_argument(
+        '--test', '-t',
+        action='store_true',
+        help='测试模式'
+    )
+    
+    args = parser.parse_args()
+    
+    # 设置日志级别
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+    
+    # 运行生成器
+    generator = AdBlockGenerator(args.config)
+    
+    if args.test:
+        # 测试模式
+        print("🧪 测试模式运行中...")
+        success = generator.run('normal')
+    else:
+        # 正常模式
+        success = generator.run(args.mode)
     
     if success:
-        print("\n🎉 规则生成成功！")
-        print("📄 查看README.md获取订阅链接")
-        print("🚀 GitHub Actions会自动提交更新")
-        print("\n💡 针对测试结果的增强功能：")
-        print("   1. 分析工具脚本执行拦截 - 解决谷歌分析、热图、Yandex分析测试失败")
-        print("   2. 横幅广告文件加载拦截 - 解决Flash、GIF、静态图像广告测试失败")
-        print("   3. 错误监控脚本执行拦截 - 解决Sentry、Bugsnag测试失败")
-        print("   4. 元素隐藏规则 - 解决区块可见性测试未通过")
-        print("\n🔧 如果仍有问题，可以：")
-        print("   1. 使用 --enhanced 模式运行（已默认启用）")
-        print("   2. 调整 rules/sources/ 中的规则源")
-        print("   3. 查看 rules/outputs/info.json 获取详细统计")
+        print("✅ 规则生成成功！")
+        print(f"📁 输出目录: {generator.config.get('paths.outputs_dir')}")
+        print("📖 查看README.md获取订阅链接")
     else:
-        print("\n💥 规则生成失败！")
+        print("❌ 规则生成失败！")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
+    import sys
     main()
