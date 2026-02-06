@@ -1,0 +1,44 @@
+! 增强广告过滤规则 v3.3.0
+! 生成时间: 2026-02-06 17:45:13
+! 模式: enhanced
+! 增强拦截域名: 36
+! 增强拦截域名: 844
+! 项目地址: https://github.com/wansheng8/adblock-enhanced
+!
+! ========== 增强拦截规则 ==========
+||adnxs.com^$third-party,important
+||adservice.google.com^$third-party,important
+||adsrvr.org^$third-party,important
+||amazon-adsystem.com^$third-party,important
+||bugsnag.com^$third-party,important
+||crazyegg.com^$third-party,important
+||criteo.com^$third-party,important
+||doubleclick.net^$third-party,important
+||facebook.com^$third-party,important
+||fbcdn.net^$third-party,important
+||google-analytics.com^$third-party,important
+||googleadservices.com^$third-party,important
+||googlesyndication.com^$third-party,important
+||googletagmanager.com^$third-party,important
+||hotjar.com^$third-party,important
+||indexexchange.com^$third-party,important
+||matomo.org^$third-party,important
+||mc.yandex.ru^$third-party,important
+||mgid.com^$third-party,important
+||mouseflow.com^$third-party,important
+||newrelic.com^$third-party,important
+||openx.net^$third-party,important
+||outbrain.com^$third-party,important
+||piwik.org^$third-party,important
+||pubmatic.com^$third-party,important
+||revcontent.com^$third-party,important
+||rubiconproject.com^$third-party,important
+||sentry.io^$third-party,important
+||sharethrough.com^$third-party,important
+||sonobi.com^$third-party,important
+||statcounter.com^$third-party,important
+||taboola.com^$third-party,important
+||triplelift.com^$third-party,important
+||twitter.com^$third-party,important
+||yandex.net^$third-party,important
+||yandex.ru^$third-party,important
