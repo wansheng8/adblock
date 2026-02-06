@@ -1,10 +1,10 @@
-name: Auto Update Rules
+name: 更新广告过滤规则
 
 on:
   schedule:
-    # 每天 UTC 时间 18:00 运行（上海时间次日凌晨 2:00）
-    - cron: '0 18 * * *'
-  workflow_dispatch:  # 手动触发
+    # 每天 UTC 时间 00:00 运行（对应上海时间 08:00）
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # 允许手动触发
   push:
     branches:
       - main
@@ -14,77 +14,68 @@ on:
 jobs:
   update-rules:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
     
     steps:
-      - name: 🛎️ 检出代码
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: 🐍 设置 Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-      
-      - name: 📦 安装依赖
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      
-      - name: 🧹 清理旧规则
-        run: |
-          rm -rf rules/outputs/*
-          echo "旧规则已清理"
-      
-      - name: 🚀 运行规则收集器
-        env:
-          TZ: Asia/Shanghai
-        run: python run.py
-      
-      - name: 📊 查看生成的文件
-        run: |
-          echo "=== 生成的文件列表 ==="
-          ls -la rules/outputs/
-          echo -e "\n=== 规则统计 ==="
-          cat rules/outputs/info.json
-      
-      - name: 📝 检查文件变更
-        id: git-check
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          
-          if git diff --quiet; then
-            echo "changes=false" >> $GITHUB_OUTPUT
-            echo "🟢 没有检测到文件变更"
-          else
-            echo "changes=true" >> $GITHUB_OUTPUT
-            echo "🟡 检测到文件变更"
-            git add .
-            git commit -m "🔄 自动更新规则 - $(date -u +'%Y-%m-%d %H:%M:%S') UTC"
-          fi
-      
-      - name: 🚀 推送变更
-        if: steps.git-check.outputs.changes == 'true'
-        run: |
-          git push origin main
-          echo "✅ 变更已推送到仓库"
-      
-      - name: 📦 生成提交信息
-        if: always()
-        run: |
-          echo "=== 更新任务完成 ==="
-          echo "时间: $(date -u +'%Y-%m-%d %H:%M:%S') UTC"
-          echo "上海时间: $(TZ=Asia/Shanghai date +'%Y-%m-%d %H:%M:%S')"
-      
-      - name: 💬 更新完成通知
-        if: success()
-        run: |
-          echo "✅ 广告规则更新完成！"
-          echo "📅 下次自动更新: 每天 UTC 18:00 (上海时间 02:00)"
+    - name: 检查代码
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        
+    - name: 设置Python环境
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: 安装依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: 清理旧规则文件
+      run: |
+        rm -f rules/outputs/*.txt
+        echo "已清理旧规则文件"
+        
+    - name: 运行规则收集器
+      run: |
+        python run.py
+        
+    - name: 检查文件变化
+      id: check-changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        if git diff --cached --quiet; then
+          echo "没有变化需要提交"
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "检测到变化，将提交更新"
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: 提交更新
+      if: steps.check-changes.outputs.has_changes == 'true'
+      run: |
+        git commit -m "🔧 自动更新规则文件 [$(date +'%Y-%m-%d %H:%M:%S')]"
+        git push
+        
+    - name: 更新完成通知
+      run: |
+        echo "✅ 广告过滤规则更新完成！"
+        echo "📅 更新时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
+        echo "📊 规则文件已更新至 outputs 目录"
+        
+    - name: 生成摘要
+      if: always()
+      run: |
+        echo "## 规则更新报告" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ 更新任务已完成！" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**更新时间 (上海时间):** $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 订阅链接" >> $GITHUB_STEP_SUMMARY
+        echo "- 混合规则: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/adblock.txt" >> $GITHUB_STEP_SUMMARY
+        echo "- 仅黑名单: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/black_only.txt" >> $GITHUB_STEP_SUMMARY
+        echo "- 仅白名单: https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/white_only.txt" >> $GITHUB_STEP_SUMMARY
