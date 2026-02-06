@@ -1,57 +1,90 @@
-name: Update AdBlock Rules
+name: Auto Update Rules
 
 on:
   schedule:
-    # 每天凌晨2点自动更新 (UTC时间)
+    # 每天 UTC 时间 18:00 运行（上海时间次日凌晨 2:00）
     - cron: '0 18 * * *'
-  workflow_dispatch: # 允许手动触发
+  workflow_dispatch:  # 手动触发
   push:
     branches:
       - main
     paths:
-      - 'rules/sources/*.txt'
+      - 'rules/sources/**'
 
 jobs:
   update-rules:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Clean previous outputs
-      run: |
-        rm -rf rules/outputs/*
-    
-    - name: Run rule aggregator
-      run: python run.py
-    
-    - name: Check for changes
-      id: git-check
-      run: |
-        git add -A
-        if git diff --cached --quiet; then
-          echo "changes=false" >> $GITHUB_OUTPUT
-        else
-          echo "changes=true" >> $GITHUB_OUTPUT
-        fi
-    
-    - name: Commit and push changes
-      if: steps.git-check.outputs.changes == 'true'
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git commit -m "🔄 Auto-update rules $(date +'%Y-%m-%d %H:%M:%S')" -a
-        git push
+      - name: 🛎️ 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 🐍 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: 📦 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: 🧹 清理旧规则
+        run: |
+          rm -rf rules/outputs/*
+          echo "旧规则已清理"
+      
+      - name: 🚀 运行规则收集器
+        env:
+          TZ: Asia/Shanghai
+        run: python run.py
+      
+      - name: 📊 查看生成的文件
+        run: |
+          echo "=== 生成的文件列表 ==="
+          ls -la rules/outputs/
+          echo -e "\n=== 规则统计 ==="
+          cat rules/outputs/info.json
+      
+      - name: 📝 检查文件变更
+        id: git-check
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          if git diff --quiet; then
+            echo "changes=false" >> $GITHUB_OUTPUT
+            echo "🟢 没有检测到文件变更"
+          else
+            echo "changes=true" >> $GITHUB_OUTPUT
+            echo "🟡 检测到文件变更"
+            git add .
+            git commit -m "🔄 自动更新规则 - $(date -u +'%Y-%m-%d %H:%M:%S') UTC"
+          fi
+      
+      - name: 🚀 推送变更
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          git push origin main
+          echo "✅ 变更已推送到仓库"
+      
+      - name: 📦 生成提交信息
+        if: always()
+        run: |
+          echo "=== 更新任务完成 ==="
+          echo "时间: $(date -u +'%Y-%m-%d %H:%M:%S') UTC"
+          echo "上海时间: $(TZ=Asia/Shanghai date +'%Y-%m-%d %H:%M:%S')"
+      
+      - name: 💬 更新完成通知
+        if: success()
+        run: |
+          echo "✅ 广告规则更新完成！"
+          echo "📅 下次自动更新: 每天 UTC 18:00 (上海时间 02:00)"
