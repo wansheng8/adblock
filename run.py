@@ -1,390 +1,412 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 广告过滤规则集合器 - 主程序
-自动从多个源收集、合并和优化广告过滤规则
+自动收集、合并、去重广告过滤规则
 """
 
 import os
-import json
-import requests
-import datetime
-from pathlib import Path
-from typing import List, Set, Dict
-from urllib.parse import urlparse
-import hashlib
 import re
+import json
+import time
+import requests
+from datetime import datetime
+from urllib.parse import urlparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-class AdBlockRuleAggregator:
+# 设置时区为上海时间
+os.environ['TZ'] = 'Asia/Shanghai'
+try:
+    time.tzset()
+except:
+    pass  # Windows系统忽略
+
+class AdblockRuleAggregator:
     def __init__(self):
-        self.base_dir = Path(__file__).parent
-        self.sources_dir = self.base_dir / "rules" / "sources"
-        self.outputs_dir = self.base_dir / "rules" / "outputs"
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.sources_dir = os.path.join(self.base_dir, 'rules', 'sources')
+        self.outputs_dir = os.path.join(self.base_dir, 'rules', 'outputs')
         
-        # 确保目录存在
-        self.sources_dir.mkdir(parents=True, exist_ok=True)
-        self.outputs_dir.mkdir(parents=True, exist_ok=True)
-        
-        # 初始化统计信息
-        self.stats = {
-            "total_rules": 0,
-            "adblock_rules": 0,
-            "dns_rules": 0,
-            "hosts_rules": 0,
-            "black_rules": 0,
-            "white_rules": 0,
-            "sources_count": 0,
-            "last_updated": "",
-            "rule_types": {
-                "element_hiding": 0,
-                "url_blocking": 0,
-                "popup_blocking": 0,
-                "analytics_blocking": 0,
-                "malware_blocking": 0,
-                "annoyance_blocking": 0
-            }
+        # 规则分类正则表达式
+        self.rule_patterns = {
+            'adblock': [
+                r'^!.*',  # 注释
+                r'^\|\|.*\^',  # 域名规则
+                r'^@@\|\|.*\^',  # 白名单
+                r'^/.*/',  # 正则表达式
+                r'^##.*',  # 元素隐藏
+                r'^#@#.*',  # 元素隐藏白名单
+                r'^\|\|.*\$.*',  # 带选项的规则
+            ],
+            'dns': [
+                r'^0\.0\.0\.0\s+',
+                r'^127\.0\.0\.1\s+',
+                r'^::1\s+',
+                r'^address=/.*/0\.0\.0\.0$',
+                r'^server=/.*/0\.0\.0\.0$',
+                r'^[a-zA-Z0-9.-]+\s+IN\s+A\s+0\.0\.0\.0',
+            ],
+            'hosts': [
+                r'^\s*0\.0\.0\.0\s+[a-zA-Z0-9.-]+',
+                r'^\s*127\.0\.0\.1\s+[a-zA-Z0-9.-]+',
+                r'^\s*::1\s+[a-zA-Z0-9.-]+',
+            ]
         }
         
-        # 规则缓存
-        self.adblock_rules = set()
-        self.dns_rules = set()
-        self.hosts_rules = set()
-        self.black_rules = set()
-        self.white_rules = set()
-
-    def load_sources(self, source_type: str) -> List[str]:
+        # 广告过滤分类
+        self.ad_categories = {
+            'banner': [
+                r'banner', r'广告', r'ad', r'ads', r'advert',
+                r'gg', r'guanggao', r'推广', r'sponsor'
+            ],
+            'popup': [
+                r'popup', r'pop-up', r'弹窗', r'modal',
+                r'overlay', r'lightbox', r'弹出'
+            ],
+            'tracker': [
+                r'track', r'analytic', r'stat', r'监测',
+                r'beacon', r'pixel', r'log', r'collect'
+            ],
+            'malware': [
+                r'malware', r'virus', r'恶意', r'欺诈',
+                r'phishing', r'钓鱼', r'exploit'
+            ],
+            'social': [
+                r'share', r'like', r'comment', r'社交',
+                r'facebook', r'twitter', r'weibo'
+            ]
+        }
+        
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        
+    def fetch_url(self, url):
+        """获取URL内容"""
+        try:
+            response = requests.get(url, headers=self.headers, timeout=30)
+            response.raise_for_status()
+            
+            # 检测编码
+            if response.encoding is None or response.encoding == 'ISO-8859-1':
+                response.encoding = 'utf-8'
+                
+            return response.text
+        except Exception as e:
+            print(f"❌ 获取 {url} 失败: {e}")
+            return None
+    
+    def load_sources(self, filename):
         """加载规则源"""
-        source_file = self.sources_dir / f"{source_type}.txt"
+        sources_file = os.path.join(self.sources_dir, filename)
         sources = []
         
-        if source_file.exists():
-            with open(source_file, 'r', encoding='utf-8') as f:
+        if os.path.exists(sources_file):
+            with open(sources_file, 'r', encoding='utf-8') as f:
                 for line in f:
                     line = line.strip()
                     if line and not line.startswith('#'):
                         sources.append(line)
         
         return sources
-
-    def download_rules(self, url: str) -> List[str]:
-        """下载规则"""
-        try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-            
-            # 处理不同编码
-            response.encoding = response.apparent_encoding
-            
-            rules = []
-            for line in response.text.splitlines():
-                line = line.strip()
-                if line and not line.startswith('!'):
-                    rules.append(line)
-            
+    
+    def parse_rules(self, content, source_url):
+        """解析规则内容"""
+        rules = {
+            'adblock': [],
+            'dns': [],
+            'hosts': [],
+            'black': [],
+            'white': []
+        }
+        
+        if not content:
             return rules
             
-        except Exception as e:
-            print(f"下载失败 {url}: {e}")
-            return []
-
-    def classify_rule(self, rule: str) -> str:
-        """分类规则类型"""
-        # Adblock规则
-        if any(rule.startswith(prefix) for prefix in ['||', '|', '||', '##', '#@#', '#?##']):
-            return 'adblock'
+        lines = content.split('\n')
+        domain = urlparse(source_url).netloc if source_url else 'unknown'
         
-        # DNS规则 (域名规则)
-        elif re.match(r'^[a-zA-Z0-9.*-]+$', rule) and '.' in rule:
-            return 'dns'
-        
-        # Hosts规则
-        elif re.match(r'^\s*\d+\.\d+\.\d+\.\d+\s+', rule):
-            return 'hosts'
-        
-        # 白名单规则
-        elif rule.startswith('@@'):
-            return 'white'
-        
-        # 黑名单规则
-        else:
-            return 'black'
-
-    def analyze_rule_type(self, rule: str) -> str:
-        """分析规则的具体类型"""
-        rule_lower = rule.lower()
-        
-        # 元素隐藏规则
-        if rule.startswith('##') or rule.startswith('#@#') or rule.startswith('#?##'):
-            return 'element_hiding'
-        
-        # 弹窗拦截
-        elif 'popup' in rule_lower or '$popup' in rule:
-            return 'popup_blocking'
-        
-        # 分析工具拦截
-        elif any(word in rule_lower for word in ['analytics', 'google-analytics', 'gtag', 'ga.js']):
-            return 'analytics_blocking'
-        
-        # 恶意软件拦截
-        elif any(word in rule_lower for word in ['malware', 'phishing', 'scam', 'malicious']):
-            return 'malware_blocking'
-        
-        # 恼人内容拦截
-        elif any(word in rule_lower for word in ['annoyance', 'cookie', 'gdpr', 'consent']):
-            return 'annoyance_blocking'
-        
-        # URL拦截
-        else:
-            return 'url_blocking'
-
-    def process_rule(self, rule: str, source_type: str):
-        """处理单个规则"""
-        if not rule or len(rule) > 2000:  # 避免超长规则
-            return
-        
-        # 去重
-        rule_hash = hashlib.md5(rule.encode()).hexdigest()
-        
-        # 分类规则
-        rule_class = self.classify_rule(rule)
-        rule_type = self.analyze_rule_type(rule)
-        
-        # 根据来源类型和规则类型分类存储
-        if source_type == 'white':
-            self.white_rules.add(rule)
-            self.stats['rule_types'][rule_type] += 1
-        else:
-            if rule_class == 'adblock':
-                self.adblock_rules.add(rule)
-            elif rule_class == 'dns':
-                self.dns_rules.add(rule)
-            elif rule_class == 'hosts':
-                self.hosts_rules.add(rule)
+        for line in lines:
+            line = line.strip()
+            
+            if not line or line.startswith('!'):
+                continue
+                
+            # 判断规则类型
+            rule_added = False
+            
+            # Adblock规则
+            for pattern in self.rule_patterns['adblock']:
+                if re.match(pattern, line):
+                    rules['adblock'].append(line)
+                    rule_added = True
+                    break
+            
+            if not rule_added:
+                # DNS规则
+                for pattern in self.rule_patterns['dns']:
+                    if re.match(pattern, line):
+                        rules['dns'].append(line)
+                        rule_added = True
+                        break
+            
+            if not rule_added:
+                # Hosts规则
+                for pattern in self.rule_patterns['hosts']:
+                    if re.match(pattern, line):
+                        rules['hosts'].append(line)
+                        rule_added = True
+                        break
+            
+            # 分类为黑名单或白名单
+            if line.startswith('@@'):
+                if line not in rules['white']:
+                    rules['white'].append(line)
             else:
-                self.black_rules.add(rule)
+                if line and line not in rules['black']:
+                    rules['black'].append(line)
+        
+        return rules
+    
+    def deduplicate_rules(self, rules_dict):
+        """去重规则"""
+        deduplicated = {}
+        for rule_type, rules in rules_dict.items():
+            # 去重并保持顺序
+            seen = set()
+            deduplicated[rule_type] = []
+            for rule in rules:
+                if rule not in seen:
+                    seen.add(rule)
+                    deduplicated[rule_type].append(rule)
+        return deduplicated
+    
+    def categorize_ad_rules(self, rules):
+        """分类广告规则"""
+        categorized = {cat: [] for cat in self.ad_categories.keys()}
+        categorized['other'] = []
+        
+        for rule in rules:
+            rule_lower = rule.lower()
+            matched = False
             
-            # 更新统计
-            self.stats['rule_types'][rule_type] += 1
-
-    def optimize_rules(self):
-        """优化规则集合"""
-        # 移除被白名单覆盖的规则
-        white_patterns = set()
-        for white_rule in self.white_rules:
-            if white_rule.startswith('@@'):
-                pattern = white_rule[2:]  # 移除@@前缀
-                white_patterns.add(pattern)
+            for category, keywords in self.ad_categories.items():
+                for keyword in keywords:
+                    if re.search(keyword, rule_lower, re.IGNORECASE):
+                        categorized[category].append(rule)
+                        matched = True
+                        break
+                if matched:
+                    break
+            
+            if not matched:
+                categorized['other'].append(rule)
         
-        # 过滤掉被白名单覆盖的黑名单规则
-        filtered_adblock = set()
-        for rule in self.adblock_rules:
-            if not any(pattern in rule for pattern in white_patterns):
-                filtered_adblock.add(rule)
-        
-        filtered_dns = set()
-        for rule in self.dns_rules:
-            if not any(pattern in rule for pattern in white_patterns):
-                filtered_dns.add(rule)
-        
-        filtered_hosts = set()
-        for rule in self.hosts_rules:
-            if not any(pattern in rule for pattern in white_patterns):
-                filtered_hosts.add(rule)
-        
-        # 应用优化后的规则集
-        self.adblock_rules = filtered_adblock
-        self.dns_rules = filtered_dns
-        self.hosts_rules = filtered_hosts
-
-    def save_rules(self):
+        return categorized
+    
+    def save_rules(self, rules_dict):
         """保存规则到文件"""
-        # 更新时间
-        self.stats['last_updated'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # 确保输出目录存在
+        os.makedirs(self.outputs_dir, exist_ok=True)
         
-        # 保存Adblock规则
-        adblock_file = self.outputs_dir / "ad.txt"
-        with open(adblock_file, 'w', encoding='utf-8') as f:
-            f.write("! 广告过滤规则 - 生成时间: {}\n".format(self.stats['last_updated']))
-            f.write("! 包含: 元素隐藏规则, 横幅广告拦截, 弹窗广告拦截, 分析工具拦截等\n")
-            f.write("! 规则数量: {}\n".format(len(self.adblock_rules)))
-            f.write("! 项目地址: https://github.com/wansheng8/adblock\n\n")
-            
-            for rule in sorted(self.adblock_rules):
-                f.write(rule + '\n')
+        # 保存各类型规则
+        for rule_type, rules in rules_dict.items():
+            if rule_type in ['adblock', 'dns', 'hosts', 'black', 'white']:
+                filename = os.path.join(self.outputs_dir, f"{rule_type}.txt")
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write(f"! Title: AdBlock {rule_type.upper()} Rules\n")
+                    f.write(f"! Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write(f"! Total rules: {len(rules)}\n")
+                    f.write("! Project: https://github.com/wansheng8/adblock\n")
+                    f.write("!\n")
+                    
+                    if rule_type == 'adblock':
+                        f.write("! 元素隐藏规则\n! 横幅广告拦截\n! 弹窗广告拦截\n! 分析工具拦截\n! 错误拦截\n")
+                    
+                    for rule in rules:
+                        f.write(f"{rule}\n")
+                
+                print(f"✅ 保存 {rule_type}.txt: {len(rules)} 条规则")
         
-        # 保存DNS规则
-        dns_file = self.outputs_dir / "dns.txt"
-        with open(dns_file, 'w', encoding='utf-8') as f:
-            f.write("# DNS过滤规则\n")
-            f.write("# 生成时间: {}\n".format(self.stats['last_updated']))
-            f.write("# 规则数量: {}\n\n".format(len(self.dns_rules)))
-            
-            for rule in sorted(self.dns_rules):
-                f.write(rule + '\n')
+        # 保存分类统计信息
+        ad_rules = rules_dict.get('adblock', [])
+        categorized = self.categorize_ad_rules(ad_rules)
         
-        # 保存Hosts规则
-        hosts_file = self.outputs_dir / "hosts.txt"
-        with open(hosts_file, 'w', encoding='utf-8') as f:
-            f.write("# Hosts广告过滤规则\n")
-            f.write("# 生成时间: {}\n".format(self.stats['last_updated']))
-            f.write("# 规则数量: {}\n\n".format(len(self.hosts_rules)))
-            f.write("127.0.0.1 localhost\n")
-            f.write("::1 localhost\n\n")
-            
-            for rule in sorted(self.hosts_rules):
-                f.write("0.0.0.0 " + rule.split()[-1] + '\n')
+        info = {
+            'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'total_rules': {
+                'adblock': len(rules_dict.get('adblock', [])),
+                'dns': len(rules_dict.get('dns', [])),
+                'hosts': len(rules_dict.get('hosts', [])),
+                'black': len(rules_dict.get('black', [])),
+                'white': len(rules_dict.get('white', []))
+            },
+            'ad_categories': {
+                category: len(rules) 
+                for category, rules in categorized.items()
+            },
+            'source_count': {
+                'black_sources': len(self.load_sources('black.txt')),
+                'white_sources': len(self.load_sources('white.txt'))
+            }
+        }
         
-        # 保存黑名单规则
-        black_file = self.outputs_dir / "black.txt"
-        with open(black_file, 'w', encoding='utf-8') as f:
-            f.write("# 通用黑名单规则\n")
-            f.write("# 生成时间: {}\n".format(self.stats['last_updated']))
-            f.write("# 规则数量: {}\n\n".format(len(self.black_rules)))
-            
-            for rule in sorted(self.black_rules):
-                f.write(rule + '\n')
-        
-        # 保存白名单规则
-        white_file = self.outputs_dir / "white.txt"
-        with open(white_file, 'w', encoding='utf-8') as f:
-            f.write("# 白名单/例外规则\n")
-            f.write("# 生成时间: {}\n".format(self.stats['last_updated']))
-            f.write("# 规则数量: {}\n\n".format(len(self.white_rules)))
-            
-            for rule in sorted(self.white_rules):
-                f.write(rule + '\n')
-        
-        # 更新统计信息
-        self.stats.update({
-            'adblock_rules': len(self.adblock_rules),
-            'dns_rules': len(self.dns_rules),
-            'hosts_rules': len(self.hosts_rules),
-            'black_rules': len(self.black_rules),
-            'white_rules': len(self.white_rules),
-            'total_rules': len(self.adblock_rules) + len(self.dns_rules) + 
-                          len(self.hosts_rules) + len(self.black_rules)
-        })
-        
-        # 保存信息文件
-        info_file = self.outputs_dir / "info.json"
+        info_file = os.path.join(self.outputs_dir, 'info.json')
         with open(info_file, 'w', encoding='utf-8') as f:
-            json.dump(self.stats, f, indent=2, ensure_ascii=False)
-
-    def generate_readme(self):
+            json.dump(info, f, indent=2, ensure_ascii=False)
+        
+        print(f"✅ 保存 info.json: {json.dumps(info, ensure_ascii=False)}")
+        
+        return info
+    
+    def generate_readme(self, info):
         """生成README.md文件"""
-        # 读取规则源
-        black_sources = self.load_sources('black')
-        white_sources = self.load_sources('white')
+        readme_path = os.path.join(self.base_dir, 'README.md')
         
-        # 读取统计信息
-        info_file = self.outputs_dir / "info.json"
-        if info_file.exists():
-            with open(info_file, 'r', encoding='utf-8') as f:
-                stats = json.load(f)
-        else:
-            stats = self.stats
+        # 加载源文件
+        black_sources = self.load_sources('black.txt')
+        white_sources = self.load_sources('white.txt')
         
-        # 构建订阅链接表格
-        subscription_table = "| 规则类型 | 订阅链接 | 规则数量 |\n"
-        subscription_table += "|----------|----------|----------|\n"
+        # 生成订阅链接表格
+        subscription_table = "## 📥 订阅链接\n\n"
+        subscription_table += "| 规则类型 | 文件 | 订阅链接 | 规则数量 |\n"
+        subscription_table += "|----------|------|----------|----------|\n"
         
-        # GitHub Raw 链接基础URL
-        base_url = "https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs/"
+        raw_base = "https://raw.githubusercontent.com/wansheng8/adblock/main/rules/outputs"
         
-        subscription_table += f"| Adblock规则 | [{base_url}ad.txt]({base_url}ad.txt) | {stats['adblock_rules']} |\n"
-        subscription_table += f"| DNS规则 | [{base_url}dns.txt]({base_url}dns.txt) | {stats['dns_rules']} |\n"
-        subscription_table += f"| Hosts规则 | [{base_url}hosts.txt]({base_url}hosts.txt) | {stats['hosts_rules']} |\n"
-        subscription_table += f"| 黑名单规则 | [{base_url}black.txt]({base_url}black.txt) | {stats['black_rules']} |\n"
-        subscription_table += f"| 白名单规则 | [{base_url}white.txt]({base_url}white.txt) | {stats['white_rules']} |\n"
+        files = [
+            ("Adblock 规则", "ad.txt", "广告拦截、元素隐藏"),
+            ("DNS 规则", "dns.txt", "DNS层面拦截"),
+            ("Hosts 规则", "hosts.txt", "系统hosts文件"),
+            ("黑名单规则", "black.txt", "完整黑名单"),
+            ("白名单规则", "white.txt", "例外规则")
+        ]
         
-        # 规则类型统计
-        rule_types_table = "| 规则类型 | 数量 | 占比 |\n"
-        rule_types_table += "|----------|------|------|\n"
-        
-        total = stats['total_rules']
-        for rule_type, count in stats['rule_types'].items():
-            if count > 0:
-                percentage = (count / total * 100) if total > 0 else 0
-                rule_types_table += f"| {rule_type.replace('_', ' ').title()} | {count} | {percentage:.1f}% |\n"
+        for name, filename, desc in files:
+            count = info['total_rules'].get(filename.replace('.txt', ''), 0)
+            url = f"{raw_base}/{filename}"
+            subscription_table += f"| {name} | `{filename}` | [订阅链接]({url}) | {count} 条 |\n"
         
         # 生成README内容
-        readme_content = f"""# AdBlock Rules Collection 🛡️
+        readme_content = f"""# 🛡️ 精准超级智能广告过滤规则集合器
 
-精准超级智能的广告过滤规则集合器，自动收集、合并和优化来自多个源的广告过滤规则。
+一个高效的广告过滤规则集合器，自动收集、合并、去重来自多个源的广告过滤规则，提供全面的广告拦截解决方案。
 
-## 📋 订阅链接
+## ✨ 特性
+
+- 🔄 **自动更新**：每天自动更新规则
+- 🧹 **智能去重**：自动去除重复规则
+- 🏷️ **规则分类**：按类型（Adblock、DNS、Hosts）分类
+- ⚡ **高性能**：并发下载，快速处理
+- 📊 **详细统计**：规则数量、分类统计
+- 🌐 **多源支持**：支持多个规则源
 
 {subscription_table}
 
 ## 📊 规则统计
 
-{rule_types_table}
+| 分类 | 数量 | 说明 |
+|------|------|------|
+| 广告拦截规则 | {info['total_rules']['adblock']} | 元素隐藏、URL拦截 |
+| DNS 拦截规则 | {info['total_rules']['dns']} | DNS层面广告拦截 |
+| Hosts 规则 | {info['total_rules']['hosts']} | 系统hosts文件 |
+| 黑名单总数 | {info['total_rules']['black']} | 总拦截规则 |
+| 白名单例外 | {info['total_rules']['white']} | 不拦截规则 |
 
-## 🕒 最新更新时间
+## 🎯 广告拦截类型
 
-**{stats['last_updated']}** (UTC+8)
+| 拦截类型 | 规则数量 | 说明 |
+|----------|----------|------|
+| 横幅广告 | {info['ad_categories']['banner']} | 页面横幅、侧边栏广告 |
+| 弹窗广告 | {info['ad_categories']['popup']} | 弹窗、浮层广告 |
+| 跟踪分析 | {info['ad_categories']['tracker']} | 统计、分析工具 |
+| 恶意网站 | {info['ad_categories']['malware']} | 恶意软件、钓鱼网站 |
+| 社交插件 | {info['ad_categories']['social']} | 社交分享按钮 |
+| 其他规则 | {info['ad_categories']['other']} | 未分类规则 |
 
-> ⚠️ 注意：这些规则可能会阻止网站的正常功能，使用时请根据需要调整
-> 
-> 🔄 规则每天自动更新，确保最新的广告过滤效果
-> 
-> 📚 项目地址：https://github.com/wansheng8/adblock
+## 🔄 更新信息
+
+**最新更新时间：** {info['update_time']} (上海时间)
+
+规则源：{info['source_count']['black_sources']} 个黑名单源 + {info['source_count']['white_sources']} 个白名单源
+
+---
+**项目地址：** [https://github.com/wansheng8/adblock](https://github.com/wansheng8/adblock)
+
+*⚠️ 注意：使用前请测试规则兼容性，部分规则可能影响网站正常功能*
 """
-
-        # 保存README.md
-        readme_file = self.base_dir / "README.md"
-        with open(readme_file, 'w', encoding='utf-8') as f:
+        
+        with open(readme_path, 'w', encoding='utf-8') as f:
             f.write(readme_content)
-
+        
+        print(f"✅ 生成 README.md 完成")
+    
     def run(self):
         """主运行函数"""
-        print("开始收集广告过滤规则...")
+        print("🚀 开始收集广告过滤规则...")
+        print(f"📁 工作目录: {self.base_dir}")
         
-        # 加载规则源
-        black_sources = self.load_sources('black')
-        white_sources = self.load_sources('white')
+        # 加载源
+        black_sources = self.load_sources('black.txt')
+        white_sources = self.load_sources('white.txt')
         
-        print(f"找到 {len(black_sources)} 个黑名单源，{len(white_sources)} 个白名单源")
+        print(f"📥 找到 {len(black_sources)} 个黑名单源")
+        print(f"📤 找到 {len(white_sources)} 个白名单源")
         
-        # 处理黑名单规则源
-        for i, url in enumerate(black_sources, 1):
-            print(f"处理黑名单源 {i}/{len(black_sources)}: {url}")
-            rules = self.download_rules(url)
-            for rule in rules:
-                self.process_rule(rule, 'black')
+        all_rules = {
+            'adblock': [],
+            'dns': [],
+            'hosts': [],
+            'black': [],
+            'white': []
+        }
         
-        # 处理白名单规则源
-        for i, url in enumerate(white_sources, 1):
-            print(f"处理白名单源 {i}/{len(white_sources)}: {url}")
-            rules = self.download_rules(url)
-            for rule in rules:
-                self.process_rule(rule, 'white')
+        # 并发获取规则
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            # 获取黑名单规则
+            future_to_url = {}
+            for url in black_sources:
+                future = executor.submit(self.fetch_url, url)
+                future_to_url[future] = ('black', url)
+            
+            for url in white_sources:
+                future = executor.submit(self.fetch_url, url)
+                future_to_url[future] = ('white', url)
+            
+            # 处理结果
+            for future in as_completed(future_to_url):
+                source_type, url = future_to_url[future]
+                content = future.result()
+                
+                if content:
+                    print(f"✅ 获取成功: {url}")
+                    rules = self.parse_rules(content, url)
+                    
+                    # 合并规则
+                    for rule_type in all_rules.keys():
+                        all_rules[rule_type].extend(rules[rule_type])
+                else:
+                    print(f"❌ 获取失败: {url}")
         
-        # 优化规则
-        print("优化规则集合...")
-        self.optimize_rules()
+        # 去重
+        print("🧹 去重处理中...")
+        deduplicated_rules = self.deduplicate_rules(all_rules)
         
         # 保存规则
-        print("保存规则文件...")
-        self.save_rules()
+        print("💾 保存规则文件中...")
+        info = self.save_rules(deduplicated_rules)
         
         # 生成README
-        print("生成README.md...")
-        self.generate_readme()
+        print("📝 生成README文档...")
+        self.generate_readme(info)
         
-        print(f"完成！")
-        print(f"生成规则统计:")
-        print(f"  - Adblock规则: {len(self.adblock_rules)}")
-        print(f"  - DNS规则: {len(self.dns_rules)}")
-        print(f"  - Hosts规则: {len(self.hosts_rules)}")
-        print(f"  - 黑名单规则: {len(self.black_rules)}")
-        print(f"  - 白名单规则: {len(self.white_rules)}")
+        print(f"🎉 任务完成！总计处理 {sum(len(r) for r in deduplicated_rules.values())} 条规则")
+        print(f"🕐 更新时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 def main():
-    aggregator = AdBlockRuleAggregator()
+    """主函数"""
+    aggregator = AdblockRuleAggregator()
     aggregator.run()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
