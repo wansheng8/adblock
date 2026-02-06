@@ -2,12 +2,10 @@ name: 更新广告过滤规则
 
 on:
   schedule:
-    # 每天北京时间02:00运行
+    # 每天北京时间02:00运行 (UTC 18:00)
     - cron: '0 18 * * *'
   workflow_dispatch:  # 手动触发
   push:
-    branches: [ main ]
-  pull_request:
     branches: [ main ]
 
 jobs:
@@ -28,26 +26,50 @@ jobs:
     - name: 安装依赖
       run: |
         python -m pip install --upgrade pip
-        pip install requests pyyaml tldextract psutil
+        pip install requests PyYAML urllib3
     
-    - name: 生成规则
+    - name: 创建必要目录
+      run: |
+        mkdir -p rules/sources rules/outputs logs cache reports backups
+    
+    - name: 创建默认源文件
+      run: |
+        cat > rules/sources/black.txt << 'EOF'
+        # 广告过滤规则源
+        # 默认内置源
+        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt
+        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/tracking.txt
+        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/analytics.txt
+        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/banners.txt
+        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/social.txt
+        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/i18n.txt
+        EOF
+        
+        cat > rules/sources/white.txt << 'EOF'
+        # 白名单规则源
+        https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist.txt
+        EOF
+    
+    - name: 生成规则（增强模式）
       run: |
         python run.py --mode enhanced --verbose
-      
-    - name: 验证规则
+    
+    - name: 验证生成的文件
       run: |
-        echo "验证规则文件..."
+        echo "📁 生成的文件列表:"
         ls -la rules/outputs/
-        wc -l rules/outputs/*.txt
-        
-        # 检查文件大小
+        echo ""
+        echo "📊 文件统计:"
         for file in rules/outputs/*.txt; do
-          echo "检查 $file"
-          head -5 "$file"
-          echo "..."
-          tail -5 "$file"
-          echo ""
+          lines=$(wc -l < "$file" | tr -d ' ')
+          size=$(du -h "$file" | cut -f1)
+          echo "$(basename "$file"): $lines 行, $size"
         done
+        echo ""
+        echo "📈 规则统计:"
+        if [ -f "rules/outputs/info.json" ]; then
+          cat rules/outputs/info.json | python3 -c "import sys,json; data=json.load(sys.stdin); print(f'黑名单: {data[\"counts\"][\"blacklist\"]:,}'); print(f'白名单: {data[\"counts\"][\"whitelist\"]:,}'); print(f'过滤后: {data[\"counts\"][\"filtered\"]:,}')"
+        fi
     
     - name: 提交更改
       run: |
@@ -55,43 +77,11 @@ jobs:
         git config --local user.name "GitHub Action"
         
         # 检查是否有更改
-        if [[ -n $(git status --porcelain) ]]; then
+        if git status --porcelain | grep -q '.'; then
           git add -A
           git commit -m "🤖 自动更新规则 $(date +'%Y-%m-%d %H:%M:%S')"
           git push
+          echo "✅ 已提交更改"
         else
-          echo "没有更改需要提交"
+          echo "📭 没有更改需要提交"
         fi
-    
-    - name: 创建Release
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: "v$(date +'%Y%m%d')"
-        name: "规则更新 $(date +'%Y-%m-%d')"
-        body: |
-          ### 🚀 自动规则更新
-          
-          **生成时间:** $(date +'%Y-%m-%d %H:%M:%S')
-          
-          **规则统计:**
-          - Adblock规则: [ad.txt](https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/ad.txt)
-          - DNS规则: [dns.txt](https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/dns.txt)
-          - Hosts规则: [hosts.txt](https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/hosts.txt)
-          - 增强规则: [enhanced.txt](https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/enhanced.txt)
-          
-          **使用说明:**
-          1. 复制订阅链接到您的广告拦截器
-          2. 或下载文件应用到DNS/Hosts
-          
-          ---
-          
-          *本次更新由GitHub Actions自动执行*
-          
-        draft: false
-        prerelease: false
-        files: |
-          rules/outputs/*.txt
-          rules/outputs/*.json
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
