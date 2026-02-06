@@ -15,7 +15,7 @@ github:
   repo: "adblock-enhanced"
   branch: "main"
   # 发布选项
-  publish_releases: true
+  publish_releases: false
   release_tag_prefix: "v"
   create_pr_on_update: false
   
@@ -24,11 +24,11 @@ performance:
   max_workers: 15
   timeout: 30
   retry_times: 3
-  batch_size: 5000
+  batch_size: 1000
   memory_limit_mb: 2048
   use_cache: true
   cache_expiry_hours: 24
-  compress_cache: true
+  compress_cache: false
   parallel_processing: true
   chunk_size: 1000
   
@@ -43,6 +43,8 @@ rules:
       - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/banners.txt"
       - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/i18n.txt"
       - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/mobile.txt"
+      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/social.txt"
+      - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/other.txt"
       
     whitelist:
       - "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist.txt"
@@ -59,6 +61,11 @@ rules:
     - "0.0.0.0.0"
     - "ip6-localhost"
     - "ip6-loopback"
+    - "ip6-localnet"
+    - "ip6-mcastprefix"
+    - "ip6-allnodes"
+    - "ip6-allrouters"
+    - "ip6-allhosts"
   
   # 白名单处理
   whitelist:
@@ -110,7 +117,7 @@ rules:
   optimization:
     compress_rules: false
     max_rule_length: 500
-    remove_comments: true
+    remove_comments: false
     sort_alphabetically: true
     remove_empty_lines: true
     
@@ -123,7 +130,7 @@ rules:
     allow_underscores: false
     allow_hyphens: true
     allow_numbers: true
-    validate_tld: true
+    validate_tld: false
 
 # 文件路径配置
 paths:
@@ -195,7 +202,7 @@ reports:
   include_whitelisted_domains: true
   
   report_format: "json"  # json, html, markdown
-  compress_reports: true
+  compress_reports: false
   
 # 网络配置
 network:
@@ -271,7 +278,7 @@ i18n:
   supported_languages:
     - "zh"
     - "en"
-  auto_detect: true
+  auto_detect: false
   
 # 插件配置
 plugins:
