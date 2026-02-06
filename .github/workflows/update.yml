@@ -52,11 +52,21 @@ jobs:
       run: |
         python run.py
         
-    - name: 检查文件变化
-      id: check-changes
+    - name: 配置Git
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+        
+    - name: 拉取远程更新并合并
+      run: |
+        # 拉取最新的远程更改
+        git fetch origin main
+        # 尝试合并，如果有冲突则使用ours策略保留我们的更改
+        git merge --strategy-option=ours origin/main || echo "合并冲突，使用我们的版本"
+        
+    - name: 检查文件变化
+      id: check-changes
+      run: |
         git add -A
         
         # 检查是否有变化
@@ -71,11 +81,14 @@ jobs:
           echo "更新时间: $UPDATE_TIME"
         fi
         
-    - name: 提交更新
+    - name: 提交并推送更新
       if: steps.check-changes.outputs.has_changes == 'true'
       run: |
+        # 提交更改
         git commit -m "🔧 自动更新规则文件 [${{ steps.check-changes.outputs.update_time }}]"
-        git push
+        
+        # 强制推送（因为我们已合并了远程更改）
+        git push --force-with-lease
         
     - name: 更新完成通知
       run: |
