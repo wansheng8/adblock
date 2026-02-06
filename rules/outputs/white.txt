@@ -1,7 +1,7 @@
 ! 白名单规则
-! 生成时间: 2026-02-06 02:56:10
-! 版本: 20260206_0256
-! 域名数量: 7,363
+! 生成时间: 2026-02-06 14:05:50
+! 版本: 20260206_1405
+! 域名数量: 7,373
 
 @@||000714.xyz^
 @@||0115765.com^
@@ -229,6 +229,7 @@
 @@||ad-putting.gw.zt-express.com^
 @@||ad.10010.com^
 @@||ad.12306.cn^
+@@||ad.71i.de^
 @@||ad.abchina.com^
 @@||ad.alimama.com^
 @@||ad.azure.com^
@@ -246,6 +247,8 @@
 @@||ad.siemens.com.cn^
 @@||ad.vivo.com.cn^
 @@||ad1.vibio.tv^
+@@||ad13.adfarm1.adition.com^
+@@||ad3.adfarm1.adition.com^
 @@||ad4.liverail.com^
 @@||adash-emas.cn-hangzhou.aliyuncs.com^
 @@||adashx.ut.dingtalk.com^
@@ -355,6 +358,7 @@
 @@||adsmanager.facebook.com^
 @@||adsninja.ca^
 @@||adspace.pro^
+@@||adspirit.de^
 @@||adsrt.com^
 @@||adst.mp.pl^
 @@||adswizz.com^
@@ -2825,6 +2829,7 @@
 @@||gma.alicdn.com^
 @@||gmads.net^
 @@||gmail.com^
+@@||gntm.connect.prosieben.de^
 @@||go-links.net^
 @@||go-mpulse.net^
 @@||go.adjust.com^
@@ -2857,6 +2862,7 @@
 @@||google.com.hk^
 @@||googleadapis.l.google.com^
 @@||googleads.g.doubleclick.net^
+@@||googleads.github.io^
 @@||googleads4.g.doubleclick.net^
 @@||googleadservices.com^
 @@||googledrivelinks.com^
@@ -2892,6 +2898,7 @@
 @@||grp07.ias.rakuten.co.jp^
 @@||grpc.biliapi.net^
 @@||gs.statcounter.com^
+@@||gse.it^
 @@||gsm1x.xyz^
 @@||gsp0.baidu.com^
 @@||gsp1.baidu.com^
@@ -3602,6 +3609,7 @@
 @@||keylerbenden.com^
 @@||keyvdowallet.me^
 @@||kf-ui.cdn-go.cn^
+@@||kfc.com^
 @@||kfcorder.com.tw^
 @@||khl.ru^
 @@||khohieu.com^
@@ -4167,6 +4175,7 @@
 @@||media.sailthru.com^
 @@||mediacdn.disqus.com^
 @@||medialaancdn.be^
+@@||mediamarkt.com.tr^
 @@||mediamarkt.nl^
 @@||mediapemersatubangsa.com^
 @@||mediaplex.com^
@@ -7028,6 +7037,7 @@
 @@||weithenn.org^
 @@||weixin.qq.com^
 @@||wenxuecity.com^
+@@||werbung.qs-optiker.de^
 @@||westelm.com^
 @@||westerndigital-privacy.my.onetrust.com^
 @@||weviral.org^
