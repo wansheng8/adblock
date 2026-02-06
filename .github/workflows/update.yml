@@ -1,39 +1,24 @@
-name: 自动更新规则
+name: 更新广告过滤规则
 
 on:
   schedule:
-    # 每天北京时间 02:00 运行（UTC 18:00）
+    # 每天北京时间02:00运行
     - cron: '0 18 * * *'
   workflow_dispatch:  # 手动触发
-    inputs:
-      force_update:
-        description: '强制更新'
-        required: false
-        default: 'false'
   push:
     branches: [ main ]
-    paths:
-      - 'rules/sources/*'
-      - 'run.py'
-
-env:
-  TZ: Asia/Shanghai
-  FORCE_UPDATE: ${{ github.event.inputs.force_update }}
-
-permissions:
-  contents: write  # 添加写入权限
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  update-rules:
+  generate-rules:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     
     steps:
     - name: 检出代码
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
       with:
-        fetch-depth: 0  # 获取所有历史记录
-        token: ${{ secrets.GITHUB_TOKEN }}  # 使用 GitHub Token
+        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: 设置Python
       uses: actions/setup-python@v4
@@ -43,117 +28,70 @@ jobs:
     - name: 安装依赖
       run: |
         python -m pip install --upgrade pip
-        pip install requests
+        pip install requests pyyaml tldextract psutil
     
-    - name: 安装jq（用于解析JSON）
+    - name: 生成规则
       run: |
-        sudo apt-get update
-        sudo apt-get install -y jq
+        python run.py --mode enhanced --verbose
+      
+    - name: 验证规则
+      run: |
+        echo "验证规则文件..."
+        ls -la rules/outputs/
+        wc -l rules/outputs/*.txt
+        
+        # 检查文件大小
+        for file in rules/outputs/*.txt; do
+          echo "检查 $file"
+          head -5 "$file"
+          echo "..."
+          tail -5 "$file"
+          echo ""
+        done
     
-    - name: 运行规则生成器
+    - name: 提交更改
       run: |
-        echo "开始运行规则生成器..."
-        if [ "${{ env.FORCE_UPDATE }}" = "true" ]; then
-          echo "强制更新模式"
-        fi
-        python run.py
-    
-    - name: 检查生成的文件
-      run: |
-        echo "检查生成的规则文件..."
-        if [ -f "rules/outputs/ad.txt" ]; then
-          echo "✅ ad.txt 生成成功"
-          echo "文件行数: $(wc -l < rules/outputs/ad.txt)"
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # 检查是否有更改
+        if [[ -n $(git status --porcelain) ]]; then
+          git add -A
+          git commit -m "🤖 自动更新规则 $(date +'%Y-%m-%d %H:%M:%S')"
+          git push
         else
-          echo "❌ ad.txt 未生成"
-          exit 1
-        fi
-        
-        if [ -f "rules/outputs/info.json" ]; then
-          echo "✅ info.json 生成成功"
-          echo "版本信息: $(cat rules/outputs/info.json | jq -r '.version')"
-        else
-          echo "❌ info.json 未生成"
-          exit 1
-        fi
-    
-    - name: 配置Git并推送
-      run: |
-        echo "配置Git并推送更新..."
-        
-        # 配置Git用户信息
-        git config --global user.email "action@github.com"
-        git config --global user.name "GitHub Action"
-        
-        # 设置远程仓库URL（包含token）
-        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-        
-        # 拉取最新更改（使用rebase避免合并冲突）
-        echo "拉取远程最新更改..."
-        git fetch origin
-        git rebase origin/main || {
-          echo "rebase失败，尝试合并..."
-          git merge origin/main -X theirs --no-edit || {
-            echo "合并失败，尝试强制更新..."
-            git reset --hard origin/main
-            git pull origin main --allow-unrelated-histories -X theirs
-          }
-        }
-        
-        # 添加所有更改
-        echo "添加更改的文件..."
-        git add -A
-        
-        # 检查是否有更改需要提交
-        if git diff --cached --quiet; then
           echo "没有更改需要提交"
-        else
-          # 提交更改
-          timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-          
-          # 获取版本信息
-          if [ -f "rules/outputs/info.json" ]; then
-            version=$(jq -r '.version' rules/outputs/info.json 2>/dev/null || echo "$(date +%Y%m%d)")
-            commit_msg="规则更新 $version: $timestamp"
-          else
-            commit_msg="规则更新: $timestamp"
-          fi
-          
-          # 添加提交来源信息
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            commit_msg="$commit_msg [手动触发]"
-          fi
-          
-          echo "提交更改: $commit_msg"
-          git commit -m "$commit_msg"
-          
-          # 推送更改（使用force-with-lease安全推送）
-          echo "推送更改到仓库..."
-          git push origin main --force-with-lease
-          
-          if [ $? -eq 0 ]; then
-            echo "✅ 更新已提交并推送"
-          else
-            echo "尝试强制推送..."
-            git push origin main --force
-            echo "✅ 强制推送完成"
-          fi
         fi
     
-    - name: 创建成功标记
-      if: success()
-      run: |
-        echo "✅ 规则更新工作流执行成功"
-        echo "更新时间: $(date '+%Y-%m-%d %H:%M:%S')"
-    
-    - name: 错误处理
-      if: failure()
-      run: |
-        echo "❌ 规则更新工作流执行失败"
-        echo "请检查以下可能的问题："
-        echo "1. 网络连接问题"
-        echo "2. 规则源URL失效"
-        echo "3. Git推送权限问题"
-        echo "4. 磁盘空间不足"
-        echo ""
-        echo "查看详细错误信息请检查运行日志"
+    - name: 创建Release
+      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: "v$(date +'%Y%m%d')"
+        name: "规则更新 $(date +'%Y-%m-%d')"
+        body: |
+          ### 🚀 自动规则更新
+          
+          **生成时间:** $(date +'%Y-%m-%d %H:%M:%S')
+          
+          **规则统计:**
+          - Adblock规则: [ad.txt](https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/ad.txt)
+          - DNS规则: [dns.txt](https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/dns.txt)
+          - Hosts规则: [hosts.txt](https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/hosts.txt)
+          - 增强规则: [enhanced.txt](https://raw.githubusercontent.com/${{ github.repository }}/main/rules/outputs/enhanced.txt)
+          
+          **使用说明:**
+          1. 复制订阅链接到您的广告拦截器
+          2. 或下载文件应用到DNS/Hosts
+          
+          ---
+          
+          *本次更新由GitHub Actions自动执行*
+          
+        draft: false
+        prerelease: false
+        files: |
+          rules/outputs/*.txt
+          rules/outputs/*.json
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
