@@ -80,7 +80,6 @@
 @@||www.bing.com^
 @@||www.eastmoney.com^
 @@||www.freedownloadmanager.org^
-@@||www.msftconnecttest.com^
 @@||www.msn.cn^
 @@||000714.xyz^
 @@||alicdn.com^

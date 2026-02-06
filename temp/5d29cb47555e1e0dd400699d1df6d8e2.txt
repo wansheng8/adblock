@@ -1,5 +1,4 @@
 ||cf.iadsdk.apple.com^
-||lf-static.tiktokpangle-cdn-us.com^
 ||*.ip6.arpa^
 /googleads.$~script,domain=~googleads.github.io
 ||google.com/pagead/
@@ -11,4 +10,3 @@
 ||superbdolly.com^
 ||salutationcheerlessdemote.com^
 ||buildingdoodlesquare.com^
-||colonistnobilityheroic.com^

@@ -7503,6 +7503,7 @@
 ||staging.appsflyer.com^
 ||stats.appsflyer.com^
 ||status.appsflyer.com^
+||t.appsflyer.com^
 ||appsgeyser.com^
 ||cdn.appsmav.com^
 ||appsontrcks.com^
@@ -11874,6 +11875,7 @@
 ||salkic.co.ba^
 ||analytics.santander.co.uk^
 ||log.ato.santander.co.uk^
+||smetrics.sbishinseibank.co.jp^
 ||adservice.sbs.co.kr^
 ||scei.co.jp^
 ||sciencentre.co.za^
@@ -12113,6 +12115,8 @@
 ||analytics.apps.com.tr^
 ||pixel.archipro.com.au^
 ||batmobile.com.tw^
+||smetrics.bbva.com.ar^
+||smetrics.bbvanet.com.mx^
 ||sgtm.beko.com.tr^
 ||bibidelivery.com.br^
 ||opuuh.bikesonline.com.au^
@@ -12123,6 +12127,7 @@
 ||analytics.blogspot.com.au^
 ||analytics.blogspot.com.br^
 ||analytics.blogspot.com.es^
+||metrics.bodyandsoul.com.au^
 ||bramblebaybowlsclub.com.au^
 ||matomo.businesstoday.com.tw^
 ||bykj.com.cn^
@@ -12268,12 +12273,14 @@
 ||myoffice.com.ng^
 ||collect.nab.com.au^
 ||pps.nab.com.au^
+||smetrics.nab.com.au^
 ||sst.nab.com.au^
 ||tags.nab.com.au^
 ||nadavi.com.ua^
 ||ssgtm.nationalgeographic.com.es^
 ||stat.nearme.com.cn^
 ||netdeal.com.br^
+||pixel.nine.com.au^
 ||nobeta.com.br^
 ||nossaquemaravilhoso.com.br^
 ||observadorregional.com.br^
@@ -12301,10 +12308,13 @@
 ||counter.pravda.com.ua^
 ||premiumads.com.br^
 ||premiumcrops.com.mx^
+||analytics.productreview.com.au^
 ||radioclickdigital.com.ar^
 ||rang.com.ua^
 ||rapchefdeliverysp.com.br^
 ||tags.reagroupdata.com.au^
+||analytics.realestate.com.au^
+||smetrics.realestate.com.au^
 ||rezina-diski.com.ua^
 ||rinhoavl.com.ar^
 ||rjdelivery.com.br^
@@ -12359,6 +12369,7 @@
 ||tecklinks.com.pk^
 ||teclamkt.com.br^
 ||adserver.terra.com.br^
+||metrics.theaustralian.com.au^
 ||thedeliverysuite.com.au^
 ||theofficelady.com.au^
 ||analytics.ticketmaster.com.au^
@@ -12387,9 +12398,11 @@
 ||vipdeals.com.br^
 ||vjdisplay.com.cn^
 ||netperform-is.vodafone.com.tr^
+||smetrics.vodafone.com.tr^
 ||countly-api.vps.com.vn^
 ||dc.vw.com.mx^
 ||gtm.waldos.com.mx^
+||smetrics.westpac.com.au^
 ||winebuy.com.br^
 ||xghk-wpsoffice.com.cn^
 ||xyz.com.br^
@@ -20881,6 +20894,7 @@
 ||ieurw.bar^
 ||analytics.if-kongress.de^
 ||ifbackoffice.com^
+||dolphin.deliver.ifeng.com^
 ||matomo.ifeu.de^
 ||ifexcapital.com^
 ||iflirts.com^
@@ -21742,6 +21756,7 @@
 ||sgtm.factory.jcrew.com^
 ||sgtm.jcrew.com^
 ||analiticaweb.jcyl.es^
+||gia.jd.com^
 ||jd8trk.com^
 ||jdbhijdadfjfifciaf.world^
 ||jdjxa.com^
@@ -24990,6 +25005,7 @@
 ||mixofficehome.com^
 ||api-eu.mixpanel.com^
 ||api-in.mixpanel.com^
+||api-js.mixpanel.com^
 ||api-secure.mixpanel.com^
 ||events.mixpanel.com^
 ||mixpaneldata.com^
@@ -34598,6 +34614,7 @@
 ||matomo.tradebyte.org^
 ||tradecraft-growth-office.pro^
 ||tradecrypts.com^
+||analytics.tradedoubler.com^
 ||anet.tradedoubler.com^
 ||hst.tradedoubler.com^
 ||img.tradedoubler.com^

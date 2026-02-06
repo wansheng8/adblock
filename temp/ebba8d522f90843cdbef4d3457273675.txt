@@ -103,6 +103,7 @@
 ||cookiereports.com^$third-party
 ||cookies-spravne.cz^$third-party
 ||cookies.fo^$third-party
+||cookiescript.info^$third-party
 ||cookiesmaster.pl^$third-party
 ||cookiespool.com^$third-party
 ||cookiesuit.com^$third-party
@@ -140,6 +141,7 @@
 ||getcomplied.com^$third-party
 ||getsitecontrol.com^$third-party
 ||getterms.io^$third-party
+||goadopt.io^$third-party
 ||hs-banner.com^$third-party
 ||hu-manity.co/hu-banner.min.js
 ||illow.io/public/cookies/
@@ -300,6 +302,7 @@
 ||sdi.co.uk/cookies/
 ||service-cmp.com/config$script,xmlhttprequest,domain=megogo.net
 ||sheinsz.ltwebstatic.com/she_dist/assets/backup-onetrust.$script,domain=shein.co.uk
+||slashdot.org/country.js
 ||smstools.com/assets/js/cookie-consent-settings.min.js
 ||steelseries.com/static/css/eu-osano.
 ||storage-mart.com/sm-policy-banner.js
@@ -7588,6 +7591,7 @@ concursolutions.com,forbes.com,formula1.com,fortune.com,proximus.be,proximustv.b
 @@||sloways.eu/*/cookie-consent$script,~third-party
 @@||sonnenverlauf.de/scripts/cookieconsent.min.js$~third-party
 @@||sourcepoint.mgr.consensu.org^$domain=t3n.de
+@@||sourcepointcmp.bloomberg.*/mms/get_site_data?$domain=bloomberg.co.jp|bloomberg.com
 @@||spacecentre.co.uk^*/uk-cookie-consent-js
 @@||st.getsitecontrol.com/main/runtime/$script,domain=beaconclimbing.com
 @@||stabila.com/bundles/marketingsuite/css/cookie-bar.css
