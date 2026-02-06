@@ -1,0 +1,10 @@
+{
+  "white_rules": 2977,
+  "black_rules": 1675333,
+  "total_rules": 1660511,
+  "sources_processed": 35,
+  "sources_failed": 1,
+  "duplicate_removed": 1036762,
+  "white_sources": [],
+  "black_sources": []
+}
