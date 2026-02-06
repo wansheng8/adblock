@@ -1,44 +1,57 @@
 {
-  "version": "3.3.0",
-  "build_date": "2026-02-06 17:45:13",
-  "timestamp": "2026-02-06 17:45:13",
-  "mode": "enhanced",
-  "stats": {
-    "total_processed": 845,
-    "valid_domains": 845,
-    "invalid_domains": 216,
-    "removed_by_whitelist": 0,
-    "removed_by_safe_check": 0,
-    "removed_by_suspicious": 23,
-    "added_by_enhancement": 34,
-    "whitelist_domains": 0,
-    "element_hiding_rules": 19,
-    "script_blocking_rules": 7
+  "version": "20260206_1750",
+  "updated_at": "2026-02-06T17:50:57.422117",
+  "rules": {
+    "blacklist_domains": 985,
+    "whitelist_domains": 0
   },
-  "counts": {
-    "blacklist": 833,
-    "whitelist": 0,
-    "filtered": 844,
-    "enhanced_added": 34
+  "filtering_stats": {
+    "domains_removed_by_whitelist": 0,
+    "domains_removed_by_safe_check": 11,
+    "domains_removed_by_suspicious": 64,
+    "critical_domains_kept": 6,
+    "essential_domains_whitelisted": 1,
+    "total_domains_processed": 842,
+    "analytics_domains_blocked": 63,
+    "banner_ad_domains_blocked": 63,
+    "error_monitoring_domains_blocked": 42,
+    "contextual_ad_domains_blocked": 45,
+    "element_hiding_rules_added": 149,
+    "script_blocking_rules_added": 62
   },
-  "github": {
-    "user": "wansheng8",
-    "repo": "adblock-enhanced",
-    "branch": "main"
+  "config": {
+    "intelligent_filtering": {
+      "enable_essential_domain_whitelist": true,
+      "enable_safe_domains_check": true,
+      "enable_false_positive_filter": true,
+      "remove_suspicious_wildcards": true,
+      "keep_popular_domains": true,
+      "enable_domain_validation": true
+    },
+    "enhanced_blocking": {
+      "enhance_analytics_blocking": true,
+      "block_analytics_execution": true,
+      "enhance_banner_blocking": true,
+      "block_flash_banners": true,
+      "block_gif_ads": true,
+      "block_static_image_ads": true,
+      "enhance_error_monitoring_blocking": true,
+      "generate_element_hiding_rules": true,
+      "generate_script_blocking_rules": true,
+      "enhance_contextual_ads": true
+    },
+    "essential_domains_count": 66,
+    "safe_domains_count": 29,
+    "analytics_domains_count": 71,
+    "banner_ad_domains_count": 105,
+    "error_monitoring_domains_count": 44,
+    "element_hiding_rules_count": 149,
+    "script_blocking_patterns_count": 62
   },
-  "sources": {
-    "blacklist_count": 6,
-    "whitelist_count": 1,
-    "blacklist_sources": [
-      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/adservers.txt",
-      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/tracking.txt",
-      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/analytics.txt",
-      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/banners.txt",
-      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/social.txt",
-      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/i18n.txt"
-    ],
-    "whitelist_sources": [
-      "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/whitelist.txt"
-    ]
+  "test_improvements": {
+    "analytics_tools": "增强脚本执行拦截，解决测试失败",
+    "banner_ads": "增强文件加载拦截，解决测试失败",
+    "error_monitoring": "增强脚本执行拦截，解决测试失败",
+    "visibility_issues": "添加元素隐藏规则，解决可见性测试"
   }
 }
