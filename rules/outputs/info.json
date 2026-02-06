@@ -1,18 +1,18 @@
 {
-  "total_rules": 918,
-  "adblock_rules": 867,
-  "dns_rules": 0,
-  "hosts_rules": 0,
-  "black_rules": 51,
-  "white_rules": 0,
+  "total_rules": 1798020,
+  "adblock_rules": 1660170,
+  "dns_rules": 340,
+  "hosts_rules": 78999,
+  "black_rules": 58511,
+  "white_rules": 3078,
   "sources_count": 0,
-  "last_updated": "2026-02-06 18:44:14",
+  "last_updated": "2026-02-06 18:52:41",
   "rule_types": {
-    "element_hiding": 0,
-    "url_blocking": 909,
-    "popup_blocking": 8,
-    "analytics_blocking": 4,
-    "malware_blocking": 0,
-    "annoyance_blocking": 0
+    "element_hiding": 80848,
+    "url_blocking": 2764308,
+    "popup_blocking": 9747,
+    "analytics_blocking": 16203,
+    "malware_blocking": 1512,
+    "annoyance_blocking": 12384
   }
 }
