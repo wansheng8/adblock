@@ -7149,10 +7149,8 @@ browsershots.org#@#.advert_area
 ||ad.mail.ru/static/admanhtml/
 ||ad.mail.ru^$~image,domain=~mail.ru|~sportmail.ru
 ||adfoc.us^$script,third-party
-||ads.saymedia.com^
 ||ads.yahoo.com^$~image
 ||affiliate-cdn.raptive.com^$third-party
-||affiliatepluginintegration.cj.com^
 ||afternic.com/v1/aftermarket/landers/
 ||akamaized.net/mr/popunder.js
 ||alarmsportsnetwork.com^$third-party
@@ -7162,7 +7160,6 @@ browsershots.org#@#.advert_area
 ||amazonaws.com/campaigns-ad/
 ||amazonaws.com/mailcache.appinthestore.com/
 ||an.yandex.ru^$domain=~e.mail.ru
-||analytics.analytics-egain.com^
 ||anigo.to^$third-party
 ||answers.sg/embed/
 ||any.gs/visitScript/
@@ -7596,7 +7593,6 @@ browsershots.org#@#.advert_area
 ||cloudfront.net/css/*.min.js$script,third-party
 ||cloudfront.net/images/*-min.js$script,third-party
 ||cloudfront.net/js/script_tag/new/sca_affiliate_
-||d1z2jf7jlzjs58.cloudfront.net^
 ||d3584kspbipfh3.cloudfront.net/cm/
 ||d3mmnnn9s2dcmq.cloudfront.net/shim/embed.js
 ||d85wutc1n854v.cloudfront.net^$domain=~wrapbootstrap.com
@@ -7725,7 +7721,6 @@ browsershots.org#@#.advert_area
 ||amateur.tv/freecam/$third-party
 ||amateurporn.net^$third-party
 ||anacams.com/cdn/top.
-||asg.prettytube.net^
 ||asianbutterflies.com/potd/
 ||asktiava.com/promotion/
 ||atlasfiles.com^*/sp3_ep.js$third-party

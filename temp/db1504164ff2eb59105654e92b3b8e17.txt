@@ -365,9 +365,12 @@ wss://*/api/wss/GetNotReadCount$third-party
 |http://gg.$third-party,domain=~guagua.cn
 ||allyes.$third-party
 ||ssh.*.com^*!$script,third-party
+||tupian888.*.bcebos.com^
+||vns86.oss-*.aliyuncs.com^
 ||yinghua8.*/bar/
 ||iyxdm.*/js/gad_
 /pic/tgad/*
+||zhizhizhizhi.oss-*.aliyuncs.com^
 ~cityheaven.net###gg1
 newduba.cn###jq_youxi
 ~houdask.com###kfivtwin
@@ -407,6 +410,7 @@ newduba.cn###jq_youxi
 ||258zw.com^$third-party
 ||3798.com^$third-party
 ||4567.org^$third-party
+||50bang.org^$third-party
 ||5399.com^$third-party
 ||60.190.139.164^
 ||6789.net^$third-party
@@ -490,6 +494,7 @@ newduba.cn###jq_youxi
 ||lianmeng.360.cn^$domain=~lianmeng.360.cn
 ||linkpicture.com^$third-party
 ||mediav.com^$third-party,domain=~dev.360.cn|~g.360.cn
+||miaozhen.com^$third-party
 ||mobads.baidu.com^$third-party
 ||news.tagtoo.co^$third-party
 ||niuza.com^$image,subdocument,third-party
@@ -503,6 +508,7 @@ newduba.cn###jq_youxi
 ||tamedia.com.tw^$third-party
 ||tanx.com^$third-party,domain=~1688.com|~alimama.com|~tmall.com|~www.taobao.com
 ||taobao.com/go/$third-party,domain=~alimama.com|~alitrip.com|~tanx.com|~tmall.com
+||tenmax.io^$third-party
 ||tianji520.cn^$third-party
 ||to8to.com^$subdocument,third-party
 ||unionli.com^$third-party
@@ -516,6 +522,7 @@ newduba.cn###jq_youxi
 ||yhdd1.com^$third-party
 ||yiqifa.com^$subdocument
 ||yiqifa.com^*.js$third-party
+||youle55.com^$third-party
 ||ysm.ezprice.net^$third-party
 ||zzad.com^$third-party
 $popup,third-party,domain=76fengyun.com|avsdown.com|downdv.com|downdvs.com|downhhh.com|imedown.info|jandown.com|mimima.com|mnks.jxedt.com|rmdown.com|soyunpan.com|xmflv.com
@@ -4322,6 +4329,7 @@ hxsame.hexun.com$domain=~quote.hexun.com
 ||woaidu.org/images/20180802/3.jpg
 ||wokao.co/qq/qq.js
 ||woozooo.com/img/*.js
+||wowad.wow-classic.com^
 ||wowfan.net/static/js/index.
 ||woyaoq.com/201904100958_5cad4dbac9c5f.png
 ||wpdaxue.com/img/*/txy-
@@ -4348,6 +4356,7 @@ hxsame.hexun.com$domain=~quote.hexun.com
 ||xav*.icu/base/js/other.js
 ||xayjbz.com/static/images/apc.
 ||xbiqu5.com/12345678.
+||xc.mydrivers.com^
 ||xcar.com.cn/dsp/ad
 ||xchina.*/scripts/modal/modal.js
 ||xchina.*/ad/
@@ -4427,6 +4436,7 @@ hxsame.hexun.com$domain=~quote.hexun.com
 ||xywy.com/gk?a=
 ||xywy.com/zhixing/
 ||xzji.com/data/block_js/softShow_
+||ya*.dwstatic.com^
 ||yahoo.com/embed/tv?site=buzzhand&
 ||yahoo.com/gdsale/gdsale.asp$domain=beephone.com.tw
 ||yalingba.com/ggtxjs/
@@ -9094,23 +9104,18 @@ tt1069.com#@##ad-slot
 @@||aboluowang.com^$generichide
 @@||acgbenzi.com//dist/images/top.png
 @@||acgdraw.com/ad$xmlhttprequest
-@@||ad.10010.com^
 @@||ad.12306.cn^$elemhide,subdocument,domain=95306.cn
 @@||ad.3.cn/ads/mgets?$domain=jd.com
 @@||ad.8maple.ru/8ads.gif
 @@||ad.8maple.ru/bilibili.png
 @@||ad.8maple.ru/close.png
-@@||ad.abchina.com^
 @@||ad.alimama.com^$genericblock
-@@||ad.kazakinfo.com^
-@@||ad.ourgame.com^
 @@||ad.thsi.cn/siteHome/
 @@||ad.vivo.com.cn^$~third-party
 @@||ad4.on.cc/web/www/delivery/ajs.php
 @@||ad4.on.cc/web/www/delivery/fl.js
 @@||ad4.on.cc/web/www/delivery/spc.php
 @@||ad4.on.cc/web/www/delivery/spcjs.php
-@@||adcdn.pingan.com^
 @@||addon.dismall.com/resource/*/ad
 @@||adjs.8591.com.tw^$script
 @@||adnet.qq.com^$~third-party
@@ -9142,7 +9147,6 @@ tt1069.com#@##ad-slot
 @@||anime1.me/ads.js
 @@||annhe.net^$generichide
 @@||aobi.100bt.com/play/ad/ad*.swf
-@@||api.ads.tvb.com^
 @@||apk.tw^*/ads.js$script,~third-party
 @@||appledaily.com.hk/admedia/
 @@||appledaily.com.tw^*_ad_logo.
@@ -9346,7 +9350,6 @@ tt1069.com#@##ad-slot
 @@||ikea.cn^*/img/ads/
 @@||imasdk.googleapis.com/js/sdkloader/ima3.js$domain=mingpao.com|4gtv.tv|881903.com|ani.gamer.com.tw|appledaily.com|ha365.com|hamivideo.hinet.net|line.me|linetv.tw|litv.tv|mytvsuper.com|nextmedia.com|now.com|tvb.com|udn.com|ulifestyle.com.hk
 @@||imfeifan.com/adv/$~third-party
-@@||img.ads.tvb.com^
 @@||imydl.com^$generichide
 @@||inoreader.com^$genericblock,generichide
 @@||inpad.com.tw/data/adv/
@@ -9802,11 +9805,17 @@ ipv6.baidu.com,www.baidu.com,www1.baidu.com,xueshu.baidu.com##.ylbx_game_desc
 ||weidianyuedu.com^$third-party
 ||wenshenbang.com^$third-party
 ||wshufa.com^$third-party
+||wuliao.chzsport.cn^
+||wyzq.rehuwang.com^
+||x.yaohuo.me^
+||xcf-bd-js.chuimg.com^
+||yijiuningyia.gushiwen.org^
 ||ynztzh.com^$third-party
 ||ys630.com^$third-party
 ||ysdm*.ys137.com.cn^
 ||ytelc.com^$third-party
 ||yunzuowen.com^$third-party
+||z1.o8h7d.cn^
 ||zhongkaowu.com^$third-party
 ||zxw51.com^$third-party
 bejson.com##.alert-dismissable

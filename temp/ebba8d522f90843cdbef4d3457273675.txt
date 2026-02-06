@@ -8089,7 +8089,6 @@ concursolutions.com,forbes.com,formula1.com,fortune.com,proximus.be,proximustv.b
 @@||ziffstatic.com^*/zdconsent.js$domain=humblebundle.com|ign.com|nintendolife.com|purexbox.com|pushsquare.com|speedtest.net|timeextension.com
 @@||zoo-frankfurt.de/bundles/chcookieconsent/js/cookie_consent.js$~third-party
 @@||zoominfo.com/_next/*/privacy-policy.json$~third-party
-@@||inflight.pacwisp.net^
 @@||www.douglas.*/public/cookieconsent.
 @@||akilliphone.com/views/kuteshop/assets/js/cookies-message.min.js$script,~third-party
 @@||amigosmuseoreinasofia.org/assets/js/cookiecuttr/jquery.cookie.js

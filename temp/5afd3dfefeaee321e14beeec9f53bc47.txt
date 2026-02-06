@@ -4438,7 +4438,6 @@ $third-party,xmlhttprequest,domain=opensubtitles.org
 ||tyxo.bg^$third-party
 ||180.76.2.18^$third-party,domain=~baidu.ip
 ||365dmp.com^$third-party
-||50bang.org^$third-party
 ||acs86.com^$third-party
 ||ad7.com^$third-party
 ||adop.cc^$third-party
@@ -4475,7 +4474,6 @@ $third-party,xmlhttprequest,domain=opensubtitles.org
 ||jpush.cn^$third-party
 ||lndata.com^$third-party
 ||mediav.com^$third-party
-||miaozhen.com^$third-party
 ||mmstat.com^$third-party
 ||oadz.com^$third-party
 ||p0y.cn^$third-party
@@ -4492,7 +4490,6 @@ $third-party,xmlhttprequest,domain=opensubtitles.org
 ||sjv.io^$third-party
 ||ta.sbird.xyz^$third-party
 ||tagmanager.cn^$third-party
-||tenmax.io^$third-party
 ||threatbook.cn^$third-party
 ||tomonline-inc.com^$third-party
 ||top-bloggers.com^$third-party
@@ -4506,7 +4503,6 @@ $third-party,xmlhttprequest,domain=opensubtitles.org
 ||webdissector.com^$third-party
 ||xtgreat.com^$third-party
 ||yigao.com^$third-party
-||youle55.com^$third-party
 ||zampda.net^$third-party
 ||ztcadx.com^$third-party
 ||dotmetrics.net^$third-party
@@ -6550,6 +6546,7 @@ $third-party,xmlhttprequest,domain=opensubtitles.org
 ||usizy.com/external/pageview
 ||utils.global-e.com/set?
 ||utt.pm/utm/
+||v.shopify.com^
 ||va.tawk.to/log
 ||validate.onecount.net^$image
 ||vanilladev.com/analytics.
@@ -8885,7 +8882,6 @@ $csp=child-src 'none'; frame-src *; worker-src 'none',domain=thepiratebay.org|vi
 ||affiliate.htb-energy.co.jp^
 ||affiliate.k-uno.co.jp^
 ||analytics.andrewsmith.com.au^
-||0tfsd2rwwu3xjstb.edge41.testandtarget.omniture.com^
 ||1ps6e7sort397gy9.edge46.testandtarget.omniture.com^
 ||20.edge46.testandtarget.omniture.com^
 ||analytics.cartoonnetwork.com.au^
@@ -9222,8 +9218,6 @@ $csp=child-src 'none'; frame-src *; worker-src 'none',domain=thepiratebay.org|vi
 ||vdmwntw1of9t8xgd.edge41.testandtarget.omniture.com^
 ||webstat.garanti.com.tr^
 ||zisr3w3i2csfa76m.edge41.testandtarget.omniture.com^
-||12build.actonservice.com^
-||23andme.actonservice.com^
 ||3mark.actonservice.com^
 ||3plworldwide.actonservice.com^
 ||a.evergage.com^
@@ -13057,7 +13051,6 @@ $csp=child-src 'none'; frame-src *; worker-src 'none',domain=thepiratebay.org|vi
 ||yahoo.co.jp/s?s=
 ||zatsubitown.com/mailfriend/kaiseki
 ||11st.co.kr/st/
-||ad-log.dable.io^
 ||auction.co.kr/ad/log.js
 ||auction.co.kr/montelena.js
 ||chosun.com/hitlog/
@@ -13235,7 +13228,6 @@ $csp=child-src 'none'; frame-src *; worker-src 'none',domain=thepiratebay.org|vi
 ||ninja.data.olxcdn.com/ninja-olxba.js
 ||abc.es/pixel/
 ||aemet.es/js/stats.js
-||analytics.redlink.com.ar^
 ||bankinter.com/res/img/documento_cargado.gif?
 ||btravel.com/analytics/
 ||btravel.com/falcon/api/hits/
@@ -13281,7 +13273,6 @@ $csp=child-src 'none'; frame-src *; worker-src 'none',domain=thepiratebay.org|vi
 ||play.pp9yy.com/hall/home/heartbeat
 ||play.pp9yy.com/hall/v1/netstat/
 ||thairath.co.th/event/
-||analytics.cosmopolitanmag.com.tr^
 ||cimri.com/api/pixel
 ||giquhome.com/0/sendEventV2
 ||glami.com.tr/tracker/
@@ -13662,7 +13653,6 @@ $csp=child-src 'none'; frame-src *; worker-src 'none',domain=thepiratebay.org|vi
 @@||static.knowledgehub.com/global/images/ping.gif?$~third-party
 @@||static.myfinance.com/widget/$domain=savingspro.org
 @@||static.pinpoll.com^$subdocument,domain=iframely.net
-@@||stats.britishbaseball.org.uk^
 @@||stats.gleague.nba.com/templates/angular/tables/events/shots.html$~third-party
 @@||stats.pusher.com/timeline/$script,domain=bringatrailer.com
 @@||stats.sports.bellmedia.ca^$domain=rds.ca|tsn.ca
@@ -13776,8 +13766,6 @@ $csp=child-src 'none'; frame-src *; worker-src 'none',domain=thepiratebay.org|vi
 @@||sourcepointcmp.bloomberg.*/mms/get_site_data?$domain=bloomberg.co.jp|bloomberg.com
 @@||adobe.com.ssl.d1.sc.omtrdc.net^$xmlhttprequest,domain=www.adobe.com
 @@||app.clarity.so^$~third-party
-@@||cbsi.map.fastly.net^
-@@||content.ingbank.pl^
 @@||ct.ddc.venmo.com.fpc.datadome.co^$domain=id.venmo.com
 @@||datadome.garena.com.first-party-js.datadome.co^$script,xmlhttprequest,domain=auth.garena.com
 @@||dd.blackhawknetwork.com.first-party-js.datadome.co^$domain=redeem.rewardlink.com
@@ -13792,7 +13780,6 @@ $csp=child-src 'none'; frame-src *; worker-src 'none',domain=thepiratebay.org|vi
 @@||sc.omtrdc.net^$domain=cibc.com
 @@||team-rec.jp^$domain=search-voi.0101.co.jp|voi.0101.co.jp
 @@||ubisoft.com.first-party-js.datadome.co^$script,domain=connect.ubisoft.com
-@@||wwwimage-tve.cbsstatic.com^
 @@||omns.americanexpress.com/b/ss/
 @@||omtrdc.net/b/ss/$image,domain=ba.com|britishairways.com|halifax-online.co.uk
 @@||omtrdc.net/rest/$xmlhttprequest
