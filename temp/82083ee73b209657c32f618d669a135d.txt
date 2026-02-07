@@ -18471,7 +18471,6 @@
 ||counter.dev^
 ||counter.ksosoft.com^
 ||counter.m1905.com^
-||counter.nope.dk^
 ||counter.promodeejay.net^
 ||countrystyle.e.aremedia.com.au^
 ||courses.go1.com^
@@ -81462,6 +81461,7 @@
 ||metrics.vwfs.com.br^
 ||metrics.weeklytimesnow.com.au^
 ||metrics.westpac.com.au^
+||metrics.williamhill.es^
 ||metrigo.zalan.do^
 ||metrilo.pongcheese.co.uk^
 ||metrix.ancestry.com^
@@ -81803,9 +81803,6 @@
 ||milsoft.actonservice.com^
 ||mimakiusa.actonservice.com^
 ||minerals.prep.global.weir^
-||minero-proxy-01.now.sh^
-||minero-proxy-02.now.sh^
-||minero-proxy-03.now.sh^
 ||minexmr.com^
 ||mini.abaha.vn^
 ||mini.notifysrv.com^
@@ -85879,7 +85876,6 @@
 ||rba.optumid.com^
 ||rbawis.pocketcard.co.jp^
 ||rbcroyalbank.fp.collect.igodigital.com^
-||rblx-copier.vercel.app^
 ||rbs.tt.omtrdc.net^
 ||rc.mail.symphony.rakuten.com^
 ||rcatk.site-drivers.com^
@@ -89255,6 +89251,7 @@
 ||smetrics.vwfs.com.br^
 ||smetrics.waseda-ac.co.jp^
 ||smetrics.westpacgroup.com.au^
+||smetrics.williamhill.es^
 ||smetrics.winc.co.nz^
 ||smetrics.winc.com.au^
 ||smetrics.wradio.com.mx^
@@ -92525,6 +92522,7 @@
 ||tm.tbcbusiness.uz^
 ||tm.telecharge.com^
 ||tm.thescore.bet^
+||tm.tradetracker.net^
 ||tm.uship.com^
 ||tm.verify.illion.com.au^
 ||tmail.happenee.com^
@@ -93427,6 +93425,7 @@
 ||tracking.carprices.com^
 ||tracking.coacha.com^
 ||tracking.concertstudio.com^
+||tracking.conduit.com^
 ||tracking.controleodonto.com.br^
 ||tracking.crystalfunds.com^
 ||tracking.destacame.com.mx^

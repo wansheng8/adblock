@@ -1,0 +1,2 @@
+indiatimes.com#@?#div:-abp-has(> div[id^="div-gpt-ad-"])
+bing.com#@?##b_results > li :-abp-has(span:-abp-contains(Ad))

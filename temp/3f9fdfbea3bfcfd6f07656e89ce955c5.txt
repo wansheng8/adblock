@@ -1,0 +1,2 @@
+||amgload.net^$third-party
+||amgload.net^$third-party,badfilter

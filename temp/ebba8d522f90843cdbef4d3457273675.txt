@@ -103,7 +103,6 @@
 ||cookiereports.com^$third-party
 ||cookies-spravne.cz^$third-party
 ||cookies.fo^$third-party
-||cookiescript.info^$third-party
 ||cookiesmaster.pl^$third-party
 ||cookiespool.com^$third-party
 ||cookiesuit.com^$third-party
@@ -141,7 +140,6 @@
 ||getcomplied.com^$third-party
 ||getsitecontrol.com^$third-party
 ||getterms.io^$third-party
-||goadopt.io^$third-party
 ||hs-banner.com^$third-party
 ||hu-manity.co/hu-banner.min.js
 ||illow.io/public/cookies/
@@ -302,7 +300,6 @@
 ||sdi.co.uk/cookies/
 ||service-cmp.com/config$script,xmlhttprequest,domain=megogo.net
 ||sheinsz.ltwebstatic.com/she_dist/assets/backup-onetrust.$script,domain=shein.co.uk
-||slashdot.org/country.js
 ||smstools.com/assets/js/cookie-consent-settings.min.js
 ||steelseries.com/static/css/eu-osano.
 ||storage-mart.com/sm-policy-banner.js
@@ -1826,6 +1823,7 @@ uplink.xyz##.cookies--w
 aiease.ai##.cookies-accept
 gstarcad.net##.cookies-ask
 credential.net,meningitisnow.org,soenergy.com##.cookies-banner
+fullstack.com##.cookies-banner_wrapper
 gomosafer.com##.cookies-body
 gitads.dev##.cookies-card
 mycar.com.au##.cookies-cards
@@ -3191,7 +3189,7 @@ trumpf.com##ux-cookie-layer
 pacificpower.net,rockymountainpower.net##wcss-cookie-banner
 web.dev##web-snackbar
 wirexapp.com##wx-cookie-policy-notification
-history.com##.p11s5o4
+history.com,yunexpress.com##.p11s5o4
 history.com##[data-sentry-component="Box"]:has-text(Legal Terms and Privacy)
 amazon.ca,amazon.co.uk,amazon.com,amazon.com.au,amazon.de,amazon.es,amazon.fr,amazon.ie,amazon.pl###sp-cc-wrapper
 redtube.com,redtube.com.br,tube8.com,you-porn.com,youporn.com###cookie_banner_overlay
@@ -3244,7 +3242,7 @@ airtel.in,habblet.city,interativa.ind.br,moex.com,seedtag.com,snoopza.com,trensu
 amministrazionicomunali.it,rual-travel.com###cookiescript_injected
 roninwear.com,roninwear.de,roninwear.fi,roninwear.fr,roninwear.hu,roninwear.it,roninwear.pt,roninwear.us###wrapper-dx-coki
 4templates.com,epal.gg,thegoodocs.com,thewallsthotel.com##div[class^="cookie__"]
-account.bhvr.com,advancedsciencenews.com,bitwarden.com,midnight.gd,scribd.com,sonesta.com##.osano-cm-window
+account.bhvr.com,advancedsciencenews.com,americastestkitchen.com,bitwarden.com,midnight.gd,scribd.com,sonesta.com##.osano-cm-window
 aia.com,aia.com.kh,aia.com.my,aia.com.ph,aia.com.sg,bpi-aia.com.ph,www.aia.co.th##.cmp-notification-action-panel
 ahjucaf.org,apf-francophonie.org,arp.pl,banquedeluxembourg.com,bayonne.port.fr,bourgogne-wines.com,chablis-wines.com,chartediversite.lu,competence.lu,cyprus-weather.com,diplomatie.gouv.fr,dupuis.com,fgirl.ch,forvia.com,guy-hoquet.com,havas.com,his-izz.be,infogreen.lu,inria.fr,ip-paris.fr,kameleoon.com,klepierre.it,klimabuendnis.lu,lechegaza.com,openedition.org,palais.mc,plazario2.com,rosenbauer.com,rsf.org,scoop.it,smeg.mc,space-eye.ch,sprecher-automation.com,tenet.ac.za,tuttonatale.it,uclouvain.be###tarteaucitronRoot
 medicalxpress.com,phys.org,techxplore.com,vitalia.pl##.popup-cookies
@@ -3552,7 +3550,7 @@ carsharingi.ru,jenner.com,kwebler.com,legiscope.com,nmsu.edu,tech-america.com,wa
 sprintersports.com,xxlnutrition.com##.bottom-0.left-0
 educationendowmentfoundation.org.uk,rshb.ru##.bottom-0.right-0
 onassis.org##.bottom-0.relative
-argyle.com,artma-zaproszenia.pl,claude.ai,getmerlin.in,olecams.com,producthunt.com,vello.fi,videochaterotico.com,youverify.co##.bottom-2
+argyle.com,artma-zaproszenia.pl,claude.ai,deno.com,getmerlin.in,olecams.com,producthunt.com,vello.fi,videochaterotico.com,youverify.co##.bottom-2
 airlinkflightschool.com,apmoller.com,app.houseofcb.com,ilmanifesto.it,lofigirl.com,momentosdealegriace.com.br,predecessorgame.com,wimotic.fr##.bottom-6
 app.gnosispay.com,cinobo.com,jdslabs.com,lukso.network,lumoar.com,mymarket.ge,platform.stability.ai,skyline-emu.one,vloot.io##.bottom-5
 ai-coustics.com,betterstack.com,dr-anns.com,lightyear.one,parallel.life,platoboost.app,vecer.com##.bottom-8
@@ -4881,7 +4879,7 @@ nieuwbouw-borger-odoorn.nl###cookie-overlay
 ekoplaza.nl###cookie-prompt-modal___BV_modal_outer_
 keuze.nl###cookie_consent
 nt-e.nl###cookie_container
-l28.nl,snickersshopbelgie.be###cookie_popup_body
+afzuigkap.nl,l28.nl,snickersshopbelgie.be###cookie_popup_body
 doof.nl###cookiechoices
 hypotheek.nl###cookielaw_idf
 hypotheek.nl###cookielaw_idf_overlay
@@ -5519,7 +5517,7 @@ hyojito.co.jp###agreement-area
 jbpo.or.jp###c_policy_wrap
 jp.ign.com###consent-wrapper
 juken-mikata.net###cookieAlt
-etvos.com,marna.jp,naturesway.jp,noevirgroup.jp,plazastyle.com,right-on.co.jp,store.kadokawa.co.jp,wind.yamano-music.co.jp###cookieBox
+etvos.com,marna.jp,naturesway.jp,noevirgroup.jp,online.tutuanna.jp,plazastyle.com,right-on.co.jp,store.kadokawa.co.jp,wind.yamano-music.co.jp###cookieBox
 tokyostarbank.co.jp###floatArea
 wisdom.nec.com###func-cookie
 blog.livedoor.jp###gdpr-banner
@@ -6557,11 +6555,8 @@ elakolije.rs###kolacic
 nedeljnik.rs###kuki_upozorenje
 buro247.rs###subscriptionPopupBottom
 digiexpert.rs##.MuiAppBar-positionFixed
-ananas.rs##.cOMKpv
 shareit.rs##.e1gb18jo0
-ananas.rs##.iAXCIF
 shareit.rs##.itemsWrapper
-ananas.rs##.kddXcJ
 sky-express.rs##.pop-up-srb
 mojadomacica.rs##.slide-in-bottom
 truck1.rs##.t1-gdpr
@@ -7301,7 +7296,7 @@ search.itaa.be#@##cookieWrapper
 eplus.jp#@##cookie_gdpr
 gogolf.fi#@##cookie_hdr_showagain
 bad-scherer.de,play-cricket.com#@##cookieaccept
-buendnisse-fuer-bildung.de,destatis.de,drklein.de,oxfamnovib.nl,schleswig-holstein.de,thw-ausbildungszentrum.de,thw.de,zensus2022.de#@##cookiebanner
+buendnisse-fuer-bildung.de,destatis.de,drklein.de,gdi-sh.de,oxfamnovib.nl,schleswig-holstein.de,thw-ausbildungszentrum.de,thw.de,zensus2022.de#@##cookiebanner
 icscards.nl,wellness-point.com#@##cookiebar
 skyrc.com#@##cookiebox
 rodekruis.be#@##cookieconsent-banner
@@ -7479,6 +7474,7 @@ concursolutions.com,forbes.com,formula1.com,fortune.com,proximus.be,proximustv.b
 @@||gamersgate.com/js/cookieconsent.js$script,~third-party
 @@||gastronovi.com/_assets/*/JavaScript/cookie_consent.js$~third-party
 @@||gazetabilgoraj.pl/wp-content/plugins/uk-cookie-consent/
+@@||gdi-sh.de/SiteGlobals/Modules/CookieBanner/$xmlhttprequest,domain=gdi-sh.de
 @@||gdpr-wrapper.privacymanager.io/gdpr/$script,xmlhttprequest,domain=dailybuzz.nl|esquire.de|futurezone.at|geenstijl.nl|gids.tv|kinuskikissa.fi|kleinezeitung.at|kurier.at|lablue.de|mediaite.com|nettivuokraus.com|omroepbrabant.nl|parra.nu|pickmypostcode.com|plusonline.nl|profil.at|rtvnoord.nl|verkeerplaza.nl|vesti.bg|weeronline.nl|weerplaza.nl
 @@||geo.privacymanager.io^$xmlhttprequest,domain=omroepbrabant.nl|plusonline.nl|weerplaza.nl
 @@||geolocation.onetrust.com/cookieconsentpub/$script,domain=rackroomshoes.com
@@ -7591,7 +7587,6 @@ concursolutions.com,forbes.com,formula1.com,fortune.com,proximus.be,proximustv.b
 @@||sloways.eu/*/cookie-consent$script,~third-party
 @@||sonnenverlauf.de/scripts/cookieconsent.min.js$~third-party
 @@||sourcepoint.mgr.consensu.org^$domain=t3n.de
-@@||sourcepointcmp.bloomberg.*/mms/get_site_data?$domain=bloomberg.co.jp|bloomberg.com
 @@||spacecentre.co.uk^*/uk-cookie-consent-js
 @@||st.getsitecontrol.com/main/runtime/$script,domain=beaconclimbing.com
 @@||stabila.com/bundles/marketingsuite/css/cookie-bar.css

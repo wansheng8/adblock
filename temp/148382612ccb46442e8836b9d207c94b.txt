@@ -1,0 +1,11 @@
+/killcovid2021\.com/\d\.mp4/$redirect=noopmp4-1s,media
+||nfmovies.com/playg$redirect=nooptext
+||cpoml.iask.sina.com.cn^$redirect=nooptext
+||sl.sogoucdn.com/semob$redirect=nooptext,popup
+/?encrypt=$redirect=nooptext,app=com.tencent.mtt.intl
+||dx-wangsucdncnc.inter.iqiyi.com/qpdxv/other^$redirect=nooptext
+||dx-bdcdncnc.inter.71edge.com/qpdxv/other^$redirect=nooptext
+||v-*.71edge.com/videos/other^$redirect=nooptext
+||*/videos/other/*.f4v$object,redirect=noopmp3-0.1s,domain=iqiyi.com
+||nfmovies.com/pic/tu/a191124001.$redirect=1x1-transparent.gif,~third-party
+||s1-a4.ifun.tv^$redirect=noopmp3-0.1s,domain=ifun.tv
