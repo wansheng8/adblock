@@ -566,6 +566,7 @@
 ||nmetrics.samsung.com^
 ||notes-analytics-events.apple.com^
 ||notify.sec.miui.com^
+||nsclick.baidu.com^
 ||o-sdk.mediation.unity3d.com^
 ||o2o.api.xiaomi.com^
 ||offerwall.yandex.net^

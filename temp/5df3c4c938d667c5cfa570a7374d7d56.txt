@@ -323,6 +323,7 @@ ithome.com##+js(trusted-click-element, span.hb-close-btn)
 |https://img.ithome.com/file/dylive/dylive.min.js^$script
 |https://api.ithome.com/json/hot/dajia.json^$script
 ||files.jb51.net^$image
+jianshu.com###note-fixed-ad-container
 ||jianshu.io/assets/web/*-ads-$image
 juejin.im##.banner,.wechat-banner
 ||gold-cdn.xitu.io/asset/sidbar-banner/$image

@@ -217,6 +217,7 @@
 ||usercentrics.eu^$third-party
 ||websitepolicies.io^$third-party
 ||widget.clym-sdk.net^$third-party
+||widgets.openli.com^
 ||wpcc.io^$third-party
 ||x-c.eu^$third-party
 ||privacy-mgmt.com^$domain=anisearch.com|anisearch.de|anisearch.es|anisearch.fr|anisearch.it|anisearch.jp|consent-manager.ft.com|economist.com|idealo.co.uk|marketwatch.com|popsci.com|startsiden.no|sussexexpress.co.uk|taz.de|wsj.com
@@ -657,6 +658,7 @@ ally.com###cx_banner_container
 crecipe.com###cxcx
 littlerealestate.com.au###da-float-cookie
 agrarshop-online.com###darkBack
+gv.com.sg###dataProtectionDiv
 mobily.com.sa###data_priv_bar
 ibm.com###dbdm--message
 pdfprof.com###dddhh
@@ -2390,6 +2392,7 @@ spotify.com##.mh-message-bar
 infineon.com##.mi-consent-layer
 bitget.com##.micro-cookie-dialog
 transparency.org##.mk-c-modal
+themarketer.com##.mkt-cookies-wrapper
 amazon.com##.mo-wp
 ny.thepaperfair.com##.mob-cookie-consent
 xhamster.com##.mobile-4488f.wrapper-4488f
@@ -2995,6 +2998,7 @@ ticketmaster.com##[aria-describedby="mobileMobileTOUMessage"]
 1password.com##[aria-label="Cookie Consent"]
 dictionary.cambridge.org##[aria-label="Cookie banner"]
 docs.nats.io##[aria-label="Cookies"]
+khanacademy.org##[aria-label="Notification Banner"]
 bicycling.com,caranddriver.com,cosmopolitan.com,countryliving.com,delish.com,elle.com,esquire.com,goodhousekeeping.com,harpersbazaar.com,roadandtrack.com,runnersworld.com,thepioneerwoman.com,womenshealthmag.com##[aria-label="Privacy Disclosure"]
 itesco.sk,tesco.*##[aria-label="consent-banner"]
 perlego.com##[aria-label="cookie banner"]
@@ -3209,7 +3213,7 @@ abcsinsights.com,antena1.com.br,author.today,cellc.co.za,finstat.cz,finstat.sk,f
 actie.degoedezaak.org,campax.org,controller.com,mrfdev.com,pelephone.co.il,voicemod.net##.cookies-consent
 arukereso.hu,docusign.net,mainchain.net,mediotiempo.com,mos-gorsud.ru,mos-sud.ru###cookie-disclaimer
 antimoon.com,apotheke-gleichen.de,bavaria-apotheke-berlin.de,cdooperesociali.org,charmanthotel.com,irisapo.de,lilabaer.de,nordbahnhof-apotheke-stuttgart.de,preins-apotheken.de,pzn24.de,sparapo.de,surf-in-apotheke.de,szynalski.com,ukehut-nyc.com###cookie-message
-adler-apotheke-kirchheim.de,apo-srb.de,apotheke-alt-buckow.de,apotheke-am-engelbecken.de,apotheke-am-schuetzenplatz-sz.de,apotheke-am-stadtgarten-ettlingen.de,apotheke-clenze.de,apotheke-rhens.de,apotheke-unterluess.de,apotheke-vechelde.de,apothekebadwilsnack.de,apothekereich.de,bahnhof-apotheke-salzbergen.de,blueletterbible.org,ceciapo.de,cecilien-apo.de,georg-apotheke-hannover.de,grosskreuz-apotheke.de,klosterapotheke-blankenburg.de,mitunsgesund.de,pannier-apotheke.de,postapotheke.biz,ribbeck-apotheke.de,rueckert-apotheke-stadtlauringen.de,rug-apo.de,schloss-apotheke-bauschlott.de,sonnen-apotheke-wismar.de,sonnenapotheke-blankenburg.de,stern-apotheke-wuerzburg.de,tannenbergapotheke.com,versandapo24.com,vu.nl,wacholder-apotheke.de###cookie-wrapper
+adler-apotheke-kirchheim.de,apo-srb.de,apotheke-alt-buckow.de,apotheke-am-engelbecken.de,apotheke-am-schuetzenplatz-sz.de,apotheke-am-stadtgarten-ettlingen.de,apotheke-clenze.de,apotheke-rhens.de,apotheke-unterluess.de,apotheke-vechelde.de,apothekebadwilsnack.de,apothekereich.de,bahnhof-apotheke-salzbergen.de,blueletterbible.org,ceciapo.de,cecilien-apo.de,georg-apotheke-hannover.de,grosskreuz-apotheke.de,klosterapotheke-blankenburg.de,magticom.ge,mitunsgesund.de,pannier-apotheke.de,postapotheke.biz,ribbeck-apotheke.de,rueckert-apotheke-stadtlauringen.de,rug-apo.de,schloss-apotheke-bauschlott.de,sonnen-apotheke-wismar.de,sonnenapotheke-blankenburg.de,stern-apotheke-wuerzburg.de,tannenbergapotheke.com,versandapo24.com,vu.nl,wacholder-apotheke.de###cookie-wrapper
 chapelle.co.uk,mtis.by,museum.nl,pyszne.pl##.cookie-overlay
 cam4.*##.EEoPD
 evertiq.*##.cc-container
@@ -3238,7 +3242,7 @@ sogeti.*###popup-cookieConsent
 wayfair.co.uk,wayfair.de,wayfair.ie##.FooterPopups
 alibabagroup.com,buildsoftwaresystems.com,cloud.huawei.com,confuciusinstitute.ac.uk,construtoraelevacao.com.br,driver61.com,gamsgo.com,hostcay.com,wodify.com##.cookie-box
 furaffinity.net,globalair.com,kennesaw.edu,reelrapture.com,retailtrends.nl,southwire.com,tourradar.com,verkkokauppa.mikrokulma.fi###cookie-notification
-airtel.in,habblet.city,interativa.ind.br,moex.com,seedtag.com,snoopza.com,trensurb.gov.br##.cookies-container
+airtel.in,ashdodport.co.il,habblet.city,interativa.ind.br,moex.com,seedtag.com,snoopza.com,trensurb.gov.br##.cookies-container
 amministrazionicomunali.it,rual-travel.com###cookiescript_injected
 roninwear.com,roninwear.de,roninwear.fi,roninwear.fr,roninwear.hu,roninwear.it,roninwear.pt,roninwear.us###wrapper-dx-coki
 4templates.com,epal.gg,thegoodocs.com,thewallsthotel.com##div[class^="cookie__"]
@@ -3683,6 +3687,7 @@ coopmobile.ch##.top-0.z-9999.fixed.bg-opacity-30:has-text(Website Cookies)
 studocu.com##.undefined:has([data-test-selector="click-the-cookie-banner"])
 istockphoto.com##.warning:has([data-cookie-type])
 app.filen.io##.z-50:has-text(This site uses cookies)
+hm-news.co.il##[data-elementor-type="popup"]:has-text(Cookies)
 unsplash.com##[open]:has(a[href="/cookies"])
 canva.com##[role="dialog"]:has-text(/cookie/i)
 bitbucket.org,chat.mistral.ai##[role="dialog"]:has-text(cookies)
@@ -5182,29 +5187,39 @@ calendar.2net.co.il###UseCookies
 maccabi4u.co.il###ZA_CAMP_BANNER_CONTAINER
 maccabi4u.co.il###ZA_CAMP_MOBILE_CONTAINER
 foodsdictionary.co.il###cookie-consent
+ladaat.co###cookie-consent-banner
 019mobile.co.il###cookie-except-banner
 madlan.co.il###cookie-root
+soltam.co.il###dfwt-gdpr-overlay
 ivory.co.il###removeBannerCookie
 gadgety.co.il###upnext-cookie-notice
 cal-online.co.il###wc-using-cookies
 iroads.co.il##.CookiePolicyDisclaimer
 lastprice.co.il##.PCConsent
+shop.sano.co.il##.accept_cookies_wrapper
 guidestar.org.il##.app-cookies-disclaimer-container
+ladaat.co##.ck-cookie-banner
 israelpost.co.il##.cookie-agreement
 yad2.co.il##.cookie-implementation-disclaimer_popupRoot__CLI1m
 easy.co.il##.cookies-consent-banner
+bug.co.il##.cookies-policy-modal-container
+pazgas.co.il##.cookies-popup-overlay
+landwercafe.co.il##.cookies_modal_container
 pais.co.il##.cookies_sec
 drushim.co.il##.dr-cookie-banner
+mtoys.co.il##.e2w-cookie-popup
+xphone.co.il##.elementor-element-7f094b47
 yad-mordechai.co.il##.eupopup-container
+cinema-city.co.il##.gdpr-module
 diners.co.il##.message-container
 bankhapoalim.co.il##.muirtl-1cwm7gt
 super-pharm.co.il##.phcBlockCookiesWrap
 colmobil.co.il##.popup-privacy
+dynamica.co.il,kfar.co.il##[class^="cookiesPopup"]
 alljobs.co.il##[id^="ZA_CAMP_BUBBLE_CONTAINER_CID_"]
 lastminute.co.il##app-notifications-container
 iec.co.il##app-sticky-banner
 dutyfree.co.il##div[class^="cookieRestriction-module__root-"]
-dynamica.co.il##div[class^="cookiesPopup"]
 yad2.co.il##div[data-nagish="cookie-implementation-disclaimer"]
 hb2.bankleumi.co.il##div[data-tid="cookies-banner"]
 postalfinance.co.il##float-window-alert
@@ -7052,6 +7067,7 @@ intertop.ua##.agreement
 kurs.com.ua##.background-popup
 ire.com.ua##.block
 booknet.ua##.bn_cookies
+delo.ua##.c-cookies-modal
 carta.ua##.carta-policy-bottom
 alfa-tv.ua##.cook
 glavcom.ua,nv.ua##.cookie-label
@@ -7204,6 +7220,7 @@ ants.vn##.sg-popup-content
 ||tolpeit.cloud/gdpr/
 ||triboo.direct/cookie_triboodirect/
 ||velvetgossip.it^*/gdprvelvet.js
+||widget.brand-fresh.it^
 ||matprat.no/Sites/OEK.MatPrat.AddOn/Content/Scripts/build/static/js/cookiesPopup.
 ||ruter.no/_astro/cookie-banner.
 ||widforss.no/bundles/consent-init
@@ -7647,7 +7664,6 @@ concursolutions.com,forbes.com,formula1.com,fortune.com,proximus.be,proximustv.b
 @@||ziffstatic.com^*/zdconsent.js$domain=humblebundle.com|ign.com|nintendolife.com|purexbox.com|pushsquare.com|speedtest.net|timeextension.com
 @@||zoo-frankfurt.de/bundles/chcookieconsent/js/cookie_consent.js$~third-party
 @@||zoominfo.com/_next/*/privacy-policy.json$~third-party
-@@||inflight.pacwisp.net^
 @@||www.douglas.*/public/cookieconsent.
 @@||akilliphone.com/views/kuteshop/assets/js/cookies-message.min.js$script,~third-party
 @@||amigosmuseoreinasofia.org/assets/js/cookiecuttr/jquery.cookie.js

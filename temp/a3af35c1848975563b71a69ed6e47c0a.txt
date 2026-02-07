@@ -615,6 +615,7 @@ forbesindia.com##.artical-controls
 crainscleveland.com,crainsnewyork.com##.article-recommended
 goodmorningamerica.com##.article-tools
 elespanol.com##.article__arrow
+elespanol.com##.article__footer-nav
 pokernews.com##.article__suggest
 iclarified.com##.article_footer
 imagetwistcams.com,strip.chat,stripchat.com,xhamsterlive.com##.auth-modal-signup
@@ -858,6 +859,7 @@ news9live.com###cube_spinner
 jweekly.com###custom_html-2
 marijuanamoment.net###custom_html-8
 liliputing.com###custom_html-9
+amazon.*###desktop-banner
 sunsky-online.com###divWelcome
 khanacademy.org###donate-banner
 the74million.org###donate_rocket
@@ -1033,6 +1035,7 @@ damemagazine.com##.an_independent
 sdvoice.info##.ancr-group
 darkreading.com##.announcement
 civitai.com##.announcements
+adguard-dns.io,adguard-mail.com,adguard-vpn.com,adguard.com##.annoyance
 thebookseller.com##.ao-cpa
 dailysabah.com##.aos-animate
 apnews.com##.ap_banner-container
@@ -5609,6 +5612,7 @@ beautycrew.com.au###NewsletterSignUpSideHero
 brighteon.com###NewsletterSocial
 gayemagazine.com###POPUPS_ROOT
 globalchinapulse.net###SUBSCRIBE
+thefreedictionary.com###SubscrSlider
 cnnsofake.news,health.news,trump.news###SubscribeForm
 cnnsofake.news,collapse.news,health.news,newstarget.com,trump.news,veteranstoday.news###Widget15
 yoncu.com###YncLightBox
@@ -9967,6 +9971,7 @@ bing.com##.b_bnp_bopc
 startpage.com,startpagel6srwcjlue4zgq3zevrujfaow726kjytqbbjyrswwmjzcqd.onion##.banner-top
 tmz.com##.browser-notifications-prompt
 cnet.com##.c-globalNotification
+lootbar.gg##.c-noti-card
 techwalla.com##.component-push-notification
 manutd.com##.custom-popup
 advfn.com##.cw-prompt-alert
