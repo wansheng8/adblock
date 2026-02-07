@@ -10962,6 +10962,7 @@
 ||ad2.yangjinyou.com^
 ||ad28967355.7d93f9d2f5.com^
 ||ad31a85068.635aa64536.com^
+||ad4.com.cn^
 ||ad7.tagphi.net^
 ||ada.moseasia.com^
 ||adae2f8a3d.087f389ba8.com^
@@ -11099,6 +11100,7 @@
 ||ads.passiontimes.hk^
 ||ads.playboy.com^
 ||ads.reader.yueyouxs.com^
+||ads.saymedia.com^
 ||ads.serving-sys.cn^
 ||ads.ttv.com.tw^
 ||ads.unister-gmbh.de^
@@ -11896,6 +11898,7 @@
 ||analytics.agroadvance.com.br^
 ||analytics.amora.com.br^
 ||analytics.amrcollection.com^
+||analytics.analytics-egain.com^
 ||analytics.andrewsmith.com.au^
 ||analytics.bargainblinds.co.nz^
 ||analytics.beachbound.com^
@@ -13086,6 +13089,7 @@
 ||asg.laivue.com^
 ||asg.mainos.pro^
 ||asg.phukienthoitranggiare.com^
+||asg.prettytube.net^
 ||asg1.hostadsmarkets.com^
 ||ashcroft.actonservice.com^
 ||ashleeadams.superchat.live^
@@ -62321,6 +62325,7 @@
 ||f5dbd92953.0bd18cc899.com^
 ||f5networks.tt.omtrdc.net^
 ||f5vy3xjl4zqen0w-p.tck020.xyz^
+||f5w.prettytube.net^
 ||f612938337.7ce48c6052.com^
 ||f61f3c327f.55b6be9d8f.com^
 ||f66b42fd48.a568e472d6.com^
@@ -94253,6 +94258,7 @@
 ||vi.xhlive.cam^
 ||vi.xhlive.net^
 ||vi.xhlive.org^
+||vi1.prettytube.net^
 ||viacredi.stripchats.io^
 ||viajeinteriorcinespanol.superchatlive.com^
 ||viasat.tt.omtrdc.net^

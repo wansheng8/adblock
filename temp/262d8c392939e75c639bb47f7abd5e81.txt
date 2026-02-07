@@ -11142,6 +11142,7 @@
 ||metrics.civitatis.com^
 ||cixupea.com^
 ||cizaxygro.com^
+||affiliatepluginintegration.cj.com^
 ||cjdropship.diy^
 ||cjhehsdl.com^
 ||cjo52gcnetp-wl2l.top^
@@ -11398,6 +11399,7 @@
 ||d1u9wuqimc88kc.cloudfront.net^
 ||d1v9u0bgi1uimx.cloudfront.net^
 ||d1wix2gc2cgqis.cloudfront.net^
+||d1z2jf7jlzjs58.cloudfront.net^
 ||d24n15hnbwhuhn.cloudfront.net^
 ||d24w6bsrhbeh9d.cloudfront.net^
 ||d26xw8rp6mlgfg.cloudfront.net^

@@ -1,4 +1,0 @@
-mangapedia.com#$#.PG_Nkeyword #anchorTop  { bottom: 20px !important; }
-gigafile.nu#$##sp_container > div#main_panel.container[style^="height:"]{ height: 0!important; }
-trashbox.ru#$#.div_landing {display: block!important;}
-deviantart.com#$#div[class*="dp-ad-"] {height: 0!important; width: 0!important; }

@@ -927,6 +927,7 @@ kingkong.com.tw##.room-banner-wrap
 xhd.cn##.xinad
 163.com##.gkk_bj_yw
 163.com##.gkk_default_yw
+jianshu.com###note-fixed-ad-container
 jianshu.com###web-note-ad-1
 776dm.com,qiqidongman.com##.topAA
 liepin.com##DIV[id^="nodetpl_g_"]
@@ -1686,6 +1687,7 @@ m.babytree.com##script + a[class]
 ||news.cn/pc-log?
 ||newspage.xilu.com/model/visitlog.js
 ||nmgnews.com.cn/sys/online_calc.js
+||nsclick.baidu.com^
 ||olpv.onlylady.com^
 ||optaim.com^$third-party
 ||other.v.duowan.com^

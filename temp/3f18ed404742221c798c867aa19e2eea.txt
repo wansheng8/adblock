@@ -1,2 +1,0 @@
-@@||douban.com^$subdocument,domain=douban.com
-@@||sinaimg.cn/large^$domain=xclient.info

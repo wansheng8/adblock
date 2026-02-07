@@ -160,6 +160,11 @@ newduba.cn###jq_youxi
 ||trafficmanager.net/o.js
 ||67.21.92.*.gif
 ||cupfox.app^$third-party
+||zyek35wsn.com^
+||reluctance58.com^
+||avpr.cn^
+||gnla02070qp.com^
+||vwvaddoet.com^
 ||affxc.com^$third-party
 ||1fxs.com^$third-party
 ||2hiu.com^$third-party

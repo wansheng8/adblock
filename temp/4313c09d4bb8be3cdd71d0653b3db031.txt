@@ -1,9 +1,0 @@
-olke.az#$##top_banner_A {display:none!important;}
-@@||warforum.xyz/ads.js?$script,first-party
-zive.cz#$#.sky-wrapper { min-height: 10px!important;}
-inforegister.ee#$#.bg-shaft.header-bar { top: 0 !important;  }
-shvoong.co.il#$##ppsPopupBgOverlay  { display: none!important; }
-cineblog.it#$#body { margin-top: 0px !important;}
-macitynet.it#$##td-outer-wrap > .td-header-wrap {margin-top: 0!important; }
-money.pl#@?#main > div:first-child:-abp-has(img[src^="https://v.wpimg.pl/"][loading="lazy"])
-purepc.pl#$#body > a[style] { height: 0!important; position: absolute!important; top: -2000px!important;}

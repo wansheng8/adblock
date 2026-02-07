@@ -3530,6 +3530,7 @@ zznews.cn##.ad:not([style="margin-top:0px;padding-top:0px;"]),.ad1000-60
 ||sinaimg.cn/mw690/$image,domain=baozoumanhua.com|www.51jifenbao.net|d5yuansu.com
 ||sinaimg.cn/mw690/006a$domain=fulibba.net
 ||sinolub.com/data/js$script
+||sitemaji.com^$third-party
 ||sobt8.com/Public/static/js/home-common-v2.js?v=
 ||soua.com^$third-party
 ||sqxst.com^$third-party
@@ -3679,6 +3680,7 @@ zznews.cn##.ad:not([style="margin-top:0px;padding-top:0px;"]),.ad1000-60
 ||yytcdn.com/uploads/player_image/
 ||yytcdn.com/user/bugles/
 ||zdfans.com/wp-content/themes/D7/img/ad
+||zedo.com^$third-party
 ||zgc66.com^$third-party
 ||zhiboche.com/check.
 ||zhongxinlm.com^$third-party
@@ -5577,6 +5579,7 @@ zdzdm.com#@##share_list
 ||api.chushou.tv/open/baidu^
 ||cm.bilibili.com/cm/api/fees/wise
 ||biquge.lu/xxgg/booknewll
+||youtube.com/pagead/
 xdean.cc##div.widget.widget_media_image
 ||m.video.9ddm.com/api$replace=/banner_button//
 ||m.video.9ddm.com/api/$replace=/banner_big//
